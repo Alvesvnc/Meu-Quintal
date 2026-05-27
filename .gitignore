@@ -1,0 +1,19 @@
+node_modules
+dist
+build
+.DS_Store
+.env
+.env.local
+.env.*.local
+*.log
+.vite
+.turbo
+coverage
+*.tsbuildinfo
+.idea
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# protótipo HTML original — não versionar
+Meu Quintal.html

@@ -1,0 +1,44 @@
+@import './fonts.css';
+
+/* Reset mínimo + defaults Quintal. Aplicado em apps via import global. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #EFECE5;
+  color: #1F1A14;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+button { font: inherit; }
+
+/* Fraunces sempre com ligatures + stylistic set 01 (a alternativo) */
+.font-display {
+  font-feature-settings: 'liga' 1, 'ss01' 1;
+}
+.font-display.italic {
+  font-feature-settings: 'liga' 1, 'ss01' 1, 'ss02' 1;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scrollbar discreta cream */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #D9D2C3; border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }

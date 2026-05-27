@@ -1,0 +1,7 @@
+@import '@mq/design-system/global.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Override mobile-first do cliente: body 17px (ver pages/cliente.md) */
+html, body { font-size: 17px; }

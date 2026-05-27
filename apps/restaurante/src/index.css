@@ -1,0 +1,7 @@
+@import '@mq/design-system/global.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Restaurante mobile: body maior (18px) — distância olho-tela ~60-100cm na bancada */
+html, body { font-size: 18px; }

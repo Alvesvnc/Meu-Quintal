@@ -1,0 +1,8 @@
+@import '@mq/design-system/global.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dono é desktop — body 14px, mais denso. NÃO customizar html font-size
+   (vide lição do restaurante: classes Tailwind rem escalam). */
+body { font-size: 14px; }

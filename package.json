@@ -1,0 +1,25 @@
+{
+  "name": "meu-quintal",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Sistema de food-court multi-cozinha — cliente, restaurante, dono.",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n cliente,restaurante,dono -c blue,magenta,green \"npm:dev:cliente\" \"npm:dev:restaurante\" \"npm:dev:dono\"",
+    "dev:cliente": "npm run dev -w apps/cliente",
+    "dev:restaurante": "npm run dev -w apps/restaurante",
+    "dev:dono": "npm run dev -w apps/dono",
+    "dev:server": "npm run dev -w server",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
