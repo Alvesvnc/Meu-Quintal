@@ -1,61 +1,80 @@
 import { useMemo } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { Button, Divider } from '@mq/design-system';
-import { KITCHENS } from '../mocks/quintal';
-import { getMenuBySlug, CATEGORY_LABEL, fmtBRL, type Category } from '../mocks/menu';
+import type { MenuCategory } from '@mq/shared';
+import { useKitchenMenu } from '../api/hooks';
 import { TabBar, useActiveSection } from '../components/TabBar';
 import { MenuItemRow } from '../components/MenuItemRow';
+import { ScreenError } from '../components/ScreenError';
 import { useCart, selectItemCount, selectTotalCents } from '../stores/cart';
+import { fmtBRL } from '../lib/format';
 
-const ORDER: Category[] = ['entradas', 'pratos', 'sobremesas', 'bebidas'];
+const CATEGORY_LABEL: Record<MenuCategory, string> = {
+  entradas:   'Entradas',
+  pratos:     'Pratos',
+  sobremesas: 'Sobremesas',
+  bebidas:    'Bebidas',
+};
+const ORDER: MenuCategory[] = ['entradas', 'pratos', 'sobremesas', 'bebidas'];
 
-/**
- * Tela 02 — Cardápio de uma cozinha.
- * pages/cliente.md § "Cardápio de uma cozinha".
- */
+/** Tela 02 — Cardápio de uma cozinha. */
 export function MenuScreen() {
   const { slug = '' } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const kitchen = KITCHENS.find((k) => k.slug === slug);
-  const menu = getMenuBySlug(slug);
+  const { data, isLoading, error, refetch } = useKitchenMenu(slug);
   const cartCount = useCart(selectItemCount);
   const cartTotal = useCart(selectTotalCents);
 
   const grouped = useMemo(() => {
-    const map = new Map<Category, typeof menu>();
+    if (!data) return [];
+    const map = new Map<MenuCategory, typeof data.items>();
     for (const c of ORDER) map.set(c, []);
-    for (const item of menu) map.get(item.category)?.push(item);
-    return ORDER.filter((c) => (map.get(c)?.length ?? 0) > 0).map((c) => ({
-      id: c,
-      label: CATEGORY_LABEL[c],
-      items: map.get(c)!,
-    }));
-  }, [menu]);
+    for (const item of data.items) map.get(item.category)?.push(item);
+    return ORDER
+      .filter((c) => (map.get(c)?.length ?? 0) > 0)
+      .map((c) => ({ id: c, label: CATEGORY_LABEL[c], items: map.get(c)! }));
+  }, [data]);
 
   const activeId = useActiveSection(grouped.map((g) => g.id));
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - 110; // header 56 + tabs 48 + folga
+    const y = el.getBoundingClientRect().top + window.scrollY - 110;
     window.scrollTo({ top: y, behavior: 'smooth' });
   };
 
-  if (!kitchen) {
+  if (isLoading) {
     return (
-      <main className="px-5 py-10">
-        <p className="font-display italic text-display-md text-ink">
-          Essa cozinha saiu do quintal.
-        </p>
+      <main className="px-5 pt-8 text-center">
+        <p className="font-display italic text-display-md text-inkMuted">Carregando cardápio…</p>
       </main>
     );
   }
 
-  if (menu.length === 0) {
+  if (error) {
+    return (
+      <ScreenError
+        title="Não rolou abrir esse cardápio."
+        body="Pode ser que a cozinha esteja fechando o turno."
+        onRetry={() => refetch()}
+      />
+    );
+  }
+
+  if (!data) {
+    return (
+      <main className="px-5 py-10">
+        <p className="font-display italic text-display-md text-ink">Essa cozinha saiu do quintal.</p>
+      </main>
+    );
+  }
+
+  if (data.items.length === 0) {
     return (
       <main className="px-5 py-10">
         <p className="font-display italic text-display-md text-ink mb-5 text-pretty">
-          O {kitchen.name} ainda está montando o cardápio aqui.
+          O {data.kitchen.name} ainda está montando o cardápio aqui.
         </p>
         <Button variant="secondary" size="lg" fullWidth onClick={() => navigate('/')}>
           Voltar pro quintal
@@ -66,17 +85,16 @@ export function MenuScreen() {
 
   return (
     <>
-      {/* Hero curta da cozinha */}
       <section className="px-5 pt-5">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Cozinha · ~{kitchen.etaMinutes} min
+          Cozinha · ~{data.kitchen.slaMinutes} min
         </p>
         <h1 className="font-display text-display-lg italic text-ink mt-1 leading-tight">
-          {kitchen.name}
+          {data.kitchen.name}
         </h1>
-        <p className="mt-2 font-sans text-body text-inkMuted">
-          {kitchen.tagline}
-        </p>
+        {data.kitchen.tagline && (
+          <p className="mt-2 font-sans text-body text-inkMuted">{data.kitchen.tagline}</p>
+        )}
       </section>
 
       <div className="px-5 pt-5">
@@ -97,23 +115,21 @@ export function MenuScreen() {
             </p>
             <div className="divide-y divide-hairlineSoft">
               {g.items.map((item) => (
-                <MenuItemRow key={item.id} item={item} />
+                <MenuItemRow
+                  key={item.id}
+                  item={item}
+                  kitchen={{ slug: data.kitchen.slug, name: data.kitchen.name }}
+                />
               ))}
             </div>
           </section>
         ))}
       </main>
 
-      {/* Sumário sticky bottom — só aparece se carrinho > 0; fica acima das tabs (bottom-16) */}
       {cartCount > 0 && (
         <div className="fixed inset-x-0 bottom-16 z-30 pointer-events-none">
           <div className="mx-auto max-w-[480px] px-5 py-3 bg-bg/95 backdrop-blur-[2px] border-t border-hairlineSoft pointer-events-auto">
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              onClick={() => navigate('/carrinho')}
-            >
+            <Button variant="primary" size="lg" fullWidth onClick={() => navigate('/carrinho')}>
               <span className="flex-1 text-left">
                 Ver carrinho · {cartCount} {cartCount === 1 ? 'item' : 'itens'}
               </span>
@@ -123,7 +139,6 @@ export function MenuScreen() {
         </div>
       )}
 
-      {/* Item detail sheet (route aninhada /k/:slug/i/:itemId) */}
       <Outlet />
     </>
   );

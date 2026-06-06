@@ -1,0 +1,159 @@
+// Meu Quintal — schema mínimo do MVP cliente.
+// Personas no MVP atual: cliente (mesa via QR), restaurante/dono virão depois.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Espaço (o "quintal" físico) ────────────────────────────────────────────
+model Space {
+  id            String   @id @default(uuid()) @db.Uuid
+  slug          String   @unique
+  name          String
+  commissionPct Decimal  @default(15) @db.Decimal(5, 2)
+  createdAt     DateTime @default(now())
+
+  tables   Table[]
+  kitchens Kitchen[]
+  orders   Order[]
+
+  @@map("spaces")
+}
+
+// ─── Mesa ────────────────────────────────────────────────────────────────────
+model Table {
+  id        String   @id @default(uuid()) @db.Uuid
+  numero    Int
+  qrToken   String   @unique // rotaciona quando dono recria QR
+  isActive  Boolean  @default(true)
+  spaceId   String   @db.Uuid
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  orders Order[]
+
+  @@unique([spaceId, numero])
+  @@index([qrToken])
+  @@map("tables")
+}
+
+// ─── Cozinha / restaurante dentro do espaço ─────────────────────────────────
+model Kitchen {
+  id          String        @id @default(uuid()) @db.Uuid
+  slug        String        @unique
+  name        String
+  category    String?
+  tagline     String?
+  description String?
+  photoUrl    String?
+  slaMinutes  Int           @default(15)
+  status      KitchenStatus @default(ativa)
+  spaceId     String        @db.Uuid
+  space       Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+
+  menuItems  MenuItem[]
+  orderItems OrderItem[]
+
+  @@index([spaceId, status])
+  @@map("kitchens")
+}
+
+enum KitchenStatus {
+  ativa
+  pausada
+  rascunho
+}
+
+// ─── Item de cardápio ───────────────────────────────────────────────────────
+model MenuItem {
+  id          String       @id @default(uuid()) @db.Uuid
+  kitchenId   String       @db.Uuid
+  kitchen     Kitchen      @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  category    MenuCategory
+  name        String
+  description String?
+  priceCents  Int
+  photoUrl    String?
+  available   Boolean      @default(true)
+  badge       MenuBadge?
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  orderItems OrderItem[]
+
+  @@index([kitchenId, available])
+  @@map("menu_items")
+}
+
+enum MenuCategory {
+  entradas
+  pratos
+  sobremesas
+  bebidas
+}
+
+enum MenuBadge {
+  novo
+  esgotando
+  sem_estoque @map("sem-estoque")
+}
+
+// ─── Pedido (raiz, agrupa itens de N cozinhas) ───────────────────────────────
+model Order {
+  id                  String    @id @default(uuid()) @db.Uuid
+  shortId             String    @unique // ex: "2421" — exibido pro cliente/restaurante
+  spaceId             String    @db.Uuid
+  space               Space     @relation(fields: [spaceId], references: [id])
+  tableId             String    @db.Uuid
+  table               Table     @relation(fields: [tableId], references: [id])
+  totalCents          Int
+  createdAt           DateTime  @default(now())
+  /// Quando cliente apertou "Fechar conta" - sinaliza pro restaurante cobrar
+  paymentRequestedAt  DateTime?
+  /// Quando restaurante confirmou pagamento
+  paidAt              DateTime?
+
+  items OrderItem[]
+
+  @@index([tableId, createdAt])
+  @@map("orders")
+}
+
+// ─── Item de pedido (uma linha = um SKU × N) ────────────────────────────────
+// Status fica por item — assim cada cozinha avança independente.
+model OrderItem {
+  id             String          @id @default(uuid()) @db.Uuid
+  orderId        String          @db.Uuid
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId     String          @db.Uuid
+  menuItem       MenuItem        @relation(fields: [menuItemId], references: [id])
+  kitchenId      String          @db.Uuid // denormalizado pra query rápida
+  kitchen        Kitchen         @relation(fields: [kitchenId], references: [id])
+  qty            Int
+  unitPriceCents Int             // snapshot — não muda se cozinha alterar o preço depois
+  nameSnapshot   String          // snapshot do nome no momento do pedido
+  note           String?
+  status         OrderItemStatus @default(novo)
+  createdAt      DateTime        @default(now())
+  acceptedAt     DateTime?
+  readyAt        DateTime?
+  pickedAt       DateTime?
+
+  @@index([orderId])
+  @@index([kitchenId, status])
+  @@map("order_items")
+}
+
+enum OrderItemStatus {
+  novo
+  preparando
+  pronto
+  retirado
+  cancelado
+}

@@ -1,19 +1,17 @@
 import { Link } from 'react-router-dom';
 import { Chip } from '@mq/design-system';
-import { fmtBRL, type MenuItem } from '../mocks/menu';
+import type { MenuItem } from '@mq/shared';
+import { fmtBRL } from '../lib/format';
 import { useCart } from '../stores/cart';
 import { QtyStepper } from './QtyStepper';
 
 interface MenuItemRowProps {
   item: MenuItem;
+  kitchen: { slug: string; name: string };
 }
 
-/**
- * Row horizontal: foto 88x88 esquerda, conteudo+preco direita, botao + (44x44)
- * ou stepper se ja estiver no carrinho. Tap no row inteiro abre detalhe.
- * pages/cliente.md § "Cardápio de uma cozinha".
- */
-export function MenuItemRow({ item }: MenuItemRowProps) {
+/** Row horizontal: foto 88x88, conteúdo+preço, botão + (44x44) ou stepper. */
+export function MenuItemRow({ item, kitchen }: MenuItemRowProps) {
   const lines = useCart((s) => s.lines);
   const addLine = useCart((s) => s.addLine);
   const setQty = useCart((s) => s.setQty);
@@ -23,23 +21,25 @@ export function MenuItemRow({ item }: MenuItemRowProps) {
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!unavailable) addLine(item, 1);
+    if (!unavailable) addLine(item, kitchen, 1);
   };
 
   return (
     <div className={`flex gap-4 py-4 ${unavailable ? 'opacity-55' : ''}`}>
       <Link
-        to={`/k/${item.kitchenSlug}/i/${item.id}`}
+        to={`/k/${kitchen.slug}/i/${item.id}`}
         className="flex-1 flex gap-4 no-underline text-inherit min-w-0"
       >
         <div className="shrink-0 w-[88px] h-[88px] rounded-md overflow-hidden bg-surface">
-          <img
-            src={item.photoUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover"
-          />
+          {item.photoUrl && (
+            <img
+              src={item.photoUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover"
+            />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -51,12 +51,14 @@ export function MenuItemRow({ item }: MenuItemRowProps) {
             {item.badge === 'esgotando' && <Chip tone="warn">últimos</Chip>}
             {item.badge === 'sem-estoque' && <Chip tone="danger">esgotado</Chip>}
           </div>
-          <p
-            className="mt-1 font-sans text-body-sm text-inkMuted leading-snug"
-            style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-          >
-            {item.description}
-          </p>
+          {item.description && (
+            <p
+              className="mt-1 font-sans text-body-sm text-inkMuted leading-snug"
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            >
+              {item.description}
+            </p>
+          )}
           <p className="mt-2 font-mono text-body text-ink">
             {fmtBRL(item.priceCents)}
           </p>

@@ -1,23 +1,34 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useCart, selectItemCount } from '../stores/cart';
+import { useOrders } from '../api/hooks';
 
-export const TABS_HEIGHT = 64; // px — usado pra calcular padding/offset em telas
+export const TABS_HEIGHT = 64;
 
 interface Tab {
   to: string;
   label: string;
-  /** Texto curto mono opcional abaixo do label (contador ou status). */
   badge?: string | null;
-  /** Se true, esconde a tab. */
   hidden?: boolean;
-  /** Match flexível (startsWith). Default: match exato. */
   matchPrefix?: boolean;
 }
 
 export function BottomTabs() {
   const cartCount = useCart(selectItemCount);
-  const activeOrderId = useCart((s) => s.activeOrderId);
+  // Fonte de verdade = server (não localStorage). Compartilha cache TanStack Query.
+  const { data: ordersData } = useOrders();
+  const activeOrders = ordersData?.orders ?? [];
   const loc = useLocation();
+
+  // Se só 1 pedido ativo, tab leva direto pra ele. 2+, leva pra lista.
+  const orderTo =
+    activeOrders.length === 1 ? `/pedido/${activeOrders[0].id}` : '/pedidos';
+  const orderLabel = activeOrders.length > 1 ? 'Pedidos' : 'Pedido';
+  const orderBadge =
+    activeOrders.length === 1
+      ? `#${activeOrders[0].shortId}`
+      : activeOrders.length > 1
+        ? String(activeOrders.length)
+        : null;
 
   const tabs: Tab[] = [
     { to: '/', label: 'Quintal' },
@@ -27,10 +38,10 @@ export function BottomTabs() {
       badge: cartCount > 0 ? String(cartCount) : null,
     },
     {
-      to: activeOrderId ? `/pedido/${activeOrderId}` : '/pedido/_',
-      label: 'Pedido',
-      badge: activeOrderId ? `#${activeOrderId}` : null,
-      hidden: !activeOrderId,
+      to: orderTo,
+      label: orderLabel,
+      badge: orderBadge,
+      hidden: activeOrders.length === 0,
       matchPrefix: true,
     },
   ];
@@ -47,7 +58,7 @@ export function BottomTabs() {
         <ul className="grid" style={{ gridTemplateColumns: `repeat(${visible.length}, 1fr)` }}>
           {visible.map((t) => {
             const active = t.matchPrefix
-              ? loc.pathname.startsWith(t.to.replace(/\/[^/]+$/, ''))
+              ? loc.pathname.startsWith('/pedido')
               : loc.pathname === t.to;
             return (
               <li key={t.label}>

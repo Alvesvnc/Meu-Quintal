@@ -3,3 +3,4 @@ export { Button } from './components/Button';
 export { Divider } from './components/Divider';
 export { Chip } from './components/Chip';
 export { Sheet, SheetHeader, SheetBody, SheetFooter } from './components/Sheet';
+export { ConfirmSheet } from './components/ConfirmSheet';

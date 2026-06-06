@@ -9,11 +9,16 @@
     "server"
   ],
   "scripts": {
-    "dev": "concurrently -n cliente,restaurante,dono -c blue,magenta,green \"npm:dev:cliente\" \"npm:dev:restaurante\" \"npm:dev:dono\"",
+    "dev": "concurrently -n cliente,restaurante,dono,server -c blue,magenta,green,yellow \"npm:dev:cliente\" \"npm:dev:restaurante\" \"npm:dev:dono\" \"npm:dev:server\"",
+    "dev:server": "npm run dev -w server",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:seed": "npm run db:seed -w server",
+    "db:studio": "npm run db:studio -w server",
     "dev:cliente": "npm run dev -w apps/cliente",
     "dev:restaurante": "npm run dev -w apps/restaurante",
     "dev:dono": "npm run dev -w apps/dono",
-    "dev:server": "npm run dev -w server",
     "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {

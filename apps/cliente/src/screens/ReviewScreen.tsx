@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Divider } from '@mq/design-system';
-import { getMockOrder } from '../mocks/order';
+import { useOrder } from '../api/hooks';
+import { ScreenError } from '../components/ScreenError';
 
 const SCALE = [
   { value: 1, label: 'ruim' },
@@ -13,18 +14,32 @@ const SCALE = [
 
 type Rating = (typeof SCALE)[number]['value'];
 
-/**
- * Tela 06 — Avaliação pós-consumo, uma pergunta por cozinha.
- * Escala 1-5 editorial (palavras, nao estrelas — estrelas sao genericas demais).
- */
+/** Tela 06 — Avaliação pós-consumo, uma pergunta por cozinha. */
 export function ReviewScreen() {
-  const { orderId = '0000' } = useParams<{ orderId: string }>();
+  const { orderId = '' } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const order = useMemo(() => getMockOrder(orderId), [orderId]);
+  const { data: order, isLoading, error, refetch } = useOrder(orderId);
 
   const [ratings, setRatings] = useState<Record<string, Rating | undefined>>({});
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
+
+  if (isLoading) {
+    return (
+      <main className="px-5 pt-8 text-center">
+        <p className="font-display italic text-display-md text-inkMuted">Carregando…</p>
+      </main>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <ScreenError
+        title="Pedido não encontrado."
+        onRetry={() => refetch()}
+      />
+    );
+  }
 
   const allRated = order.kitchens.every((k) => ratings[k.kitchenSlug] != null);
 
@@ -32,7 +47,7 @@ export function ReviewScreen() {
     return (
       <main className="px-5 py-12 text-center">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Pedido #{order.id}
+          Pedido #{order.shortId}
         </p>
         <h1 className="mt-3 font-display italic text-display-xl text-ink leading-tight text-pretty">
           Obrigada.
@@ -50,10 +65,10 @@ export function ReviewScreen() {
   }
 
   return (
-    <main className="pb-44 px-5">
+    <main className="pb-32 px-5">
       <section className="pt-6 pb-2">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Pedido #{order.id}
+          Pedido #{order.shortId}
         </p>
         <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight text-pretty">
           Como foi?
@@ -130,9 +145,7 @@ export function ReviewScreen() {
                      focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash
                      resize-none"
         />
-        <p className="mt-1 font-mono text-mono-sm text-inkDim text-right">
-          {note.length}/280
-        </p>
+        <p className="mt-1 font-mono text-mono-sm text-inkDim text-right">{note.length}/280</p>
       </section>
 
       <div className="fixed inset-x-0 bottom-16 z-30 pointer-events-none">
@@ -144,7 +157,9 @@ export function ReviewScreen() {
             disabled={!allRated}
             onClick={() => setSent(true)}
           >
-            {allRated ? 'Enviar' : `Avalie ${order.kitchens.length - Object.keys(ratings).length} cozinha(s)`}
+            {allRated
+              ? 'Enviar'
+              : `Avalie ${order.kitchens.length - Object.keys(ratings).length} cozinha(s)`}
           </Button>
         </div>
       </div>

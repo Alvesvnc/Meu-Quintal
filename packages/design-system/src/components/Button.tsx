@@ -65,7 +65,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             ●●●
           </span>
         )}
-        <span>{children}</span>
+        {children}
       </button>
     );
   },

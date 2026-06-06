@@ -1,28 +1,29 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button, Chip, Divider } from '@mq/design-system';
-import {
-  STATUS_ORDER,
-  STATUS_LABEL,
-  fmtTime,
-  getMockOrder,
-  type Status,
-  type OrderKitchen,
-} from '../mocks/order';
+import type { OrderItemStatus, OrderKitchenGroup } from '@mq/shared';
+import { useOrder } from '../api/hooks';
+import { ScreenError } from '../components/ScreenError';
+import { fmtTime } from '../lib/format';
 
-/**
- * Tela 05 ★ — Acompanhamento ao vivo.
- * Mock estatico que ilustra os 3 estados principais ao mesmo tempo (PREPARANDO/PRONTO/RECEBIDO).
- * pages/cliente.md § "Acompanhamento ao vivo".
- */
+const STATUS_LABEL: Record<OrderItemStatus, string> = {
+  novo:       'Recebido',
+  preparando: 'Preparando',
+  pronto:     'Pronto',
+  retirado:   'Retirado',
+  cancelado:  'Cancelado',
+};
+const STATUS_FLOW: OrderItemStatus[] = ['novo', 'preparando', 'pronto', 'retirado'];
+
+/** Tela 05 ★ — Acompanhamento ao vivo via Socket.io. */
 export function TrackScreen() {
-  const { orderId = '0000' } = useParams<{ orderId: string }>();
-  const order = useMemo(() => getMockOrder(orderId), [orderId]);
+  const { orderId = '' } = useParams<{ orderId: string }>();
+  const { data: order, isLoading, error, refetch } = useOrder(orderId);
 
-  // Vibrar uma vez quando uma cozinha fica pronta. Aqui rodamos no mount
-  // pra cada cozinha já PRONTA (no MVP real isso virá de Socket.io status:pronto).
+  // Vibrar 1x quando uma cozinha fica pronta
   const buzzedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
+    if (!order) return;
     order.kitchens.forEach((k) => {
       if (k.status === 'pronto' && !buzzedRef.current.has(k.kitchenSlug)) {
         buzzedRef.current.add(k.kitchenSlug);
@@ -31,13 +32,31 @@ export function TrackScreen() {
     });
   }, [order]);
 
+  if (isLoading) {
+    return (
+      <main className="px-5 pt-8 text-center">
+        <p className="font-display italic text-display-md text-inkMuted">Buscando seu pedido…</p>
+      </main>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <ScreenError
+        title="Não encontrei esse pedido."
+        body="Pode ser que ele tenha sido criado em outra mesa."
+        onRetry={() => refetch()}
+      />
+    );
+  }
+
   const allDone = order.kitchens.every((k) => k.status === 'retirado');
 
   return (
-    <main className="pb-24 px-5">
+    <main className="pb-10 px-5">
       <section className="pt-6 pb-2">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Pedido #{order.id} · Mesa {String(order.mesaNumero).padStart(2, '0')}
+          Pedido #{order.shortId} · Mesa {String(order.mesaNumero).padStart(2, '0')}
         </p>
         <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight text-pretty">
           {allDone ? 'Pedido completo.' : 'Acompanhando seu pedido.'}
@@ -57,7 +76,7 @@ export function TrackScreen() {
 
       {allDone && (
         <div className="mt-10">
-          <Link to={`/pedido/${order.id}/avaliar`}>
+          <Link to={`/pedido/${orderId}/avaliar`}>
             <Button variant="primary" size="lg" fullWidth>
               Como foi?
             </Button>
@@ -68,57 +87,54 @@ export function TrackScreen() {
       <div className="mt-8">
         <Divider />
         <p className="mt-4 text-center font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Atualizando ao vivo
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" aria-hidden />
+            Atualizando ao vivo
+          </span>
         </p>
       </div>
     </main>
   );
 }
 
-function KitchenTimeline({ k }: { k: OrderKitchen }) {
+function KitchenTimeline({ k }: { k: OrderKitchenGroup }) {
   const isReady = k.status === 'pronto';
   const isInProgress = k.status === 'preparando';
-  const remaining = remainingMinutes(k);
+
+  const remaining = (() => {
+    const start = k.acceptedAt ?? null;
+    if (!start) return null;
+    const elapsedMin = Math.floor((Date.now() - new Date(start).getTime()) / 60_000);
+    return Math.max(0, k.slaMinutes - elapsedMin);
+  })();
 
   const headerRight = (() => {
-    if (k.status === 'pronto') {
-      return <Chip tone="primary">retire no balcão</Chip>;
-    }
-    if (k.status === 'retirado') {
-      return <Chip tone="accent">retirado</Chip>;
-    }
+    if (k.status === 'pronto') return <Chip tone="primary">retire no balcão</Chip>;
+    if (k.status === 'retirado') return <Chip tone="accent">retirado</Chip>;
+    if (k.status === 'cancelado') return <Chip tone="danger">cancelado</Chip>;
     if (remaining !== null) {
       const tone = remaining <= 5 ? 'text-primary' : 'text-ink';
-      return (
-        <span className={`font-mono text-body ${tone}`}>
-          ~{remaining} min restantes
-        </span>
-      );
+      return <span className={`font-mono text-body ${tone}`}>~{remaining} min restantes</span>;
     }
     return null;
   })();
 
   return (
-    <section
-      className={[
-        'rounded-lg border bg-surface p-5',
-        isReady ? 'border-primary' : 'border-hairline',
-      ].join(' ')}
-    >
+    <section className={[
+      'rounded-lg border bg-surface p-5',
+      isReady ? 'border-primary' : 'border-hairline',
+    ].join(' ')}>
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-display text-display-md text-ink leading-tight">
-          {k.kitchenName}
-        </h2>
+        <h2 className="font-display text-display-md text-ink leading-tight">{k.kitchenName}</h2>
         {headerRight}
       </div>
 
       <ul className="mt-4 space-y-1">
-        {k.items.map((it, i) => (
-          <li key={i} className="font-sans text-body text-inkMuted">
-            <span className="font-mono text-mono text-ink mr-2 tabular-nums">
-              {it.qty}×
-            </span>
+        {k.items.map((it) => (
+          <li key={it.id} className="font-sans text-body text-inkMuted">
+            <span className="font-mono text-mono text-ink mr-2 tabular-nums">{it.qty}×</span>
             {it.name}
+            {it.note && <span className="ml-2 italic text-inkDim">— {it.note}</span>}
           </li>
         ))}
       </ul>
@@ -128,13 +144,18 @@ function KitchenTimeline({ k }: { k: OrderKitchen }) {
       </div>
 
       <ol className="mt-3 space-y-2.5">
-        {STATUS_ORDER.map((s) => (
+        {STATUS_FLOW.map((s) => (
           <TimelineRow
             key={s}
             label={STATUS_LABEL[s]}
             done={isStatusReached(k.status, s)}
             current={k.status === s}
-            time={k.timestamps[s]}
+            time={
+              s === 'novo' ? null :
+              s === 'preparando' ? k.acceptedAt :
+              s === 'pronto' ? k.readyAt :
+              s === 'retirado' ? k.pickedAt : null
+            }
             pulse={isInProgress && s === 'preparando'}
           />
         ))}
@@ -149,7 +170,7 @@ function TimelineRow({
   label: string;
   done: boolean;
   current: boolean;
-  time?: number;
+  time: string | null;
   pulse?: boolean;
 }) {
   const mark = done ? '✓' : current ? '◐' : '○';
@@ -169,12 +190,10 @@ function TimelineRow({
       >
         {mark}
       </span>
-      <span
-        className={[
-          'font-sans text-body',
-          done || current ? 'text-ink' : 'text-inkDim',
-        ].join(' ')}
-      >
+      <span className={[
+        'font-sans text-body',
+        done || current ? 'text-ink' : 'text-inkDim',
+      ].join(' ')}>
         {label}
       </span>
       {time && (
@@ -186,14 +205,6 @@ function TimelineRow({
   );
 }
 
-function isStatusReached(current: Status, target: Status): boolean {
-  return STATUS_ORDER.indexOf(target) < STATUS_ORDER.indexOf(current);
-}
-
-function remainingMinutes(k: OrderKitchen): number | null {
-  const startedAt = k.timestamps.preparando ?? k.timestamps.recebido;
-  if (!startedAt) return null;
-  const elapsedMin = Math.floor((Date.now() - startedAt) / 60_000);
-  const left = k.slaMinutes - elapsedMin;
-  return Math.max(0, left);
+function isStatusReached(current: OrderItemStatus, target: OrderItemStatus): boolean {
+  return STATUS_FLOW.indexOf(target) < STATUS_FLOW.indexOf(current);
 }

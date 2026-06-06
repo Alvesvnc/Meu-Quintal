@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: meu-quintal-db
+    environment:
+      POSTGRES_USER: quintal
+      POSTGRES_PASSWORD: quintal_dev
+      POSTGRES_DB: meu_quintal
+    ports:
+      - "5433:5432"
+    volumes:
+      - quintal-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quintal -d meu_quintal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  quintal-pg-data:
