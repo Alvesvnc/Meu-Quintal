@@ -86,14 +86,69 @@ fila ao vivo) e **Dono do espaço** (web responsivo, administração).
 
 ## Stack tecnológica
 
-| Camada | Tecnologia |
+### Front-end (três apps)
+
+| Tecnologia | Versão | Função |
+|---|---|---|
+| [React](https://react.dev) | 18.3 | Biblioteca de UI |
+| [TypeScript](https://www.typescriptlang.org) | 5.6 | Tipagem estática estrita (`noUnusedLocals`, `strict`) |
+| [Vite](https://vitejs.dev) | 5.4 | Build tool e dev server com HMR |
+| [Tailwind CSS](https://tailwindcss.com) | 3.4 | Estilização utility-first com preset compartilhado |
+| [React Router](https://reactrouter.com) | 6.27 | Roteamento client-side |
+| [Zustand](https://github.com/pmndrs/zustand) | 5.0 | Estado global leve (carrinho, sessão) |
+| [TanStack Query](https://tanstack.com/query) | 5.62 | Cache e sincronização de estado servidor |
+| [axios](https://axios-http.com) | 1.7 | Cliente HTTP com interceptors |
+| [socket.io-client](https://socket.io/docs/v4/client-api/) | 4.8 | Cliente WebSocket para real-time |
+
+### Backend
+
+| Tecnologia | Versão | Função |
+|---|---|---|
+| [Node.js](https://nodejs.org) | 20+ | Runtime JavaScript |
+| [Fastify](https://fastify.dev) | 5.1 | Framework HTTP (mais performático que Express) |
+| [Prisma](https://www.prisma.io) | 5.22 | ORM type-safe + migrations |
+| [PostgreSQL](https://www.postgresql.org) | 16 | Banco relacional principal |
+| [Socket.io](https://socket.io) | 4.8 | WebSocket para eventos em tempo real |
+| [Zod](https://zod.dev) | 3.23 | Validação de schemas (body, query, env) |
+| [tsx](https://github.com/privatenumber/tsx) | 4.19 | Hot reload do servidor em desenvolvimento |
+| [pino-pretty](https://github.com/pinojs/pino-pretty) | 11.3 | Logs legíveis em desenvolvimento |
+
+### Design system
+
+| Tecnologia | Função |
 |---|---|
-| **Front-end** | React 18, TypeScript, Vite, Tailwind CSS 3, Zustand 5, React Router 6, TanStack Query 5, axios, socket.io-client |
-| **Backend** | Fastify 5, Prisma 5, PostgreSQL 16, Socket.io 4, Zod |
-| **Tipografia** | Fraunces (display), DM Sans (UI), JetBrains Mono (números) |
-| **Workspace** | npm workspaces (`apps/*` + `packages/*` + `server`) |
-| **Infra dev** | Docker (Postgres) |
-| **Dev tools** | concurrently, tsx (server hot reload), Prisma Studio |
+| [Fraunces](https://fonts.google.com/specimen/Fraunces) | Tipografia display (italic preferido), opsz variável |
+| [DM Sans](https://fonts.google.com/specimen/DM+Sans) | Tipografia de interface |
+| [JetBrains Mono](https://www.jetbrains.com/lp/mono/) | Tipografia monoespaçada (valores, IDs, tempos) |
+| Tokens em TypeScript | Cores, espaçamento, raios, sombras — fonte única em `packages/design-system/src/tokens` |
+| Preset Tailwind compartilhado | Cada app importa de `packages/design-system/src/tailwind-preset` |
+
+### Workspace e infraestrutura
+
+| Tecnologia | Função |
+|---|---|
+| [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/workspaces) | Monorepo nativo (`apps/*`, `packages/*`, `server`) |
+| [concurrently](https://github.com/open-cli-tools/concurrently) | Orquestra os quatro processos em `npm run dev` |
+| [Docker](https://www.docker.com) + Compose | PostgreSQL para desenvolvimento local |
+| [Prisma Studio](https://www.prisma.io/studio) | Interface web para inspecionar o banco |
+
+### Por que essa stack
+
+- **React + Vite + Tailwind** é o trio padrão da indústria para front
+  web rápido, com ecossistema maduro e tempo de iteração curto. Os três
+  apps compartilham 100% do design system.
+- **Fastify ao invés de Express:** API mais moderna, melhor TypeScript,
+  performance superior e plugin system robusto.
+- **Prisma ao invés de query builder/SQL direto:** schema declarativo,
+  migrations versionadas e cliente type-safe gerado a partir do schema.
+- **Socket.io ao invés de WebSocket nativo:** abstrai reconexão, fallback
+  para polling e gerenciamento de salas (essencial para
+  `order:{id}` e `kitchen:{slug}`).
+- **Zod no shared package:** mesmo schema validação consumido por server
+  (validação de input) e front (validação de form), evitando dessincronização.
+- **Tokens em TypeScript:** permite refatoração com auto-complete e
+  type-check, e exporta tanto para Tailwind (via preset) quanto para
+  estilos inline quando necessário.
 
 ## Arquitetura
 
