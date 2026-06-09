@@ -191,6 +191,9 @@ cd Meu-Quintal
 # Instalar dependências de todos os workspaces
 npm install
 
+# Configurar variáveis de ambiente do Docker Postgres (raiz)
+cp .env.example .env
+
 # Configurar variáveis de ambiente do server
 cp server/.env.example server/.env
 
