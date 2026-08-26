@@ -1,18 +1,29 @@
 import 'dotenv/config';
-import { z } from 'zod';
+import { parseEnv } from './envSchema.js';
 
-const schema = z.object({
-  DATABASE_URL: z.string().url(),
-  PORT: z.coerce.number().int().default(3001),
-  CORS_ORIGINS: z.string().default('http://localhost:5173'),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-});
+export { parseEnv } from './envSchema.js';
+export type { Env } from './envSchema.js';
 
-const parsed = schema.safeParse(process.env);
+const parsed = parseEnv(process.env);
 if (!parsed.success) {
-  console.error('Erro nas variaveis de ambiente:', parsed.error.flatten().fieldErrors);
+  // Sem logger ainda — o server nem subiu. console.error e o canal certo aqui.
+  console.error('');
+  console.error('Configuracao invalida. O server nao vai subir:');
+  console.error('');
+  for (const [campo, erros] of Object.entries(parsed.error.flatten().fieldErrors)) {
+    for (const erro of erros ?? []) {
+      console.error(`  ${campo}: ${erro}`);
+    }
+  }
+  console.error('');
+  console.error('Veja server/.env.example para a lista completa.');
+  console.error('');
   process.exit(1);
 }
 
 export const env = parsed.data;
-export const corsOrigins = env.CORS_ORIGINS.split(',').map((s) => s.trim());
+export const isProd = env.NODE_ENV === 'production';
+export const isDev = env.NODE_ENV === 'development';
+export const corsOrigins = env.CORS_ORIGINS.split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);

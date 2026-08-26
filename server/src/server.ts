@@ -1,69 +1,67 @@
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import sensible from '@fastify/sensible';
-import { env, corsOrigins } from './lib/env.js';
+// PRIMEIRO import, sempre. Ele inicializa o Sentry por efeito colateral, e a
+// ordem dos imports e a unica coisa que a spec garante em ESM — ver o
+// comentario em instrument.ts. No-op se SENTRY_DSN estiver vazio.
+import './instrument.js';
+
+import { env } from './lib/env.js';
+import { sentryAtivo, encerrarSentry } from './lib/sentry.js';
 import { prisma } from './lib/prisma.js';
-import { setupAuthMesa } from './plugins/auth-mesa.js';
-import { setupSocket } from './plugins/socket.js';
-import { quintalRoutes } from './modules/quintal.js';
-import { kitchenRoutes } from './modules/kitchen.js';
-import { orderRoutes } from './modules/order.js';
+import { buildApp } from './app.js';
 
-const app = Fastify({
-  logger: env.NODE_ENV === 'development'
-    ? { transport: { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' } } }
-    : true,
-});
+/**
+ * Entrypoint do processo. A montagem do app vive em app.ts pra que os testes
+ * possam usar `fastify.inject()` sem abrir porta.
+ *
+ * Aqui fica so o que e responsabilidade de PROCESSO: escutar, tratar sinal e
+ * encerrar direito.
+ */
+const app = await buildApp();
 
-await app.register(cors, { origin: corsOrigins, credentials: true });
-await app.register(sensible);
-
-// Socket.io ANTES das rotas pra app.io estar disponivel nos handlers
-// NAO usar app.register — encapsulation isola o decorator
-setupSocket(app);
-
-// Auth de mesa: aplica a /api/m/* via preHandler global
-// (mesmo motivo — encapsulation isolaria o hook)
-setupAuthMesa(app);
-
-// Routes
-await app.register(quintalRoutes);
-await app.register(kitchenRoutes);
-await app.register(orderRoutes);
-
-// Healthcheck + info
-app.get('/health', async () => ({ ok: true, t: new Date().toISOString() }));
-app.get('/', async () => ({
-  name: 'Meu Quintal · server',
-  version: '0.0.1',
-  endpoints: {
-    health: 'GET /health',
-    cliente: {
-      quintal: 'GET /api/m/quintal',
-      menu: 'GET /api/m/k/:slug',
-      novoPedido: 'POST /api/m/pedido',
-      pedido: 'GET /api/m/pedido/:id',
-    },
-    dev: {
-      avancarPedido: 'PATCH /api/_dev/order/:id/advance',
-    },
-    auth: 'Authorization: Bearer {qrToken}',
-  },
-}));
-
-// Graceful shutdown
+// ─── Shutdown ───────────────────────────────────────────────────────────────
+// O orquestrador manda SIGTERM e espera. Fechar o Fastify primeiro drena as
+// conexoes em voo; so depois solta o pool do Prisma.
+let encerrando = false;
 const shutdown = async (signal: string) => {
+  if (encerrando) return;
+  encerrando = true;
+
   app.log.info(`Recebido ${signal}, encerrando…`);
-  await app.close();
-  await prisma.$disconnect();
-  process.exit(0);
+  const prazo = setTimeout(() => {
+    app.log.error('Shutdown passou de 15s, saindo a forca.');
+    process.exit(1);
+  }, 15_000);
+  prazo.unref();
+
+  try {
+    await app.close();
+    await prisma.$disconnect();
+    // Depois do app fechar: o erro que derrubou o servico e justamente o que
+    // nao chega ao Sentry se o processo sair antes do envio terminar.
+    await encerrarSentry();
+    app.log.info('Encerrado com sucesso.');
+    process.exit(0);
+  } catch (err) {
+    app.log.error({ err }, 'falha durante o shutdown');
+    process.exit(1);
+  }
 };
+
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
+process.on('unhandledRejection', (err) => {
+  app.log.error({ err }, 'unhandledRejection');
+  shutdown('unhandledRejection');
+});
+
 try {
-  await app.listen({ port: env.PORT, host: '0.0.0.0' });
-  app.log.info(`Meu Quintal · server escutando em http://localhost:${env.PORT}`);
+  await app.listen({ port: env.PORT, host: env.HOST });
+  app.log.info(`Meu Quintal · server em http://${env.HOST}:${env.PORT} (${env.NODE_ENV})`);
+  app.log.info(
+    sentryAtivo
+      ? `Sentry ativo (traces ${env.SENTRY_TRACES_SAMPLE_RATE})`
+      : 'Sentry desligado (SENTRY_DSN vazio)',
+  );
 } catch (err) {
   app.log.error(err);
   process.exit(1);
