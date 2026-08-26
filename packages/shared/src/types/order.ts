@@ -7,8 +7,21 @@ export interface OrderResponse {
   shortId: string;
   mesaNumero: number;
   createdAt: string; // ISO
+  /** O que foi PEDIDO. Snapshot da criacao — nao muda se um item for cancelado. */
   totalCents: number;
+  /**
+   * O que vai CHEGAR: soma dos itens ainda ativos.
+   *
+   * Igual a `totalCents` enquanto nada for cancelado. Quando divergem, e este
+   * o valor que a pessoa vai pagar no balcao — e o que a tela mostra.
+   */
+  totalAtivosCents: number;
   kitchens: OrderKitchenGroup[];
+  /**
+   * A cozinha propos reduzir ou cancelar algo e espera resposta. A tela
+   * interrompe o que estiver fazendo pra mostrar isto.
+   */
+  alteracaoPendente: import('./alteracao').AlteracaoPendente | null;
 }
 
 export interface OrderKitchenGroup {
@@ -16,6 +29,10 @@ export interface OrderKitchenGroup {
   kitchenName: string;
   slaMinutes: number;
   items: OrderLineItem[];
+  /**
+   * Agregado dos itens ATIVOS. So e 'cancelado' quando todos os itens estao.
+   * Ver server/src/lib/orderStatus.ts.
+   */
   status: OrderItemStatus;
   acceptedAt: string | null;
   readyAt: string | null;
@@ -47,7 +64,10 @@ export interface OrderListItem {
   id: string;
   shortId: string;
   createdAt: string;
+  /** O que foi pedido (snapshot). */
   totalCents: number;
+  /** O que vai chegar: exclui itens cancelados. */
+  totalAtivosCents: number;
   kitchenSlug: string;
   kitchenName: string;
   /** Status agregado da cozinha desse pedido. */

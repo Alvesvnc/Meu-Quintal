@@ -9,7 +9,18 @@ export const fontFeatures = {
   fraunces_italic: "'liga' 1, 'ss01' 1, 'ss02' 1",
 } as const;
 
-export const fontSize = {
+/**
+ * Formato que o Tailwind espera em `theme.fontSize`: uma TUPLA de
+ * [tamanho, ajustes]. Sem esta anotacao o TypeScript infere
+ * `(string | objeto)[]` — array comum, nao tupla — e o preset precisava de um
+ * `as any` pra passar. Declarar o tipo resolve na origem.
+ */
+export type TokenDeFonte = [
+  tamanho: string,
+  ajustes: { lineHeight: string; letterSpacing?: string },
+];
+
+export const fontSize: Record<string, TokenDeFonte> = {
   'display-xl': ['clamp(40px, 5vw, 56px)', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
   'display-lg': ['32px', { lineHeight: '1.1',  letterSpacing: '-0.015em' }],
   'display-md': ['24px', { lineHeight: '1.2',  letterSpacing: '-0.01em' }],

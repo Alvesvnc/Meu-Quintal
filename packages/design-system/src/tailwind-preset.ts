@@ -32,7 +32,7 @@ const preset: Partial<Config> = {
         sans:    ['"DM Sans"', 'system-ui', 'sans-serif'],
         mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
-      fontSize: fontSize as any,
+      fontSize,
       borderRadius: {
         none: radius.none,
         sm:   radius.sm,

@@ -4,3 +4,4 @@ export { Divider } from './components/Divider';
 export { Chip } from './components/Chip';
 export { Sheet, SheetHeader, SheetBody, SheetFooter } from './components/Sheet';
 export { ConfirmSheet } from './components/ConfirmSheet';
+export { useAgora, useMinutosDesde } from './hooks/useAgora';
