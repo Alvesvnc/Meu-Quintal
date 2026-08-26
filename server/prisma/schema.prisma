@@ -1,5 +1,18 @@
-// Meu Quintal — schema mínimo do MVP cliente.
-// Personas no MVP atual: cliente (mesa via QR), restaurante/dono virão depois.
+// Meu Quintal — schema multi-tenant.
+//
+// Hierarquia:
+//   Account (o cliente pagante do SaaS)
+//     └── Space (um quintal físico)
+//           ├── Table (mesa, acessada por QR)
+//           └── Kitchen (uma casinha do quintal)
+//
+// REGRA DE ISOLAMENTO: nenhuma query pode atravessar Account. Toda rota resolve
+// o escopo a partir da credencial (qrToken -> Table -> Space; JWT de cozinha ->
+// Kitchen -> Space; JWT de dono -> AccountUser -> Account) e filtra por ele.
+//
+// MODELO FINANCEIRO: o dinheiro NAO passa pelo app. Cada cozinha cobra direto
+// do cliente no balcao. No fim do ciclo a cozinha DEVE comissao + aluguel ao
+// dono do espaco — por isso KitchenCharge e uma cobranca, nao um repasse.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,18 +23,172 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Conta: o cliente pagante do SaaS ───────────────────────────────────────
+// Um dono de food-court assina o Meu Quintal e ganha uma Account. Tudo abaixo
+// dela pertence a esse cliente e nao pode ser visto por nenhum outro.
+model Account {
+  id          String        @id @default(uuid()) @db.Uuid
+  slug        String        @unique // usado na URL de login do dono
+  name        String
+  /// Sem default: plano e escolha comercial, nao valor que aparece sozinho.
+  /// Quem cria conta (bootstrap) tem que dizer qual formato foi vendido.
+  plan        AccountPlan
+  status      AccountStatus @default(ativa)
+  trialEndsAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  spaces  Space[]
+  users   AccountUser[]
+  invites Invite[]
+
+  @@map("accounts")
+}
+
+/// Link de uso unico pra alguem DEFINIR a propria senha.
+///
+/// Existe pra que a senha do dono nunca precise trafegar. Antes disto o
+/// bootstrap gerava uma senha, imprimia no terminal e o operador ditava por
+/// WhatsApp — a credencial que abre a conta inteira passeando por canal
+/// nenhum. Agora vai um link, e quem escolhe a senha e a propria pessoa.
+///
+/// Hoje so serve pro PRIMEIRO ACESSO. Recuperacao de senha vai usar a mesma
+/// mecanica — quando existir, ganha um campo `kind` e prazos diferentes.
+model AccessToken {
+  id        String      @id @default(uuid()) @db.Uuid
+  /// sha256 do token. O texto puro so existe no email.
+  tokenHash String      @unique
+  userId    String      @db.Uuid
+  user      AccountUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  /// Carimbo de uso. `null` = ainda vale. Uso unico.
+  usedAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([userId])
+  @@map("access_tokens")
+}
+
+/// O plano E o que diferencia restaurante unico de praca de alimentacao.
+///
+/// Nao ha "trial" aqui de proposito: quem testa ja assinou um formato, e ate
+/// quando ele testa esta em `Account.trialEndsAt`. Misturar os dois faria um
+/// trial expirado virar plano nenhum.
+enum AccountPlan {
+  /// Uma cozinha, que e do proprio dono. Cliente entra direto no cardapio.
+  restaurante
+  /// Varias cozinhas independentes, cada uma com login proprio. O dono cobra
+  /// comissao e/ou aluguel de cada uma.
+  praca
+}
+
+enum AccountStatus {
+  ativa
+  suspensa // inadimplente: login funciona, escrita bloqueada
+  cancelada
+}
+
+// ─── Usuário do lado do dono (dono do quintal e equipe dele) ────────────────
+// Nao confundir com KitchenUser, que e o operador de uma cozinha.
+model AccountUser {
+  id           String      @id @default(uuid()) @db.Uuid
+  accountId    String      @db.Uuid
+  account      Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  /// Unico no sistema inteiro, nao por conta: e assim que o login descobre a
+  /// qual Account o usuario pertence, sem pedir o quintal no formulario.
+  email        String      @unique
+  passwordHash String
+  name         String?
+  role         AccountRole @default(owner)
+  createdAt    DateTime    @default(now())
+  lastLoginAt  DateTime?
+
+  acessos AccessToken[]
+
+  /// Preenchido no RESTAURANTE UNICO, onde o dono e o operador da cozinha sao
+  /// a mesma pessoa. Com este vinculo, o token de dono tambem abre as rotas
+  /// /api/r/* daquela cozinha — um login so pra tocar o proprio negocio.
+  ///
+  /// O caminho contrario NAO existe: um KitchenUser nunca vira dono. Descer de
+  /// privilegio dentro da propria conta e seguro; subir nao.
+  kitchenId String?  @db.Uuid
+  kitchen   Kitchen? @relation(fields: [kitchenId], references: [id], onDelete: SetNull)
+
+  @@index([accountId])
+  @@index([kitchenId])
+  @@map("account_users")
+}
+
+enum AccountRole {
+  owner // dono: tudo, inclusive financeiro e faturamento
+  admin // gerente: opera o quintal, sem mexer em conta/plano
+  staff // equipe de salao: mesas e pedidos ao vivo
+}
+
+// ─── Convite ────────────────────────────────────────────────────────────────
+// Serve pros dois fluxos do app do dono: convidar uma cozinha e convidar
+// alguem pra equipe. O token vai por email e e guardado com HASH — em vazamento
+// de banco, um token em texto puro daria acesso direto.
+model Invite {
+  id         String     @id @default(uuid()) @db.Uuid
+  accountId  String     @db.Uuid
+  account    Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  spaceId    String?    @db.Uuid
+  space      Space?     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  email      String
+  tokenHash  String     @unique
+  kind       InviteKind
+  createdAt  DateTime   @default(now())
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  /// kind=equipe: papel que o convidado assume ao aceitar
+  role AccountRole?
+
+  /// kind=cozinha: termos combinados no convite, copiados pra Kitchen no aceite
+  kitchenName      String?
+  chargeCommission Boolean?
+  commissionPct    Decimal? @db.Decimal(5, 2)
+  chargeRent       Boolean?
+  rentCents        Int?
+
+  @@index([accountId, kind])
+  @@index([email])
+  @@map("invites")
+}
+
+enum InviteKind {
+  cozinha
+  equipe
+}
+
 // ─── Espaço (o "quintal" físico) ────────────────────────────────────────────
 model Space {
-  id            String   @id @default(uuid()) @db.Uuid
-  slug          String   @unique
-  name          String
-  commissionPct Decimal  @default(15) @db.Decimal(5, 2)
-  createdAt     DateTime @default(now())
+  id        String       @id @default(uuid()) @db.Uuid
+  accountId String       @db.Uuid
+  account   Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  slug      String       @unique
+  name      String
+  /// Praca de alimentacao ou restaurante unico. Muda o fluxo do cliente, o
+  /// financeiro e a linguagem das telas — ver TipoDeEspaco.
+  tipo      TipoDeEspaco @default(food_court)
+  createdAt DateTime     @default(now())
+
+  /// Comissao padrao do quintal. Cada cozinha pode ter a propria — ver
+  /// Kitchen.commissionPct. O @map preserva a coluna commissionPct original:
+  /// sem ele o Prisma dropa e recria, levando junto o valor ja cadastrado.
+  defaultCommissionPct Decimal @default(15) @map("commissionPct") @db.Decimal(5, 2)
+
+  /// Dia do mes em que o ciclo de cobranca fecha (ex: 5 = fecha dia 5).
+  closingDay Int @default(5)
 
   tables   Table[]
   kitchens Kitchen[]
   orders   Order[]
+  invites  Invite[]
+  cycles   BillingCycle[]
 
+  @@index([accountId])
   @@map("spaces")
 }
 
@@ -35,17 +202,31 @@ model Table {
   space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
+  /// Estado no salao, mexido pela equipe no app do dono.
+  status TableStatus @default(livre)
+
   orders Order[]
 
   @@unique([spaceId, numero])
   @@index([qrToken])
+  @@index([spaceId, status])
   @@map("tables")
+}
+
+enum TableStatus {
+  livre
+  ocupada
+  precisa_limpar @map("precisa-limpar")
 }
 
 // ─── Cozinha / restaurante dentro do espaço ─────────────────────────────────
 model Kitchen {
-  id          String        @id @default(uuid()) @db.Uuid
-  slug        String        @unique
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Unico DENTRO do quintal, nao no sistema. Dois clientes diferentes do SaaS
+  /// podem ter uma "lou-burger" cada um. Por isso as salas de socket usam o id
+  /// da cozinha, nunca o slug — ver plugins/socket.ts.
+  slug        String
   name        String
   category    String?
   tagline     String?
@@ -57,11 +238,45 @@ model Kitchen {
   space       Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   createdAt   DateTime      @default(now())
 
+  // ─── Acordo financeiro com o quintal ────────────────────────────────────
+  // Comissao e aluguel sao independentes: da pra cobrar so um, os dois ou
+  // nenhum (ver a tela de onboarding do app do dono).
+  chargeCommission Boolean @default(true)
+
+  /// null = herda Space.defaultCommissionPct
+  commissionPct Decimal? @db.Decimal(5, 2)
+
+  chargeRent Boolean @default(false)
+  /// Aluguel fixo mensal da casinha, em centavos
+  rentCents  Int     @default(0)
+
   menuItems  MenuItem[]
   orderItems OrderItem[]
+  users      KitchenUser[]
+  charges    KitchenCharge[]
+  changes    OrderChange[]
+  /// Donos que operam esta cozinha diretamente (restaurante unico).
+  donos      AccountUser[]
 
+  @@unique([spaceId, slug])
   @@index([spaceId, status])
   @@map("kitchens")
+}
+
+// ─── Usuário operador de uma cozinha (1+ por cozinha) ───────────────────────
+model KitchenUser {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String
+  name         String?
+  kitchenId    String    @db.Uuid
+  kitchen      Kitchen   @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  role         String    @default("owner") // owner | operator (futuro)
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  @@index([kitchenId])
+  @@map("kitchen_users")
 }
 
 enum KitchenStatus {
@@ -85,10 +300,49 @@ model MenuItem {
   sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
 
+  /// Item "excluido" pela cozinha. NAO se apaga de verdade: OrderItem aponta
+  /// pra ca com onDelete padrao (Restrict), entao um DELETE ou falharia ou —
+  /// se alguem "consertasse" pondo Cascade — levaria junto o historico de
+  /// pedidos e reescreveria faturamento ja fechado.
+  ///
+  /// Arquivado some do cardapio do cliente e nao pode ser pedido; o que ja foi
+  /// vendido continua intacto (OrderItem guarda nome e preco em snapshot).
+  archivedAt  DateTime?
+
   orderItems OrderItem[]
+  fotos      MenuItemPhoto[]
 
   @@index([kitchenId, available])
+  @@index([kitchenId, archivedAt])
   @@map("menu_items")
+}
+
+/// Foto de um item do cardapio, enviada pela propria cozinha.
+///
+/// Tabela e nao coluna porque o item pode ter varias: o cliente decide o que
+/// pedir olhando, e um prato tem angulos. A ORDEM importa — `sortOrder` 0 e a
+/// capa, que e a unica que aparece na lista.
+model MenuItemPhoto {
+  id         String   @id @default(uuid()) @db.Uuid
+  menuItemId String   @db.Uuid
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  /// Nome do arquivo no armazenamento. ALEATORIO — nunca o nome que veio no
+  /// upload, que e texto controlado por quem envia e caminho pra path
+  /// traversal.
+  storageKey String @unique
+
+  /// Dimensao DEPOIS do processamento. Serve pro front reservar o espaco certo
+  /// e nao pular o layout quando a imagem carrega.
+  width  Int
+  height Int
+  bytes  Int
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([menuItemId, sortOrder])
+  @@map("menu_item_photos")
 }
 
 enum MenuCategory {
@@ -106,20 +360,21 @@ enum MenuBadge {
 
 // ─── Pedido (raiz, agrupa itens de N cozinhas) ───────────────────────────────
 model Order {
-  id                  String    @id @default(uuid()) @db.Uuid
-  shortId             String    @unique // ex: "2421" — exibido pro cliente/restaurante
-  spaceId             String    @db.Uuid
-  space               Space     @relation(fields: [spaceId], references: [id])
-  tableId             String    @db.Uuid
-  table               Table     @relation(fields: [tableId], references: [id])
-  totalCents          Int
-  createdAt           DateTime  @default(now())
+  id                 String    @id @default(uuid()) @db.Uuid
+  shortId            String    @unique // ex: "2421" — exibido pro cliente/restaurante
+  spaceId            String    @db.Uuid
+  space              Space     @relation(fields: [spaceId], references: [id])
+  tableId            String    @db.Uuid
+  table              Table     @relation(fields: [tableId], references: [id])
+  totalCents         Int
+  createdAt          DateTime  @default(now())
   /// Quando cliente apertou "Fechar conta" - sinaliza pro restaurante cobrar
-  paymentRequestedAt  DateTime?
+  paymentRequestedAt DateTime?
   /// Quando restaurante confirmou pagamento
-  paidAt              DateTime?
+  paidAt             DateTime?
 
-  items OrderItem[]
+  items   OrderItem[]
+  changes OrderChange[]
 
   @@index([tableId, createdAt])
   @@map("orders")
@@ -136,8 +391,8 @@ model OrderItem {
   kitchenId      String          @db.Uuid // denormalizado pra query rápida
   kitchen        Kitchen         @relation(fields: [kitchenId], references: [id])
   qty            Int
-  unitPriceCents Int             // snapshot — não muda se cozinha alterar o preço depois
-  nameSnapshot   String          // snapshot do nome no momento do pedido
+  unitPriceCents Int // snapshot — não muda se cozinha alterar o preço depois
+  nameSnapshot   String // snapshot do nome no momento do pedido
   note           String?
   status         OrderItemStatus @default(novo)
   createdAt      DateTime        @default(now())
@@ -145,8 +400,19 @@ model OrderItem {
   readyAt        DateTime?
   pickedAt       DateTime?
 
+  /// Preenchido quando o item e cancelado. No item e nao no pedido porque e o
+  /// item que e cancelado — e e por item que a metrica agrega.
+  cancelMotivo MotivoCancelamento?
+  /// Texto livre que o CLIENTE le. A categoria acima e que vira numero.
+  cancelReason String?
+  canceledAt   DateTime?
+
+  changeItems OrderChangeItem[]
+
   @@index([orderId])
   @@index([kitchenId, status])
+  /// Suporta a metrica: cancelamentos de uma cozinha num periodo, por motivo.
+  @@index([kitchenId, canceledAt])
   @@map("order_items")
 }
 
@@ -156,4 +422,157 @@ enum OrderItemStatus {
   pronto
   retirado
   cancelado
+}
+
+// ─── Ciclo de cobrança ──────────────────────────────────────────────────────
+// Um ciclo por quintal por mês. Fecha no Space.closingDay e congela os valores
+// — depois de fechado, pedido novo não altera cobrança já emitida.
+model BillingCycle {
+  id        String      @id @default(uuid()) @db.Uuid
+  spaceId   String      @db.Uuid
+  space     Space       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  /// "2026-06" — mês de referência
+  refMonth  String
+  startsAt  DateTime
+  endsAt    DateTime
+  status    CycleStatus @default(aberto)
+  closedAt  DateTime?
+  createdAt DateTime    @default(now())
+
+  charges KitchenCharge[]
+
+  @@unique([spaceId, refMonth])
+  @@index([spaceId, status])
+  @@map("billing_cycles")
+}
+
+enum CycleStatus {
+  aberto
+  fechado
+}
+
+// ─── Cobrança de uma cozinha num ciclo ──────────────────────────────────────
+// A cozinha DEVE este valor ao dono do quintal. O dinheiro nunca passou pelo
+// app: a cozinha já recebeu do cliente no próprio caixa.
+//
+// Os valores são SNAPSHOT: commissionPct fica gravado aqui porque, se o dono
+// renegociar a comissão depois, uma cobrança já emitida não pode mudar.
+model KitchenCharge {
+  id        String       @id @default(uuid()) @db.Uuid
+  cycleId   String       @db.Uuid
+  cycle     BillingCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  kitchenId String       @db.Uuid
+  kitchen   Kitchen      @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+
+  /// Bruto vendido pela cozinha no ciclo — base do cálculo
+  grossCents      Int
+  /// Se o acordo tinha comissão QUANDO O CICLO FECHOU. Congelado junto com o
+  /// resto porque é ele que decide se o dono pode ver `grossCents` — sem isso,
+  /// ligar a comissão hoje revelaria o faturamento de todos os meses passados,
+  /// que estavam protegidos pelo acordo vigente na época.
+  chargeCommission Boolean @default(true)
+  commissionPct   Decimal @db.Decimal(5, 2)
+  commissionCents Int
+  rentCents       Int
+  /// commissionCents + rentCents — o que a cozinha deve
+  totalDueCents   Int
+
+  status    ChargeStatus @default(aberta)
+  paidAt    DateTime?
+  /// Anotação do dono ("pagou em dinheiro dia 3", "parcelou")
+  note      String?
+  createdAt DateTime     @default(now())
+
+  @@unique([cycleId, kitchenId])
+  @@index([kitchenId, status])
+  @@map("kitchen_charges")
+}
+
+enum ChargeStatus {
+  aberta // ciclo ainda em andamento, valor sobe a cada pedido
+  fechada // ciclo fechou, valor congelado, aguardando pagamento
+  paga
+  atrasada
+}
+
+// ─── Alteração proposta pela cozinha ────────────────────────────────────────
+// A cozinha não altera o pedido direto: ela PROPÕE e o cliente decide. Aplicar
+// em cima do OrderItem perderia o "antes" e não haveria onde guardar a proposta
+// enquanto ninguém respondeu.
+//
+// Só reduz: cancelar item (qtyProposta = 0) ou diminuir quantidade. Aumentar
+// seria a cozinha vendendo o que o cliente não pediu.
+model OrderChange {
+  id        String  @id @default(uuid()) @db.Uuid
+  orderId   String  @db.Uuid
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Qual cozinha propôs. Um pedido pode ter itens de várias.
+  kitchenId String  @db.Uuid
+  kitchen   Kitchen @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+
+  status ChangeStatus       @default(pendente)
+  /// Categoria — o que vira metrica.
+  motivo MotivoCancelamento @default(outro)
+  /// "acabou o pão", "só tenho 1 porção". Texto que o cliente le.
+  reason String?
+
+  createdAt   DateTime  @default(now())
+  /// Passou disto sem resposta, vale o mesmo que recusa. Ver lib/alteracao.ts.
+  expiresAt   DateTime
+  respondedAt DateTime?
+
+  items OrderChangeItem[]
+
+  @@index([orderId, status])
+  @@index([kitchenId, status])
+  @@map("order_changes")
+}
+
+enum ChangeStatus {
+  pendente
+  aceita
+  recusada
+  /// Expirou sem resposta. Efeito igual ao de recusada, mas registrado
+  /// separado — o dono precisa saber se o cliente decidiu ou se não viu.
+  expirada
+}
+
+model OrderChangeItem {
+  id          String      @id @default(uuid()) @db.Uuid
+  changeId    String      @db.Uuid
+  change      OrderChange @relation(fields: [changeId], references: [id], onDelete: Cascade)
+  orderItemId String      @db.Uuid
+  orderItem   OrderItem   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  /// Quantidade no momento da proposta. Guardada pra a tela conseguir mostrar
+  /// "2 → 1" mesmo depois de aplicada.
+  qtyAnterior Int
+  /// 0 = cancelar o item.
+  qtyProposta Int
+
+  @@unique([changeId, orderItemId])
+  @@map("order_change_items")
+}
+
+/// Por que um item foi cancelado. Lista FECHADA de proposito: texto livre nao
+/// agrega — "acabou o pao", "sem pao" e "pao acabou" sao a mesma causa escrita
+/// de tres jeitos, e nenhum grafico sai disso.
+enum MotivoCancelamento {
+  sem_ingrediente         @map("sem-ingrediente")
+  equipamento
+  demanda_alta            @map("demanda-alta")
+  fim_de_expediente       @map("fim-de-expediente")
+  item_errado_no_cardapio @map("item-errado-no-cardapio")
+  cliente_desistiu        @map("cliente-desistiu")
+  outro
+}
+
+/// Como o espaco funciona.
+enum TipoDeEspaco {
+  /// Varias cozinhas dividindo o salao. O dono cobra comissao/aluguel delas.
+  food_court        @map("food-court")
+  /// Uma cozinha so, e o dono E a cozinha. Sem comissao (seria cobrar de si
+  /// mesmo) e o cliente vai direto ao cardapio, sem passar por uma lista de um
+  /// item so.
+  restaurante_unico @map("restaurante-unico")
 }

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
@@ -7,16 +8,44 @@ async function main() {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.menuItem.deleteMany();
+  await prisma.kitchenUser.deleteMany();
   await prisma.kitchen.deleteMany();
   await prisma.table.deleteMany();
+  await prisma.invite.deleteMany();
   await prisma.space.deleteMany();
+  await prisma.accountUser.deleteMany();
+  await prisma.account.deleteMany();
+
+  // Senha padrao pra dev — TODOS os users tem a mesma. NUNCA usar em prod.
+  const DEV_PASSWORD = 'quintal2026';
+  const passwordHash = await argon2.hash(DEV_PASSWORD);
+
+  // ─── Conta (o cliente do SaaS) ─────────────────────────────────────────
+  const account = await prisma.account.create({
+    data: {
+      slug: 'quintal-sao-sebastiao',
+      name: 'Quintal São Sebastião',
+      plan: 'praca',
+      status: 'ativa',
+      users: {
+        create: {
+          email: 'marina@meuquintal.app',
+          passwordHash,
+          name: 'Marina',
+          role: 'owner',
+        },
+      },
+    },
+  });
 
   // ─── Espaco ────────────────────────────────────────────────────────────
   const space = await prisma.space.create({
     data: {
+      accountId: account.id,
       slug: 'sao-sebastiao',
       name: 'Meu Quintal · São Sebastião',
-      commissionPct: 15,
+      defaultCommissionPct: 15,
+      closingDay: 5,
     },
   });
 
@@ -50,6 +79,19 @@ async function main() {
     agua:      'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&q=80&auto=format&fit=crop',
   };
 
+  // Helper pra criar user da cozinha
+  async function createOwner(kitchenId: string, email: string, name: string) {
+    return prisma.kitchenUser.create({
+      data: {
+        email: email.toLowerCase(),
+        passwordHash,
+        name,
+        kitchenId,
+        role: 'owner',
+      },
+    });
+  }
+
   // Lou Burger
   const louBurger = await prisma.kitchen.create({
     data: {
@@ -61,6 +103,9 @@ async function main() {
       slaMinutes: 12,
       status: 'ativa',
       spaceId: space.id,
+      // Acordo: comissao padrao do quintal (15%), sem aluguel
+      chargeCommission: true,
+      chargeRent: false,
       menuItems: {
         create: [
           { category: 'entradas',   name: 'Batata-doce frita',     description: 'Cubos rústicos, sal de ervas, maionese de páprica defumada.',          priceCents: 1800, photoUrl: PHOTOS.batata,   sortOrder: 1 },
@@ -78,8 +123,10 @@ async function main() {
     },
   });
 
+  await createOwner(louBurger.id, 'marcos@louburger.com', 'Marcos');
+
   // Cumbuca Caicara
-  await prisma.kitchen.create({
+  const cumbuca = await prisma.kitchen.create({
     data: {
       slug: 'cumbuca-caicara',
       name: 'Cumbuca Caiçara',
@@ -89,6 +136,11 @@ async function main() {
       slaMinutes: 18,
       status: 'ativa',
       spaceId: space.id,
+      // Acordo: comissao menor negociada + aluguel da casinha
+      chargeCommission: true,
+      commissionPct: 12,
+      chargeRent: true,
+      rentCents: 80_000,
       menuItems: {
         create: [
           { category: 'pratos', name: 'Moqueca de peixe', description: 'Peixe branco do dia, leite de coco, dendê, arroz de coco e farofa.', priceCents: 5800, photoUrl: PHOTOS.moqueca, sortOrder: 1 },
@@ -99,8 +151,10 @@ async function main() {
     },
   });
 
+  await createOwner(cumbuca.id, 'ana@cumbuca.com', 'Ana');
+
   // Pasteloka
-  await prisma.kitchen.create({
+  const pasteloka = await prisma.kitchen.create({
     data: {
       slug: 'pasteloka',
       name: 'Pasteloka',
@@ -110,6 +164,10 @@ async function main() {
       slaMinutes: 8,
       status: 'ativa',
       spaceId: space.id,
+      // Acordo: so aluguel — volume alto, ticket baixo
+      chargeCommission: false,
+      chargeRent: true,
+      rentCents: 60_000,
       menuItems: {
         create: [
           { category: 'pratos',  name: 'Pastel de carne',      description: 'Massa fininha, carne moída temperada.',  priceCents: 1200, photoUrl: PHOTOS.pastel, sortOrder: 1 },
@@ -120,8 +178,10 @@ async function main() {
     },
   });
 
+  await createOwner(pasteloka.id, 'seujose@pasteloka.com', 'Seu José');
+
   // Horta do Ze
-  await prisma.kitchen.create({
+  const horta = await prisma.kitchen.create({
     data: {
       slug: 'horta-do-ze',
       name: 'Horta do Zé',
@@ -131,6 +191,10 @@ async function main() {
       slaMinutes: 10,
       status: 'ativa',
       spaceId: space.id,
+      // Acordo: comissao padrao + aluguel
+      chargeCommission: true,
+      chargeRent: true,
+      rentCents: 50_000,
       menuItems: {
         create: [
           { category: 'pratos', name: 'Tigela do Zé',     description: 'Quinoa, grão-de-bico, vegetais assados, molho de missô.',  priceCents: 3200, photoUrl: PHOTOS.salada, sortOrder: 1 },
@@ -140,8 +204,10 @@ async function main() {
     },
   });
 
+  await createOwner(horta.id, 'ze@hortadoze.com', 'Zé');
+
   // Dolce Marina
-  await prisma.kitchen.create({
+  const dolce = await prisma.kitchen.create({
     data: {
       slug: 'dolce-marina',
       name: 'Dolce Marina',
@@ -151,6 +217,10 @@ async function main() {
       slaMinutes: 5,
       status: 'ativa',
       spaceId: space.id,
+      // Acordo: comissao maior, sem aluguel (quiosque pequeno)
+      chargeCommission: true,
+      commissionPct: 18,
+      chargeRent: false,
       menuItems: {
         create: [
           { category: 'sobremesas', name: 'Brigadeiro de colher', description: 'Pote 200g, com granulado belga.', priceCents: 1800, photoUrl: PHOTOS.doce, sortOrder: 1 },
@@ -160,6 +230,8 @@ async function main() {
       },
     },
   });
+
+  await createOwner(dolce.id, 'marina@dolcemarina.com', 'Marina');
 
   // Taverna do Pico (pausada — exemplo de cozinha que ainda nao publicou)
   await prisma.kitchen.create({
@@ -171,6 +243,9 @@ async function main() {
       slaMinutes: 15,
       status: 'pausada',
       spaceId: space.id,
+      // Acordo: ancora, entra sem cobranca nenhuma no primeiro ano
+      chargeCommission: false,
+      chargeRent: false,
     },
   });
 
@@ -180,11 +255,21 @@ async function main() {
   Mesas:   ${tables.length} (qrTokens: mesa-1-dev .. mesa-16-dev)
   Cozinhas: 5 ativas + 1 pausada
 
-Teste:
+Cliente (sem cadastro, via QR):
   curl -H "Authorization: Bearer mesa-12-dev" http://localhost:3001/api/m/quintal
-  curl -H "Authorization: Bearer mesa-12-dev" http://localhost:3001/api/m/k/lou-burger
 
-Item ID pra criar pedido (use no body): copie de qualquer item do Lou Burger:
+Restaurante (login email/senha — senha unica de DEV: "${DEV_PASSWORD}"):
+  - marcos@louburger.com       → Lou Burger
+  - ana@cumbuca.com            → Cumbuca Caiçara
+  - seujose@pasteloka.com      → Pasteloka
+  - ze@hortadoze.com           → Horta do Zé
+  - marina@dolcemarina.com     → Dolce Marina
+
+  curl -X POST -H "Content-Type: application/json" \\
+    -d '{"email":"marcos@louburger.com","password":"${DEV_PASSWORD}"}' \\
+    http://localhost:3001/api/r/auth/login
+
+Item ID pra criar pedido cliente (use no body):
   ${louBurger.id}
 `);
 }
