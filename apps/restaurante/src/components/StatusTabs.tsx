@@ -1,13 +1,23 @@
-﻿import type { Status } from '../mocks/orders';
+﻿import type { OrderItemStatus } from '@mq/shared';
 
+/**
+ * Status vem do contrato da API (@mq/shared), nao de mocks/orders. A tela ja le
+ * dados reais; manter o tipo preso ao mock faria a compilacao quebrar no dia em
+ * que os mocks forem apagados — sem que nada de errado tenha sido feito.
+ */
 interface StatusTab {
-  id: Exclude<Status, 'retirado' | 'cancelado'>;
+  id: Exclude<OrderItemStatus, 'retirado' | 'cancelado'>;
   label: string;
   count: number;
 }
 
 interface StatusTabsProps {
-  tabs: StatusTab[];
+  /**
+   * `readonly` de proposito: o chamador monta a lista com `as const`, e um
+   * array mutavel aqui obrigaria um cast do lado de la — que era exatamente o
+   * `tabs as any` que existia antes.
+   */
+  tabs: readonly StatusTab[];
   activeId: StatusTab['id'];
   onSelect: (id: StatusTab['id']) => void;
 }

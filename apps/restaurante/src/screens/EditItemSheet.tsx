@@ -1,287 +1,270 @@
-import { useState, useEffect, useRef } from 'react';
-import {
-  Button, Sheet, SheetBody, SheetFooter, SheetHeader,
-} from '@mq/design-system';
-import { CATEGORY_LABEL, type MenuItemAdmin, type MenuCategory } from '../mocks/orders';
+import { useState } from 'react';
+import { Button, Sheet, SheetBody, SheetFooter, SheetHeader } from '@mq/design-system';
+import { mensagemDeErro, type CategoriaMenu, type ItemCardapio } from '@mq/shared';
+import { useCriarItem, useEditarItem, useExcluirItem } from '../api/hooks';
+import { Switch } from '../components/Switch';
+import { FotosDoItem } from '../components/FotosDoItem';
+import { CATEGORIA_LABEL, CATEGORIAS } from '../lib/formato';
 
-interface EditItemSheetProps {
-  item: MenuItemAdmin | null;
-  /** Modo criação — esconde "excluir", muda título, foca o nome. */
-  isNew?: boolean;
+interface Props {
+  /** `null` = criando um item novo. */
+  item: ItemCardapio | null;
   onClose: () => void;
-  onSave: (updated: MenuItemAdmin) => void;
-  onDelete: (id: string) => void;
 }
 
 /**
- * Sheet de edição/criação de item de cardápio.
- * Campos: foto, nome, categoria, descrição, preço, disponível.
- * Ações: salvar (primary), excluir (só edição).
+ * Criar ou editar um item do cardápio.
+ *
+ * O `key` remonta o formulário a cada item: o estado inicial volta a ser lido
+ * das props sozinho. Sincronizar campo a campo num useEffect abria o item novo
+ * com o texto do anterior por um frame — e, num formulário de preço, mostrar o
+ * valor errado mesmo que por um instante gera dúvida sobre o que foi salvo.
  */
-export function EditItemSheet({ item, isNew = false, onClose, onSave, onDelete }: EditItemSheetProps) {
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState<MenuCategory>('pratos');
-  const [description, setDescription] = useState('');
-  const [priceStr, setPriceStr] = useState('');
-  const [available, setAvailable] = useState(true);
-  const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  // Mantém objectURL pra revogar ao fechar (evita leak)
-  const lastObjectUrlRef = useRef<string | null>(null);
+export function EditItemSheet({ item, onClose }: Props) {
+  return <Formulario key={item?.id ?? 'novo'} item={item} onClose={onClose} />;
+}
 
-  // Reset on item change
-  useEffect(() => {
-    if (!item) return;
-    setName(item.name);
-    setCategory(item.category);
-    setDescription(item.description);
-    setPriceStr((item.priceCents / 100).toFixed(2).replace('.', ','));
-    setAvailable(item.available);
-    setPhotoUrl(item.photoUrl);
-  }, [item?.id]);
+function Formulario({ item, onClose }: Props) {
+  const criar = useCriarItem();
+  const editar = useEditarItem();
+  const excluir = useExcluirItem();
 
-  // Limpa objectURL ao desmontar
-  useEffect(() => {
-    return () => {
-      if (lastObjectUrlRef.current) URL.revokeObjectURL(lastObjectUrlRef.current);
-    };
-  }, []);
+  const novo = item === null;
 
-  const open = item != null;
+  const [name, setName] = useState(item?.name ?? '');
+  const [category, setCategory] = useState<CategoriaMenu>(item?.category ?? 'pratos');
+  const [description, setDescription] = useState(item?.description ?? '');
+  const [photoUrl, setPhotoUrl] = useState(item?.photoUrl ?? '');
+  const [precoStr, setPrecoStr] = useState(
+    item ? (item.priceCents / 100).toFixed(2).replace('.', ',') : '',
+  );
+  const [available, setAvailable] = useState(item?.available ?? true);
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
 
-  const handlePickFile = () => fileInputRef.current?.click();
+  const preco = parseFloat(precoStr.replace(',', '.'));
+  const precoValido = !isNaN(preco) && preco > 0;
+  const nomeValido = name.trim().length >= 2;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Revoga URL anterior se houver
-    if (lastObjectUrlRef.current) URL.revokeObjectURL(lastObjectUrlRef.current);
-    const url = URL.createObjectURL(file);
-    lastObjectUrlRef.current = url;
-    setPhotoUrl(url);
-    e.target.value = ''; // permite re-selecionar o mesmo arquivo
-  };
+  const salvando = criar.isPending || editar.isPending || excluir.isPending;
+  const podeSalvar = nomeValido && precoValido && !salvando;
 
-  const handleRemovePhoto = () => {
-    if (lastObjectUrlRef.current) {
-      URL.revokeObjectURL(lastObjectUrlRef.current);
-      lastObjectUrlRef.current = null;
-    }
-    setPhotoUrl(undefined);
-  };
+  const erro =
+    criar.error || editar.error || excluir.error
+      ? mensagemDeErro(criar.error ?? editar.error ?? excluir.error, 'Nao consegui salvar.')
+      : null;
 
-  const handleSave = () => {
-    if (!item) return;
-    const num = parseFloat(priceStr.replace(',', '.'));
-    const priceCents = !isNaN(num) && num > 0 ? Math.round(num * 100) : item.priceCents;
-    onSave({
-      ...item,
-      name: name.trim() || item.name,
+  const salvar = () => {
+    if (!podeSalvar) return;
+    const dados = {
       category,
-      description: description.trim(),
-      priceCents,
+      name: name.trim(),
+      description: description.trim() || null,
+      photoUrl: photoUrl.trim() || null,
+      priceCents: Math.round(preco * 100),
       available,
-      photoUrl,
-    });
-    onClose();
-  };
-
-  const handleDelete = () => {
-    if (!item) return;
-    if (window.confirm(`Excluir "${item.name}" do cardápio?`)) {
-      onDelete(item.id);
-      onClose();
-    }
+    };
+    if (novo) criar.mutate({ ...dados, badge: null, sortOrder: 0 }, { onSuccess: onClose });
+    else editar.mutate({ id: item.id, ...dados }, { onSuccess: onClose });
   };
 
   return (
-    <Sheet open={open} onClose={onClose} ariaLabel={item ? `Editar ${item.name}` : 'Editar item'}>
+    <Sheet open onClose={onClose} ariaLabel={novo ? 'Novo item' : `Editar ${item.name}`}>
       <SheetHeader>
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          {isNew ? 'Novo item' : `Editar item · #${item?.id}`}
+        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkInverseDim">
+          {novo ? 'Cardápio · novo item' : 'Cardápio · editar'}
         </p>
-        <h2 className="mt-1 font-display text-display-md italic text-ink leading-tight">
-          {isNew
-            ? (name.trim() || 'Sem nome ainda')
-            : item?.name}
+        <h2 className="mt-1 font-display italic text-display-md text-inkInverse leading-tight">
+          {name.trim() || (novo ? 'Item novo' : item.name)}
         </h2>
       </SheetHeader>
 
       <SheetBody>
-        <div className="space-y-5">
-          <Field label="Foto">
+        <Campo rotulo="Nome" dica={`${name.length}/80`}>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={80}
+            autoFocus={novo}
+            placeholder="ex: Smash Lou"
+            className={inputCls}
+          />
+        </Campo>
+
+        <Campo rotulo="Categoria">
+          <div className="grid grid-cols-2 gap-2">
+            {CATEGORIAS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(c)}
+                className={[
+                  'min-h-11 px-3 py-2 rounded-md text-left',
+                  'font-sans text-body-sm border transition-colors duration-base ease-out',
+                  category === c
+                    ? 'border-primary bg-primary text-inkInverse'
+                    : 'border-hairlineDark text-inkInverseDim',
+                ].join(' ')}
+              >
+                {CATEGORIA_LABEL[c]}
+              </button>
+            ))}
+          </div>
+        </Campo>
+
+        <Campo rotulo="Preço">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-body-lg text-inkInverseDim">R$</span>
             <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
+              type="text"
+              inputMode="decimal"
+              value={precoStr}
+              onChange={(e) => setPrecoStr(e.target.value.replace(/[^\d,.]/g, ''))}
+              placeholder="32,00"
+              className={`${inputCls} w-32 font-mono`}
             />
-            {photoUrl ? (
-              <div className="relative rounded-md overflow-hidden bg-surface aspect-[4/3]">
-                <img
-                  src={photoUrl}
-                  alt={name || 'Foto do item'}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-x-0 bottom-0 p-2 flex gap-2 bg-gradient-to-t from-ink/60 to-transparent">
-                  <button
-                    type="button"
-                    onClick={handlePickFile}
-                    className="flex-1 h-10 px-3 rounded-md bg-bg/95 border border-hairline
-                               font-sans text-body-sm text-ink cursor-pointer
-                               hover:bg-primaryWash transition-colors duration-base ease-out"
+          </div>
+          {precoStr !== '' && !precoValido && (
+            <p className="mt-2 font-mono text-mono-sm text-danger">
+              Preço precisa ser maior que zero.
+            </p>
+          )}
+        </Campo>
+
+        <Campo rotulo="Descrição" dica={`${description.length}/280 · opcional`}>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={280}
+            rows={2}
+            placeholder="Blend 180g, queijo, picles da casa…"
+            className={`${inputCls} resize-none`}
+          />
+        </Campo>
+
+        {/* Foto so depois de o item existir: ela precisa de um item a que se
+            ligar. Criar rascunho no servidor pra segurar upload deixaria item
+            fantasma toda vez que alguem desistisse no meio. */}
+        {novo ? (
+          <p className="mt-5 font-sans text-body-sm text-inkInverseDim">
+            Salve o item primeiro. Depois você adiciona as fotos.
+          </p>
+        ) : (
+          <FotosDoItem itemId={item.id} fotos={item.fotos} />
+        )}
+
+        {/* Legado: item cadastrado antes de existir upload. So aparece se ja
+            tiver valor — nao ha por que oferecer o caminho velho pra quem esta
+            comecando agora. */}
+        {photoUrl.trim() !== '' && (
+          <Campo rotulo="Foto por endereço" dica="campo antigo">
+            <input
+              type="url"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              placeholder="https://…"
+              className={inputCls}
+            />
+            <p className="mt-2 font-sans text-body-sm text-inkInverseDim">
+              Apague este endereço e envie a foto acima — assim ela fica guardada aqui e não
+              depende de outro site continuar no ar.
+            </p>
+          </Campo>
+        )}
+
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="font-sans text-body-lg text-inkInverse">
+              {available ? 'Disponível' : 'Esgotado'}
+            </p>
+            <p className="mt-0.5 font-sans text-body-sm text-inkInverseDim">
+              Esgotado continua no cardápio, marcado e sem poder ser pedido.
+            </p>
+          </div>
+          <Switch
+            checked={available}
+            onChange={() => setAvailable(!available)}
+            ariaLabel="Disponível"
+          />
+        </div>
+
+        {erro && <p className="mt-4 font-mono text-mono-sm text-danger">{erro}</p>}
+
+        {!novo && (
+          <div className="mt-8 pt-5 border-t border-hairlineDark">
+            {confirmandoExclusao ? (
+              <>
+                <p className="font-sans text-body text-inkInverseDim">
+                  Tirar <span className="text-inkInverse">{item.name}</span> do cardápio? Ele some
+                  pro cliente. Os pedidos antigos continuam como estão.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="md"
+                    disabled={salvando}
+                    onClick={() => excluir.mutate(item.id, { onSuccess: onClose })}
                   >
-                    Trocar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRemovePhoto}
-                    aria-label="Remover foto"
-                    className="h-10 px-3 rounded-md bg-bg/95 border border-hairline
-                               font-mono text-mono-sm uppercase tracking-wider text-inkDim cursor-pointer
-                               hover:text-danger transition-colors duration-base ease-out"
-                  >
-                    Remover
-                  </button>
+                    {excluir.isPending ? 'Tirando…' : 'Sim, tirar'}
+                  </Button>
+                  <Button variant="ghost" size="md" onClick={() => setConfirmandoExclusao(false)}>
+                    Não
+                  </Button>
                 </div>
-              </div>
+              </>
             ) : (
               <button
                 type="button"
-                onClick={handlePickFile}
-                className="w-full aspect-[4/3] rounded-md border border-dashed border-hairline
-                           bg-surface flex flex-col items-center justify-center gap-1 cursor-pointer
-                           hover:border-primary hover:bg-primaryWash transition-colors duration-base ease-out"
+                onClick={() => setConfirmandoExclusao(true)}
+                className="font-mono text-mono-sm uppercase tracking-wider text-inkInverseDim
+                           hover:text-danger cursor-pointer transition-colors duration-base ease-out"
               >
-                <span className="font-display italic text-display-md text-inkMuted">
-                  Adicionar foto
-                </span>
-                <span className="font-mono text-mono-sm text-inkDim">
-                  4:3 · JPG ou PNG
-                </span>
+                Tirar do cardápio
               </button>
             )}
-          </Field>
-
-          <Field label="Nome">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={60}
-              autoFocus={isNew}
-              placeholder={isNew ? 'ex: Smash duplo bacon' : undefined}
-              className={fieldClasses}
-            />
-          </Field>
-
-          <Field label="Categoria">
-            <div className="grid grid-cols-2 gap-2">
-              {(Object.keys(CATEGORY_LABEL) as MenuCategory[]).map((c) => {
-                const active = category === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setCategory(c)}
-                    className={[
-                      'h-12 px-3 rounded-md border cursor-pointer',
-                      'font-sans text-body text-center',
-                      'transition-colors duration-base ease-out',
-                      active
-                        ? 'border-primary bg-primaryWash text-primary'
-                        : 'border-hairline bg-surface text-inkMuted hover:border-primary/40',
-                    ].join(' ')}
-                  >
-                    {CATEGORY_LABEL[c]}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
-
-          <Field label="Descrição" hint={`${description.length}/200`}>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={200}
-              rows={3}
-              className={`${fieldClasses} resize-none`}
-            />
-          </Field>
-
-          <Field label="Preço">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-body-lg text-inkMuted">R$</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={priceStr}
-                onChange={(e) => setPriceStr(e.target.value)}
-                className={`${fieldClasses} font-mono text-body-lg w-32 tabular-nums`}
-              />
-            </div>
-          </Field>
-
-          <Field label="Disponibilidade">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={available}
-                onChange={(e) => setAvailable(e.target.checked)}
-                className="w-5 h-5 accent-accent cursor-pointer"
-              />
-              <span className="font-sans text-body text-ink">
-                {available ? 'Disponível pra pedir' : 'Esgotado — não aparece pro cliente'}
-              </span>
-            </label>
-          </Field>
-        </div>
+          </div>
+        )}
       </SheetBody>
 
       <SheetFooter>
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          onClick={handleSave}
-          disabled={isNew && !name.trim()}
-        >
-          {isNew ? 'Adicionar ao cardápio' : 'Salvar'}
+        <Button variant="primary" size="lg" fullWidth disabled={!podeSalvar} onClick={salvar}>
+          {salvando ? 'Salvando…' : novo ? 'Adicionar ao cardápio' : 'Salvar'}
         </Button>
-        {!isNew && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="block mx-auto mt-3 px-3 py-1 cursor-pointer
-                       font-mono text-mono-sm uppercase tracking-wider text-inkDim
-                       hover:text-danger transition-colors duration-base ease-out"
-          >
-            Excluir do cardápio
-          </button>
-        )}
+        <Button variant="ghost" size="lg" fullWidth onClick={onClose}>
+          Cancelar
+        </Button>
       </SheetFooter>
     </Sheet>
   );
 }
 
-const fieldClasses =
-  'w-full px-4 py-3 bg-surface border border-hairline rounded-md ' +
-  'font-sans text-body text-ink placeholder:text-inkDim ' +
-  'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash';
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Campo({
+  rotulo,
+  dica,
+  children,
+}: {
+  rotulo: string;
+  dica?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2">
-        <label className="font-mono text-label uppercase tracking-wider text-inkDim">
-          {label}
+    <div className="mt-5 first:mt-0">
+      <div className="flex items-baseline justify-between mb-2 gap-3">
+        <label className="font-mono text-label uppercase tracking-wider text-inkInverseDim">
+          {rotulo}
         </label>
-        {hint && <span className="font-mono text-mono-sm text-inkDim">{hint}</span>}
+        {dica && (
+          <span className="font-mono text-mono-sm text-inkInverseDim normal-case tracking-normal">
+            {dica}
+          </span>
+        )}
       </div>
       {children}
     </div>
   );
 }
+
+const inputCls =
+  'w-full rounded-md bg-surfaceDeep px-4 py-3 border border-hairlineDark ' +
+  'font-sans text-body text-inkInverse placeholder:text-inkInverseDim ' +
+  'focus:outline-none focus:border-primary';

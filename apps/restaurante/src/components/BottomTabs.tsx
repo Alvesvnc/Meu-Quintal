@@ -1,10 +1,13 @@
 ﻿import { NavLink, useLocation } from 'react-router-dom';
-import { useQueue, selectActiveCount } from '../stores/queue';
+import { useFila } from '../api/hooks';
 
 export const TABS_HEIGHT = 64;
 
 export function BottomTabs() {
-  const activeCount = useQueue(selectActiveCount);
+  // Mesma fonte da fila: o badge nao pode discordar do que a tela mostra.
+  const { data } = useFila();
+  const activeCount =
+    data?.orders.filter((o) => o.status === 'novo' || o.status === 'preparando').length ?? 0;
   const loc = useLocation();
 
   const tabs = [
