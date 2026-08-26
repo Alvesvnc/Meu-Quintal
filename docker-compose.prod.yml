@@ -1,0 +1,177 @@
+# Stack de producao/staging em uma maquina so (VPS, homologacao).
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# PRODUCAO USA POSTGRES GERENCIADO (decidido 2026-08-24). O servico `postgres`
+# daqui NAO faz backup, nao tem replica e nao tem point-in-time recovery — ele
+# existe pra desenvolvimento e homologacao.
+#
+#   --profile with-db   sobe o Postgres junto (dev/homologacao)
+#   (sem profile)       usa o banco do provedor via DATABASE_URL  <- producao
+#
+# Ver docs/runbook-banco.md: o que exigir do provedor, como testar restore e o
+# procedimento de emergencia.
+
+# Nome de projeto proprio. Sem isto o compose herda o nome do diretorio — o
+# MESMO do docker-compose.yml de desenvolvimento — e o servico `postgres` daqui
+# substitui o container de dev, que some da maquina de quem rodou.
+name: meu-quintal-prod
+
+services:
+  # ATENCAO: sem backup. Nao usar em producao — ver docs/runbook-banco.md.
+  postgres:
+    profiles: ['with-db']
+    image: postgres:16-alpine
+    container_name: meu-quintal-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB}
+    volumes:
+      - quintal-pg-prod:/var/lib/postgresql/data
+    # Sem `ports`: o banco fica so na rede interna do compose. Publicar 5432
+    # na internet e o jeito mais rapido de ser varrido por bot.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot: aplica migrations e sai. O `server` so sobe depois que este
+  # terminar com sucesso — evita servir trafego com schema desatualizado.
+  migrate:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: meu-quintal-server:${TAG:-latest}
+    container_name: meu-quintal-migrate
+    restart: 'no'
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL}
+    command: ['node_modules/.bin/prisma', 'migrate', 'deploy']
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: meu-quintal-server:${TAG:-latest}
+    container_name: meu-quintal-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOST: 0.0.0.0
+      DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET — openssl rand -base64 48}
+      CORS_ORIGINS: ${CORS_ORIGINS:?defina CORS_ORIGINS com os dominios https}
+      # Ligar somente se houver proxy/ingress conhecido na frente, senao
+      # qualquer um forja X-Forwarded-For e escapa do rate limit.
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
+      # Vazio = /metrics desabilitada. Ver docs/observabilidade.md.
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      # Vazio = Sentry desligado. Ver docs/observabilidade.md.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-producao}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      # AS FOTOS DO CARDAPIO. Sem este volume elas vivem na camada do
+      # container e somem no primeiro deploy — e nada avisa: a rota devolve
+      # 404 por foto e o app so mostra buraco.
+      #
+      # E o mesmo motivo pelo qual disco local nao sobrevive a mais de uma
+      # replica: o volume e desta maquina. Antes de escalar horizontalmente,
+      # isto vira objeto (S3/R2) — ver lib/armazenamento.ts.
+      - quintal-uploads:/app/uploads
+    ports:
+      - '${SERVER_PORT:-3001}:3001'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # ─── Apps React (estaticos, servidos por nginx) ─────────────────────────────
+  # VITE_API_URL e BUILD ARG, nao environment: o Vite assa a URL dentro do
+  # bundle. Trocar de ambiente exige rebuild, nao restart.
+  #
+  # As portas sobem em 127.0.0.1 por padrao: em producao quem termina TLS e fala
+  # com a internet e o reverse proxy (nginx/Caddy/Traefik) na frente.
+
+  cliente:
+    build:
+      context: .
+      dockerfile: apps/Dockerfile
+      args:
+        APP: cliente
+        VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL com a URL publica da API}
+    image: meu-quintal-cliente:${TAG:-latest}
+    container_name: meu-quintal-cliente
+    restart: unless-stopped
+    ports:
+      - '${CLIENTE_PORT:-127.0.0.1:8081}:8080'
+    depends_on:
+      server:
+        condition: service_started
+    logging: &log-front
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  restaurante:
+    build:
+      context: .
+      dockerfile: apps/Dockerfile
+      args:
+        APP: restaurante
+        VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL com a URL publica da API}
+    image: meu-quintal-restaurante:${TAG:-latest}
+    container_name: meu-quintal-restaurante
+    restart: unless-stopped
+    ports:
+      - '${RESTAURANTE_PORT:-127.0.0.1:8082}:8080'
+    depends_on:
+      server:
+        condition: service_started
+    logging: *log-front
+
+  dono:
+    build:
+      context: .
+      dockerfile: apps/Dockerfile
+      args:
+        APP: dono
+        VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL com a URL publica da API}
+    image: meu-quintal-dono:${TAG:-latest}
+    container_name: meu-quintal-dono
+    restart: unless-stopped
+    ports:
+      - '${DONO_PORT:-127.0.0.1:8083}:8080'
+    depends_on:
+      server:
+        condition: service_started
+    logging: *log-front
+
+volumes:
+  quintal-pg-prod:
+  quintal-uploads:

@@ -1,3 +1,8 @@
+# Stack de DESENVOLVIMENTO. A de producao e docker-compose.prod.yml, que tem
+# `name:` proprio — sem isso os dois disputariam o mesmo container.
+# NAO adicionar `name:` aqui: mudaria o prefixo do volume quintal-pg-data e
+# o banco de desenvolvimento apareceria vazio.
+
 services:
   postgres:
     image: postgres:16-alpine

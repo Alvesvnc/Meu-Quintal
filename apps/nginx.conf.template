@@ -1,0 +1,68 @@
+# Config do nginx que serve um dos apps React (SPA estatica).
+#
+# __API_ORIGIN__ e substituido no BUILD pelo mesmo valor de VITE_API_URL — ver
+# apps/Dockerfile. De propósito no build e não em runtime: o Vite congela a URL
+# da API dentro do bundle, então um valor de runtime diferente só criaria um
+# CSP que bloqueia justamente a API que o bundle chama.
+
+server {
+  # 8080 e nao 80: a imagem base e a nginx-unprivileged, que roda como uid 101.
+  # Porta baixa exigiria root.
+  listen       8080;
+  server_name  _;
+  root         /usr/share/nginx/html;
+  index        index.html;
+
+  # Nao entregar a versao do nginx em header nem em pagina de erro
+  server_tokens off;
+
+  # Log em stdout/stderr: quem coleta e o orquestrador, nao um arquivo no disco
+  access_log /dev/stdout;
+  error_log  /dev/stderr warn;
+
+  gzip on;
+  gzip_vary on;
+  gzip_min_length 1024;
+  gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+  # ─── Liveness ─────────────────────────────────────────────────────────────
+  location = /health {
+    access_log off;
+    add_header Content-Type application/json always;
+    return 200 '{"ok":true}';
+  }
+
+  # ─── Assets com hash no nome ──────────────────────────────────────────────
+  # O Vite gera index-C1DpkoCE.js: o conteudo nunca muda sem o nome mudar, entao
+  # pode ficar em cache pra sempre. E o que faz o segundo acesso ser instantaneo.
+  location /assets/ {
+    # So o add_header: a diretiva `expires` emitiria um segundo Cache-Control,
+    # e a resposta sairia com o header duplicado.
+    add_header Cache-Control "public, immutable, max-age=31536000" always;
+    try_files $uri =404;
+  }
+
+  # ─── SPA fallback ─────────────────────────────────────────────────────────
+  # OBRIGATORIO: as rotas sao do React Router, nao do disco. Sem esta linha,
+  # abrir/recarregar /pedido/abc ou /m/mesa-4-dev devolve 404 do nginx — o
+  # cliente que escaneia o QR cai numa pagina de erro.
+  location / {
+    # index.html NAO pode ficar em cache: e ele que aponta pros assets novos.
+    # Com cache, um deploy novo so aparece pro usuario quando o cache expirar.
+    add_header Cache-Control "no-cache, must-revalidate" always;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # CSP: aqui serve HTML, entao ela vale (na API o helmet desliga por isso).
+    #   img-src: as fotos enviadas pelas cozinhas vem da propria API
+    #   (__API_ORIGIN__), e `https:` cobre o campo legado `photoUrl`, que
+    #   aponta pra imagem hospedada em qualquer lugar
+    #   connect-src    -> a API e o websocket do Socket.io
+    #   style-src inline -> o React injeta style inline em alguns pontos
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https: __API_ORIGIN__; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' __API_ORIGIN__ __API_WS_ORIGIN__; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" always;
+
+    try_files $uri $uri/ /index.html;
+  }
+}
