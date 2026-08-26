@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Button, Divider } from '@mq/design-system';
+import { mensagemDeErro, type ConviteResponse } from '@mq/shared';
+import { useConvidarCozinha } from '../api/hooks';
 
 /**
  * Tela 03 — Convidar nova cozinha.
@@ -15,6 +17,8 @@ import { Button, Divider } from '@mq/design-system';
  * cozinha de outra pessoa.
  */
 export function OnboardScreen() {
+  const convidar = useConvidarCozinha();
+  const [convite, setConvite] = useState<ConviteResponse | null>(null);
   const [internalName, setInternalName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
 
@@ -26,7 +30,42 @@ export function OnboardScreen() {
   const [rentReais, setRentReais] = useState('800');
 
   const noAgreement = !chargeCommission && !chargeRent;
-  const canSend = internalName.trim() && ownerEmail.trim() && !noAgreement;
+  const canSend =
+    !!internalName.trim() && !!ownerEmail.trim() && !noAgreement && !convidar.isPending;
+
+  const enviar = () => {
+    convidar.mutate(
+      {
+        email: ownerEmail.trim(),
+        kitchenName: internalName.trim(),
+        chargeCommission,
+        commissionPct: chargeCommission ? commissionPct : null,
+        chargeRent,
+        rentCents: chargeRent ? Number(rentReais || 0) * 100 : 0,
+      },
+      { onSuccess: setConvite },
+    );
+  };
+
+  const erro = convidar.error
+    ? mensagemDeErro(convidar.error, 'Nao consegui criar o convite.')
+    : null;
+
+  // Convite criado: o link aparece UMA vez. Depois disto so existe o hash no
+  // banco, e nao ha rota que devolva o link de novo — por isso a tela para
+  // tudo e mostra so ele, em vez de voltar pro formulario.
+  if (convite) {
+    return (
+      <ConviteCriado
+        convite={convite}
+        aoNovo={() => {
+          setConvite(null);
+          setInternalName('');
+          setOwnerEmail('');
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -87,7 +126,12 @@ export function OnboardScreen() {
                   Comissão sobre as vendas
                 </p>
                 <p className="mt-0.5 font-sans text-body-sm text-inkMuted">
-                  Percentual do que a cozinha fatura, descontado no repasse.
+                  Percentual do que a cozinha fatura. Ela cobra o cliente no próprio caixa e te
+                  deve essa parte no fim do ciclo.
+                </p>
+                <p className="mt-1 font-sans text-body-sm text-inkDim">
+                  Com comissão, você passa a ver quanto essa cozinha vende — o bruto é a base do
+                  cálculo. Só com aluguel, não vê.
                 </p>
               </div>
             </label>
@@ -129,7 +173,8 @@ export function OnboardScreen() {
                   Aluguel fixo mensal
                 </p>
                 <p className="mt-0.5 font-sans text-body-sm text-inkMuted">
-                  Valor fixo da casinha, cobrado todo mês independente do que vende.
+                  Valor fixo da casinha, devido todo mês independente do que ela vende — e por
+                  isso o faturamento dela não aparece pra você.
                 </p>
               </div>
             </label>
@@ -162,29 +207,73 @@ export function OnboardScreen() {
       </div>
 
       <div className="mt-12 pt-6 border-t border-hairline max-w-2xl flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        <Button
-          variant="primary"
-          size="lg"
-          disabled={!canSend}
-          onClick={() =>
-            alert(
-              `Mock: convidar ${ownerEmail} pra operar "${internalName}".\n` +
-              `Acordo: ${chargeCommission ? `${commissionPct}% comissão` : ''}${chargeCommission && chargeRent ? ' + ' : ''}${chargeRent ? `R$ ${rentReais}/mês aluguel` : ''}.`
-            )
-          }
-        >
-          Enviar convite
-        </Button>
-        <Button variant="ghost" size="lg" onClick={() => alert('Mock: salvar rascunho')}>
-          Salvar rascunho
+        <Button variant="primary" size="lg" disabled={!canSend} onClick={enviar}>
+          {convidar.isPending ? 'Criando…' : 'Criar convite'}
         </Button>
       </div>
 
+      {erro && <p className="mt-3 max-w-2xl font-mono text-mono-sm text-danger">{erro}</p>}
+
       <p className="mt-6 max-w-2xl font-sans text-body-sm text-inkDim">
-        O responsável recebe um email com link de cadastro. Após aceitar, ele preenche
-        nome final, descrição, foto, cardápio e demais detalhes da cozinha. Você é avisada
-        quando a cozinha estiver pronta pra publicar no quintal.
+        Ainda não há envio de email configurado: o link do convite aparece aqui na tela e você
+        manda pro responsável pelo canal que preferir. Ele vale 7 dias e serve uma vez só.
       </p>
+    </>
+  );
+}
+
+/**
+ * O link do convite aparece UMA vez.
+ *
+ * Depois de criado, o banco guarda só o hash — não existe rota que devolva o
+ * link de novo, e não deve existir: link recuperável a qualquer momento vale
+ * tanto quanto senha guardada em texto puro.
+ */
+function ConviteCriado({ convite, aoNovo }: { convite: ConviteResponse; aoNovo: () => void }) {
+  const link = convite.linkDeAceite;
+  const expira = new Date(convite.expiresAt).toLocaleDateString('pt-BR');
+
+  return (
+    <>
+      <header className="mb-8">
+        <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">
+          Configurar · convite criado
+        </p>
+        <h1 className="font-display italic text-display-xl text-ink leading-tight">
+          Convite pronto pra {convite.email}.
+        </h1>
+      </header>
+
+      <div className="max-w-2xl">
+        <Divider label="Link de aceite" />
+        <p className="mt-4 font-sans text-body text-inkMuted">
+          Copie agora. Este link não aparece de novo — daqui pra frente o sistema guarda só o
+          hash dele, do mesmo jeito que faz com senha.
+        </p>
+
+        <div className="mt-4 p-4 bg-surface border border-hairline rounded-md">
+          <code className="block font-mono text-mono text-ink break-all">{link ?? '—'}</code>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          {link && (
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => navigator.clipboard?.writeText(link)}
+            >
+              Copiar link
+            </Button>
+          )}
+          <Button variant="ghost" size="md" onClick={aoNovo}>
+            Convidar outra cozinha
+          </Button>
+        </div>
+
+        <p className="mt-6 font-sans text-body-sm text-inkDim">
+          Vale até {expira} e serve uma vez só.
+        </p>
+      </div>
     </>
   );
 }

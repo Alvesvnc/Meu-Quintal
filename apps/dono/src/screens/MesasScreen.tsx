@@ -1,20 +1,50 @@
 import { useState } from 'react';
 import { Button, Chip, Divider } from '@mq/design-system';
-import { MESAS, MESA_STATUS_LABEL, type Mesa, type MesaStatus } from '../mocks/mesas';
-import { fmtBRL } from '../mocks/quintal';
+import { mensagemDeErro, type MesaDesempenho, type MesaResumo } from '@mq/shared';
+import { useMesas, useMudarStatusMesa, useDesempenhoMesas } from '../api/hooks';
+import { Carregando, ErroDaTela, Vazio } from '../components/Estado';
+import { fmtBRL, fmtRefMonth, refMonthAtual } from '../lib/formato';
+
+const ROTULO: Record<MesaResumo['status'], string> = {
+  livre: 'livre',
+  ocupada: 'ocupada',
+  'precisa-limpar': 'limpar',
+};
 
 /**
- * Tela 05 — Mesas & QR.
- * Grid 4x4 de mesas, side panel direita ao selecionar.
- * pages/dono.md § "Tela 05 — Mesas & QR".
+ * O salão: quem está ocupada agora, e quanto cada mesa rendeu no mês.
+ *
+ * As duas perguntas moram na mesma tela porque são a mesma imagem mental — o
+ * desenho do salão. O valor do mês vai em cima do número da mesa, então o
+ * ranking se lê **olhando o layout**, sem tabela: dá pra ver que o canto da
+ * janela rende e o fundo não.
+ *
+ * A comparação com a média fica no painel lateral, ao clicar. É o número que
+ * informa decisão ("essa mesa rende 34% acima"), mas ocupa espaço demais para
+ * caber em dezesseis quadradinhos.
+ *
+ * O `qrToken` NÃO aparece aqui, e a API nem o devolve: é a credencial da mesa.
+ * Quem tem o token abre a mesa. A versão mockada desta tela exibia o token num
+ * painel lateral.
  */
 export function MesasScreen() {
-  const [selected, setSelected] = useState<number | null>(null);
-  const mesa = selected != null ? MESAS.find((m) => m.numero === selected) : null;
+  const salao = useMesas();
+  const mes = useDesempenhoMesas();
+  const [selecionada, setSelecionada] = useState<number | null>(null);
 
-  const livres = MESAS.filter((m) => m.status === 'livre').length;
-  const ocupadas = MESAS.filter((m) => m.status === 'ocupada').length;
-  const limpar = MESAS.filter((m) => m.status === 'precisa-limpar').length;
+  if (salao.isLoading) return <Carregando o="as mesas" />;
+  if (salao.isError) return <ErroDaTela erro={salao.error} aoTentar={() => salao.refetch()} />;
+  if (!salao.data) return null;
+
+  const ativas = salao.data.filter((m) => m.isActive);
+  const livres = ativas.filter((m) => m.status === 'livre').length;
+  const ocupadas = ativas.filter((m) => m.status === 'ocupada').length;
+  const limpar = ativas.filter((m) => m.status === 'precisa-limpar').length;
+
+  const desempenhoDe = (id: string): MesaDesempenho | undefined =>
+    mes.data?.mesas.find((d) => d.id === id);
+
+  const mesa = selecionada != null ? salao.data.find((m) => m.numero === selecionada) : null;
 
   return (
     <>
@@ -32,127 +62,228 @@ export function MesasScreen() {
         )}
       </header>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Grid de mesas */}
-        <div className="flex-1 min-w-0">
-          <Divider label="Layout do quintal" />
-          <div className="mt-4 grid grid-cols-4 gap-3 max-w-[400px]">
-            {MESAS.map((m) => (
-              <MesaCell
-                key={m.numero}
-                mesa={m}
-                selected={selected === m.numero}
-                onClick={() => setSelected(m.numero)}
-              />
-            ))}
-          </div>
+      {salao.data.length === 0 ? (
+        <Vazio>Nenhuma mesa cadastrada ainda.</Vazio>
+      ) : (
+        <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex-1 min-w-0">
+            <Divider
+              label={
+                mes.data
+                  ? `Layout do quintal · valores de ${fmtRefMonth(mes.data.refMonth)}`
+                  : 'Layout do quintal'
+              }
+            />
 
-          <div className="mt-6 flex items-center gap-4 flex-wrap">
-            <LegendDot tone="accent" label="livre" />
-            <LegendDot tone="primary" label="ocupada" />
-            <LegendDot tone="warn" label="precisa limpar" />
-          </div>
-        </div>
-
-        {/* Side panel (lateral em desktop, abaixo em mobile) */}
-        <aside className="w-full md:w-80 shrink-0 md:border-l border-t md:border-t-0 border-hairline pt-6 md:pt-0 md:pl-8 min-h-[320px]">
-          {mesa ? (
-            <MesaPanel mesa={mesa} onClose={() => setSelected(null)} />
-          ) : (
-            <div className="py-12 text-center">
-              <p className="font-display italic text-display-md text-inkMuted text-pretty">
-                Selecione uma mesa pra ver detalhes.
-              </p>
+            <div className="mt-4 grid grid-cols-4 gap-3 max-w-[440px]">
+              {salao.data.map((m) => (
+                <Celula
+                  key={m.id}
+                  mesa={m}
+                  noMes={desempenhoDe(m.id)}
+                  selecionada={selecionada === m.numero}
+                  onClick={() => setSelecionada(m.numero)}
+                />
+              ))}
             </div>
-          )}
-        </aside>
-      </div>
+
+            <div className="mt-6 flex items-center gap-4 flex-wrap">
+              <Legenda tom="accent" rotulo="livre" />
+              <Legenda tom="primary" rotulo="ocupada" />
+              <Legenda tom="warn" rotulo="precisa limpar" />
+            </div>
+
+            {mes.data && (
+              <>
+                <p className="mt-6 font-sans text-body text-inkMuted">
+                  Média por mesa no mês:{' '}
+                  <strong className="text-ink font-medium">
+                    {fmtBRL(mes.data.media.grossCents)}
+                  </strong>
+                  {mes.data.media.mesasNaBase > 0 && (
+                    <span className="text-inkDim">
+                      {' '}
+                      · sobre {mes.data.media.mesasNaBase} mesa
+                      {mes.data.media.mesasNaBase === 1 ? '' : 's'} que existia
+                      {mes.data.media.mesasNaBase === 1 ? '' : 'm'} o mês inteiro
+                    </span>
+                  )}
+                </p>
+              </>
+            )}
+          </div>
+
+          <aside
+            className="w-full md:w-80 shrink-0 md:border-l border-t md:border-t-0 border-hairline
+                       pt-6 md:pt-0 md:pl-8 min-h-[320px]"
+          >
+            {mesa ? (
+              <Painel
+                mesa={mesa}
+                noMes={desempenhoDe(mesa.id)}
+                refMonth={mes.data?.refMonth ?? refMonthAtual()}
+                onFechar={() => setSelecionada(null)}
+              />
+            ) : (
+              <Vazio>Selecione uma mesa pra ver detalhes.</Vazio>
+            )}
+          </aside>
+        </div>
+      )}
     </>
   );
 }
 
-function MesaCell({ mesa, selected, onClick }: { mesa: Mesa; selected: boolean; onClick: () => void }) {
-  const tone = {
-    'livre':           'bg-accentWash border-accent/30 text-ink hover:border-accent',
-    'ocupada':         'bg-primaryWash border-primary/30 text-ink hover:border-primary',
-    'precisa-limpar':  'bg-warn/10 border-warn/30 text-ink hover:border-warn',
-  }[mesa.status];
+interface CelulaProps {
+  mesa: MesaResumo;
+  noMes?: MesaDesempenho;
+  selecionada: boolean;
+  onClick: () => void;
+}
+
+function Celula({ mesa, noMes, selecionada, onClick }: CelulaProps) {
+  const tom = !mesa.isActive
+    ? 'bg-surface border-hairline text-inkDim'
+    : {
+        livre: 'bg-accentWash border-accent/30 text-ink hover:border-accent',
+        ocupada: 'bg-primaryWash border-primary/30 text-ink hover:border-primary',
+        'precisa-limpar': 'bg-warn/10 border-warn/30 text-ink hover:border-warn',
+      }[mesa.status];
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
-        'aspect-square rounded-md border-2 cursor-pointer relative flex flex-col items-center justify-center gap-0.5',
+        'aspect-square rounded-md border-2 cursor-pointer',
+        'flex flex-col items-center justify-center gap-0.5 px-1',
         'transition-colors duration-base ease-out',
-        tone,
-        selected ? 'ring-2 ring-primary ring-offset-2 ring-offset-bg' : '',
+        tom,
+        selecionada ? 'ring-2 ring-primary ring-offset-2 ring-offset-bg' : '',
       ].join(' ')}
     >
-      <span className="font-mono text-mono-lg text-ink tabular-nums">
+      {/* O valor do mês vem PRIMEIRO: é o que se compara batendo o olho no
+          salão inteiro. O número da mesa só identifica. */}
+      {noMes && (
+        <span
+          className={[
+            'font-mono text-mono tabular-nums leading-none',
+            noMes.grossCents > 0 ? 'text-ink' : 'text-inkDim',
+          ].join(' ')}
+        >
+          {fmtBRL(noMes.grossCents)}
+        </span>
+      )}
+      <span className="font-mono text-mono-lg tabular-nums leading-none">
         {String(mesa.numero).padStart(2, '0')}
       </span>
       {mesa.ordersToday > 0 && (
-        <span className="font-mono text-mono-sm text-inkDim">
-          {mesa.ordersToday} ped.
+        <span className="font-mono text-mono-sm text-inkDim leading-none">
+          {mesa.ordersToday} hoje
         </span>
       )}
     </button>
   );
 }
 
-function LegendDot({ tone, label }: { tone: 'accent' | 'primary' | 'warn'; label: string }) {
-  const cls = { accent: 'bg-accent', primary: 'bg-primary', warn: 'bg-warn' }[tone];
+function Legenda({ tom, rotulo }: { tom: 'accent' | 'primary' | 'warn'; rotulo: string }) {
+  const cls = { accent: 'bg-accent', primary: 'bg-primary', warn: 'bg-warn' }[tom];
   return (
     <span className="inline-flex items-center gap-2">
       <span className={`w-2.5 h-2.5 rounded-full ${cls}`} aria-hidden />
-      <span className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">{label}</span>
+      <span className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">{rotulo}</span>
     </span>
   );
 }
 
-function MesaPanel({ mesa, onClose }: { mesa: Mesa; onClose: () => void }) {
+interface PainelProps {
+  mesa: MesaResumo;
+  noMes?: MesaDesempenho;
+  refMonth: string;
+  onFechar: () => void;
+}
+
+function Painel({ mesa, noMes, refMonth, onFechar }: PainelProps) {
+  const mudar = useMudarStatusMesa();
+  const erro = mudar.error ? mensagemDeErro(mudar.error, 'Nao consegui mudar o status.') : null;
+  const tom = mesa.status === 'livre' ? 'accent' : mesa.status === 'ocupada' ? 'primary' : 'warn';
+
   return (
     <>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <p className="font-mono text-label uppercase tracking-wider text-inkDim">
-            Mesa
-          </p>
+          <p className="font-mono text-label uppercase tracking-wider text-inkDim">Mesa</p>
           <p className="font-display text-display-lg italic text-ink leading-none mt-1">
             {String(mesa.numero).padStart(2, '0')}
           </p>
         </div>
-        <Chip tone={statusToTone(mesa.status)}>
-          {MESA_STATUS_LABEL[mesa.status]}
-        </Chip>
+        <Chip tone={tom}>{ROTULO[mesa.status]}</Chip>
       </div>
 
-      <Divider />
+      <Divider label={fmtRefMonth(refMonth)} />
+      {noMes ? (
+        <dl className="mt-4 space-y-3">
+          <Linha rotulo="Rendeu no mês" valor={fmtBRL(noMes.grossCents)} />
+          <Linha rotulo="Comparada à média" valor={<VsMedia pct={noMes.vsMediaPct} />} />
+          {/* Giro: "12 pedidos em 9 dias" separa a mesa que trabalha todo dia
+              da que pegou uma noite cheia. Mesmo valor, decisões diferentes. */}
+          <Linha
+            rotulo="Giro"
+            valor={`${noMes.pedidos} ped. em ${noMes.diasComMovimento} dia${
+              noMes.diasComMovimento === 1 ? '' : 's'
+            }`}
+          />
+          <Linha rotulo="Ticket médio" valor={fmtBRL(noMes.ticketMedioCents)} />
+        </dl>
+      ) : (
+        <p className="mt-4 font-sans text-body-sm text-inkMuted">Sem dados do mês.</p>
+      )}
 
+      {noMes?.novaNoPeriodo && (
+        <p className="mt-3 font-sans text-body-sm text-inkDim">
+          Cadastrada no meio do período — não teve o mês inteiro pra faturar, e por isso fica fora
+          da média.
+        </p>
+      )}
+
+      <div className="mt-6">
+        <Divider label="Hoje" />
+      </div>
       <dl className="mt-4 space-y-3">
-        <DlRow label="Pedidos hoje" value={String(mesa.ordersToday)} />
-        <DlRow label="Bruto hoje" value={fmtBRL(mesa.grossCents)} />
-        <DlRow label="QR token" value={mesa.qrToken} mono />
+        <Linha rotulo="Pedidos" valor={String(mesa.ordersToday)} />
+        <Linha rotulo="Consumo" valor={fmtBRL(mesa.grossTodayCents)} />
       </dl>
 
       <div className="mt-6 space-y-2">
-        <Button variant="secondary" size="md" fullWidth>
-          Baixar QR (PDF)
-        </Button>
-        <Button variant="ghost" size="md" fullWidth>
-          Reimprimir QR
-        </Button>
-        {mesa.status === 'precisa-limpar' && (
-          <Button variant="primary" size="md" fullWidth>
-            Marcar limpa
+        {mesa.status !== 'livre' && (
+          <Button
+            variant="primary"
+            size="md"
+            fullWidth
+            disabled={mudar.isPending}
+            onClick={() => mudar.mutate({ numero: mesa.numero, status: 'livre' })}
+          >
+            {mudar.isPending ? 'Salvando…' : 'Marcar livre'}
+          </Button>
+        )}
+        {mesa.status !== 'precisa-limpar' && (
+          <Button
+            variant="secondary"
+            size="md"
+            fullWidth
+            disabled={mudar.isPending}
+            onClick={() => mudar.mutate({ numero: mesa.numero, status: 'precisa-limpar' })}
+          >
+            Marcar pra limpar
           </Button>
         )}
       </div>
 
+      {erro && <p className="mt-3 font-mono text-mono-sm text-danger">{erro}</p>}
+
       <button
         type="button"
-        onClick={onClose}
+        onClick={onFechar}
         className="mt-6 font-mono text-mono-sm uppercase tracking-wider text-inkDim
                    hover:text-ink cursor-pointer transition-colors duration-base ease-out"
       >
@@ -162,17 +293,23 @@ function MesaPanel({ mesa, onClose }: { mesa: Mesa; onClose: () => void }) {
   );
 }
 
-function DlRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function VsMedia({ pct }: { pct: number | null }) {
+  // Sem base de comparação não se escreve "0%": isso afirmaria "está na média",
+  // e não há dado que sustente a afirmação.
+  if (pct === null) return <span className="text-inkDim">sem base</span>;
+  const acima = pct >= 0;
   return (
-    <div className="flex items-baseline justify-between gap-3 border-b border-hairlineSoft pb-2">
-      <dt className="font-mono text-label uppercase tracking-wider text-inkDim">{label}</dt>
-      <dd className={mono ? 'font-mono text-mono-sm text-ink' : 'font-mono text-body text-ink tabular-nums'}>
-        {value}
-      </dd>
-    </div>
+    <span className={acima ? 'text-accent' : 'text-inkMuted'}>
+      {acima ? '↑' : '↓'} {Math.abs(pct)}%
+    </span>
   );
 }
 
-function statusToTone(s: MesaStatus): 'accent' | 'primary' | 'warn' {
-  return s === 'livre' ? 'accent' : s === 'ocupada' ? 'primary' : 'warn';
+function Linha({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-hairlineSoft pb-2">
+      <dt className="font-mono text-label uppercase tracking-wider text-inkDim">{rotulo}</dt>
+      <dd className="font-mono text-body text-ink tabular-nums">{valor}</dd>
+    </div>
+  );
 }

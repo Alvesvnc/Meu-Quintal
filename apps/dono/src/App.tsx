@@ -1,28 +1,47 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
+import { AuthGuard } from './components/AuthGuard';
+import { LoginScreen } from './screens/LoginScreen';
+import { PrimeiroAcessoScreen } from './screens/PrimeiroAcessoScreen';
 import { OverviewScreen } from './screens/OverviewScreen';
 import { RestaurantesScreen } from './screens/RestaurantesScreen';
 import { OnboardScreen } from './screens/OnboardScreen';
 import { FinanceiroScreen } from './screens/FinanceiroScreen';
 import { MesasScreen } from './screens/MesasScreen';
-import { PedidosLiveScreen } from './screens/PedidosLiveScreen';
 import { ContaScreen } from './screens/ContaScreen';
 import { PlaceholderScreen } from './screens/PlaceholderScreen';
 
 export function App() {
-  return (
-    <AppShell>
+  const loc = useLocation();
+
+  // Login e primeiro acesso ficam FORA do shell: sidebar e topo dependem de
+  // estar logado pra saber o nome do quintal. E o primeiro acesso e publico —
+  // quem chega nele ainda nao consegue logar, e passar pelo AuthGuard o
+  // mandaria pro login, onde ele nao tem senha pra digitar.
+  const fora = loc.pathname === '/login' || loc.pathname.startsWith('/primeiro-acesso/');
+  if (fora) {
+    return (
       <Routes>
-        <Route path="/" element={<OverviewScreen />} />
-        <Route path="/restaurantes"       element={<RestaurantesScreen />} />
-        <Route path="/restaurantes/novo"  element={<OnboardScreen />} />
-        <Route path="/restaurantes/:slug" element={<PlaceholderScreen title="Detalhe da cozinha" note="Em construção." />} />
-        <Route path="/financeiro"         element={<FinanceiroScreen />} />
-        <Route path="/mesas"              element={<MesasScreen />} />
-        <Route path="/pedidos"            element={<PedidosLiveScreen />} />
-        <Route path="/conta"              element={<ContaScreen />} />
-        <Route path="*"                   element={<PlaceholderScreen title="Página não encontrada" />} />
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/primeiro-acesso/:token" element={<PrimeiroAcessoScreen />} />
       </Routes>
-    </AppShell>
+    );
+  }
+
+  return (
+    <AuthGuard>
+      <AppShell>
+        <Routes>
+          <Route path="/" element={<OverviewScreen />} />
+          <Route path="/restaurantes"       element={<RestaurantesScreen />} />
+          <Route path="/restaurantes/novo"  element={<OnboardScreen />} />
+          <Route path="/restaurantes/:slug" element={<PlaceholderScreen title="Detalhe da cozinha" note="Em construção." />} />
+          <Route path="/financeiro"         element={<FinanceiroScreen />} />
+          <Route path="/mesas"              element={<MesasScreen />} />
+          <Route path="/conta"              element={<ContaScreen />} />
+          <Route path="*"                   element={<Navigate to="/" replace />} />
+        </Routes>
+      </AppShell>
+    </AuthGuard>
   );
 }

@@ -1,5 +1,4 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
 import { TopBar } from './TopBar';
 import { Sidebar } from './Sidebar';
 
@@ -9,12 +8,10 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const loc = useLocation();
 
-  // Fecha drawer ao navegar
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [loc.pathname]);
+  // O drawer fecha no clique do link (ver Sidebar.onNavegar), nao num effect
+  // reagindo a mudanca de rota. Um setState sincrono dentro de effect provoca
+  // render em cascata: pinta o drawer aberto na rota nova e so entao fecha.
 
   // Trava scroll do body quando drawer aberto (mobile)
   useEffect(() => {
@@ -46,7 +43,7 @@ export function AppShell({ children }: AppShellProps) {
             drawerOpen ? 'translate-x-0 shadow-sheet md:shadow-none' : '-translate-x-full md:translate-x-0',
           ].join(' ')}
         >
-          <Sidebar />
+          <Sidebar onNavegar={() => setDrawerOpen(false)} />
         </div>
 
         <main className="flex-1 min-w-0">

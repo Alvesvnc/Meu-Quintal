@@ -1,6 +1,7 @@
 {
   "name": "@mq/dono",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
@@ -10,7 +11,10 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
-    "@mq/design-system": "*",
+    "@mq/design-system": "workspace:*",
+    "@mq/shared": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
+    "axios": "^1.7.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0",
