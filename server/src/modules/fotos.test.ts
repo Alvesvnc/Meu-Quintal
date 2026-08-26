@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { criarPrismaMock, type PrismaMock } from '../test/prismaMock.js';
+import { criarPrismaMock, type PrismaMock , cozinhaLogada } from '../test/prismaMock.js';
 
 const prismaMock: PrismaMock = criarPrismaMock();
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
@@ -75,6 +75,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   guardadas.clear();
   Object.assign(prismaMock, criarPrismaMock());
+  cozinhaLogada(prismaMock, COZINHA.id, 'ku1');
   prismaMock.kitchen.findUnique.mockResolvedValue(COZINHA);
   prismaMock.menuItem.findFirst.mockResolvedValue(ITEM);
   prismaMock.menuItemPhoto.count.mockResolvedValue(0);

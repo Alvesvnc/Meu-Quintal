@@ -83,6 +83,8 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
         kitchenSlug: user.kitchen.slug,
         email: user.email,
         role: user.role,
+        // Ver o mesmo campo no login do dono.
+        v: user.tokenVersion,
       });
 
       const response: LoginResponse = {

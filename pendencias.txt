@@ -1,6 +1,6 @@
 ================================================================================
 MEU QUINTAL - PENDENCIAS ABERTAS
-Ultima atualizacao: 2026-08-25 (primeiro acesso por link)
+Ultima atualizacao: 2026-08-26 (recuperar senha + expulsao de sessao)
 ================================================================================
 
 Este arquivo existe pra sobreviver a troca de sessao/chat. Se voce abriu um
@@ -16,7 +16,7 @@ Estado em 2026-08-25:
   - App do cliente ......................................... na API
   - App do dono ............................................ na API
   - App do restaurante ..................................... na API
-  - 489 testes | lint 0 erros/0 warnings | typecheck limpo | 4 imagens Docker OK
+  - 506 testes | lint 0 erros/0 warnings | typecheck limpo | 4 imagens Docker OK
 
 NADA ESTA COMMITADO. Sao 100+ arquivos desde a594b82 (2026-06-09).
 
@@ -255,6 +255,32 @@ COZINHA NOVA NASCE PAUSADA (aceite de convite): o cliente nao pode ver cozinha
 sem cardapio. Quem publica e o responsavel, depois de cadastrar os pratos — por
 isso ele PRECISA conseguir entrar estando pausado.
 
+--- 1.8-B TROCAR A SENHA EXPULSA QUEM ESTAVA DENTRO ---
+
+Feito em 2026-08-26, junto com recuperar senha — sem isso a recuperacao
+prometeria o que nao entrega.
+
+AccountUser.tokenVersion e KitchenUser.tokenVersion sobem a cada troca de
+senha. O JWT carrega `v`, e os DOIS plugins de auth comparam com o banco.
+
+  POR QUE: o JWT e stateless e vale 7 dias. Quem trocasse a senha JUSTAMENTE
+  por desconfiar de invasao continuaria com o invasor dentro por mais uma
+  semana, achando que resolveu.
+
+  Token emitido ANTES do campo existir chega sem `v` e conta como versao 0 —
+  que e o valor de quem nunca trocou a senha. Pode aparecer por 7 dias depois
+  do deploy.
+
+ACHADO NO CAMINHO: auth-restaurante NUNCA RELIA O USUARIO, so a cozinha.
+Remover um funcionario nao revogava o acesso dele — o token seguia valendo ate
+expirar. Agora o KitchenUser e relido a cada request (existe? ainda e desta
+cozinha? a versao bate?). Verificado no banco: apagar o usuario derruba na
+hora.
+
+QUEM ASSINA TOKEN PRECISA POR O `v`: login do dono, login da cozinha, aceite de
+convite e definir senha. Esquecer em um deles faz o usuario ser deslogado no
+request seguinte.
+
 --- 1.9 SENHA NUNCA TRAFEGA ---
 
 Feito em 2026-08-25. Ninguem recebe senha pronta — recebe um LINK de uso unico
@@ -286,11 +312,31 @@ Ja entra logado depois de definir: a pessoa acabou de provar que tem o link e
 escolheu a senha; manda-la pro login seria pedir o que ela digitou ha dois
 segundos.
 
-[ ] NAO EXISTE RECUPERAR SENHA. Nem pro dono, nem pra cozinha. Quem esquecer
-    depende de alguem gerar um AccessToken no banco. A mecanica ja esta pronta
-    (model AccessToken + rotas /api/acesso/*): falta um "esqueci minha senha"
-    que crie o token, um prazo curto (1h, nao 7 dias) e um campo `kind` no
-    model pra separar os dois usos.
+RECUPERAR SENHA: FEITO em 2026-08-26.
+
+  POST /api/a/auth/recuperar   dono
+  POST /api/r/auth/recuperar   cozinha
+  Tela: /senha/:token nos DOIS apps — a mesma tela serve primeiro acesso e
+        recuperacao; quem diz qual e o caso e o servidor (campo `tipo`), nao a
+        rota.
+
+  A RESPOSTA E SEMPRE `{ok:true}`, exista o email ou nao — inclusive pra email
+  malformado. Responder "nao encontrado" transformaria a rota num oraculo: um
+  script descobriria quais enderecos tem conta aqui, e isso e material de
+  phishing dirigido. A TELA TAMBEM NAO PODE CONTRADIZER ISSO: a confirmacao
+  fala em condicional ("se houver uma conta com esse email").
+
+  PRAZO: 1 HORA, contra 7 dias do primeiro acesso. Quem pediu esta na frente do
+  computador agora; cada hora a mais e uma hora a mais em que um email vazado
+  vira acesso.
+
+  LINK NOVO INVALIDA OS ANTERIORES. Pedir tres vezes deixaria tres links vivos
+  na caixa de entrada, cada um capaz de trocar a senha durante o prazo inteiro.
+
+  AccessToken agora aponta pra AccountUser OU KitchenUser — CHECK no banco
+  garante exatamente um dos dois (`access_tokens_um_dono_so`). Duas colunas com
+  FK, e nao um par (tipo, id) generico, pra nao abrir mao da integridade
+  referencial.
 
 --- 1.10 CONVITE DE COZINHA: O CICLO ---
 
@@ -581,7 +627,7 @@ Upload de foto de ITEM do cardapio esta FEITO (ver 1.12). O que sobrou:
 
 --- 2.6 COBERTURA DE TESTE ---
 
-489 testes. Cobertura medida: ~62% de linha, 85% de branch.
+506 testes. Cobertura medida: ~62% de linha, 85% de branch.
 Rodar com: pnpm test:coverage (relatorio HTML em coverage/index.html)
 
 [ ] Rotas de LEITURA do cliente: GET /api/m/pedido/:id, GET /api/m/pedidos e

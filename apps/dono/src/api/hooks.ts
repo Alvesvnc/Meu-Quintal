@@ -209,6 +209,19 @@ export function usePrimeiroAcesso(token: string) {
   });
 }
 
+/**
+ * Esqueci minha senha.
+ *
+ * A resposta e sempre `ok`, exista o email ou nao — quem responde assim e o
+ * servidor, de proposito. A tela nao tem como (nem deve) dizer mais.
+ */
+export function usePedirRecuperacao() {
+  return useMutation({
+    mutationFn: async (email: string) =>
+      (await api.post('/api/a/auth/recuperar', { email })).data,
+  });
+}
+
 export function useDefinirSenha() {
   const qc = useQueryClient();
   const setMe = useAuth((s) => s.setMe);
@@ -217,7 +230,10 @@ export function useDefinirSenha() {
       (await api.post<DefinirSenhaResponse>(`/api/acesso/${token}/senha`, { password })).data,
     onSuccess: (data) => {
       setToken(data.token);
-      setMe(data.me);
+      // O mesmo endereco serve dono e cozinha. Neste app so chega link de
+      // dono, mas o tipo e uma uniao — sem a checagem o TS nao deixa ler `me`,
+      // e a checagem tambem protege de um link trocado por engano.
+      if (data.app === 'dono') setMe(data.me);
       qc.invalidateQueries();
     },
   });

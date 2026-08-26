@@ -216,6 +216,7 @@ async function main() {
     await tx.accessToken.create({
       data: {
         tokenHash,
+        kind: 'primeiro_acesso',
         userId: conta.users[0].id,
         expiresAt: linkExpiraEm,
       },
@@ -224,7 +225,7 @@ async function main() {
     return { conta, espaco, cozinha };
   });
 
-  const link = `${env.APP_DONO_URL}/primeiro-acesso/${token}`;
+  const link = `${env.APP_DONO_URL}/senha/${token}`;
 
   const envio = await enviar(
     boasVindas({

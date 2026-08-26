@@ -62,6 +62,18 @@ declare module '@fastify/jwt' {
   }
 }
 
+/**
+ * `v` e a versao do token (KitchenUser/AccountUser.tokenVersion).
+ *
+ * Sobe a cada troca de senha, e o plugin de auth compara com o banco. E o que
+ * faz "trocar a senha" expulsar quem ja estava dentro: sem isso o JWT e
+ * stateless e continua valendo ate expirar, entao trocar a senha por
+ * desconfiar de invasao nao resolveria nada.
+ *
+ * Opcional no tipo porque token emitido ANTES deste campo existir chega sem
+ * ele — e vale 7 dias, entao pode aparecer por uma semana depois do deploy.
+ * Ausente e tratado como versao 0.
+ */
 export interface TokenCozinha {
   kind: 'cozinha';
   sub: string; // KitchenUser.id
@@ -69,10 +81,13 @@ export interface TokenCozinha {
   kitchenSlug: string;
   email: string;
   role: string;
+  v?: number;
 }
 
 export interface TokenDono {
   kind: 'dono';
+  /** Ver `v` em TokenCozinha. */
+  v?: number;
   sub: string; // AccountUser.id
   accountId: string;
   accountSlug: string;

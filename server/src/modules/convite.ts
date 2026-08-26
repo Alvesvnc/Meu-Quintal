@@ -221,6 +221,7 @@ export async function conviteRoutes(fastify: FastifyInstance) {
         kitchenSlug: criado.kitchen.slug,
         email: criado.user.email,
         role: criado.user.role,
+        v: criado.user.tokenVersion,
       });
 
       const response: AceitarConviteResponse = {

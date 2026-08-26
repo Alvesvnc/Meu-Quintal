@@ -98,6 +98,33 @@ export async function setupAuthRestaurante(fastify: FastifyInstance) {
       return reply.code(401).send({ error: 'Cozinha nao encontrada.' });
     }
 
+    // ─── O USUARIO DA COZINHA, RELIDO ────────────────────────────────────
+    //
+    // Antes disto so a COZINHA era reconferida, nunca a pessoa. Duas
+    // consequencias, as duas ruins:
+    //
+    //   Remover um funcionario nao revogava o acesso dele — o token seguia
+    //   valendo ate expirar, por ate sete dias.
+    //
+    //   Trocar a senha nao expulsava ninguem, pelo mesmo motivo.
+    //
+    // O token de DONO nao passa por aqui: quem valida a versao dele e o
+    // auth-dono, e este ramo so e alcancado por `kind === 'cozinha'`.
+    if (req.user.kind === 'cozinha') {
+      const operador = await prisma.kitchenUser.findUnique({
+        where: { id: sub },
+        select: { id: true, kitchenId: true, tokenVersion: true },
+      });
+
+      if (!operador || operador.kitchenId !== kitchen.id) {
+        return reply.code(401).send({ error: 'Usuario nao encontrado.' });
+      }
+      // Token sem `v` (emitido antes do campo existir) conta como versao 0.
+      if ((req.user.v ?? 0) !== operador.tokenVersion) {
+        return reply.code(401).send({ error: 'Sua sessao expirou. Entre de novo.' });
+      }
+    }
+
     req.kitchen = {
       userId: sub,
       kitchenId: kitchen.id,

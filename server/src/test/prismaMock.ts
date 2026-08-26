@@ -30,7 +30,7 @@ export interface PrismaMock {
     groupBy: Fn;
     count: Fn;
   };
-  kitchenUser: { findUnique: Fn; update: Fn; create: Fn };
+  kitchenUser: { findUnique: Fn; findUniqueOrThrow: Fn; update: Fn; create: Fn };
   menuItem: {
     findMany: Fn;
     findFirst: Fn;
@@ -86,7 +86,12 @@ export function criarPrismaMock(): PrismaMock {
       // o caso comum e todo mundo pagando comissao.
       count: vi.fn().mockResolvedValue(0),
     },
-    kitchenUser: { findUnique: vi.fn(), update: vi.fn().mockResolvedValue({}), create: vi.fn() },
+    kitchenUser: {
+      findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn().mockResolvedValue({}),
+      create: vi.fn(),
+    },
     menuItem: {
       findMany: vi.fn().mockResolvedValue([]),
       findFirst: vi.fn().mockResolvedValue(null),
@@ -177,6 +182,25 @@ export function usuarioDono(role: 'owner' | 'admin' | 'staff' = 'owner') {
     id: 'user-1',
     role,
     accountId: CONTA.id,
+    // Zero = nunca trocou a senha. O auth compara com o `v` do token, e token
+    // de teste tambem sai sem `v` (tratado como 0) — os dois batem.
+    tokenVersion: 0,
     account: { id: CONTA.id, slug: CONTA.slug, status: CONTA.status },
   };
+}
+
+/**
+ * Deixa o auth de cozinha passar.
+ *
+ * Desde que trocar a senha passou a expulsar sessao, `auth-restaurante` rele o
+ * KitchenUser a cada request: confere que ele existe, que ainda pertence
+ * aquela cozinha, e que a versao do token bate. Sem isto no mock, toda rota de
+ * cozinha responde 401.
+ *
+ * Teste que queira o contrario — funcionario removido, ou sessao derrubada por
+ * troca de senha — sobrescreve com `mockResolvedValue(null)` ou com uma versao
+ * diferente.
+ */
+export function cozinhaLogada(m: PrismaMock, kitchenId: string, userId: string) {
+  m.kitchenUser.findUnique.mockResolvedValue({ id: userId, kitchenId, tokenVersion: 0 });
 }

@@ -259,16 +259,27 @@ export interface AceitarConviteResponse {
   };
 }
 
-/** O que a tela de primeiro acesso mostra antes de pedir a senha. */
+/** O que a tela mostra antes de pedir a senha. */
 export interface PrimeiroAcessoResponse {
+  /** Muda o texto da tela: criar a primeira senha ou trocar a que esqueceu. */
+  tipo: 'primeiro-acesso' | 'recuperar-senha';
   email: string;
   name: string | null;
+  /** Nome da conta (dono) ou da cozinha (operador) — pra pessoa se reconhecer. */
   accountName: string;
   expiresAt: string;
 }
 
-export interface DefinirSenhaResponse {
-  /** Já entra logado: a pessoa acabou de escolher a senha. */
-  token: string;
-  me: DonoMeResponse;
-}
+/**
+ * Já entra logado: a pessoa acabou de provar que tem o link e escolheu a senha.
+ *
+ * `app` diz de quem é o link. O mesmo endereço serve dono e cozinha, e cada um
+ * volta pra um app diferente.
+ */
+export type DefinirSenhaResponse =
+  | { app: 'dono'; token: string; me: DonoMeResponse }
+  | {
+      app: 'cozinha';
+      token: string;
+      kitchen: { id: string; slug: string; name: string; status: 'ativa' | 'pausada' | 'rascunho' };
+    };

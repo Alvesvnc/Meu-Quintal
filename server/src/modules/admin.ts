@@ -116,6 +116,9 @@ export async function adminRoutes(fastify: FastifyInstance) {
         accountSlug: user.account.slug,
         email: user.email,
         role: user.role,
+        // Versao do token: o auth compara com o banco a cada request, e trocar
+        // a senha (que incrementa) derruba tudo que foi emitido antes.
+        v: user.tokenVersion,
         // Restaurante unico: o token ja sai autorizado tambem pras rotas da
         // cozinha. O vinculo e reconferido no banco a cada requisicao.
         ...(user.kitchenId ? { kitchenId: user.kitchenId } : {}),

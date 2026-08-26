@@ -23,6 +23,8 @@ import type {
   MetricasResponse,
   ConvitePublicoResponse,
   AceitarConviteResponse,
+  PrimeiroAcessoResponse,
+  DefinirSenhaResponse,
 } from '@mq/shared';
 import { api, setToken } from './client';
 import { getSocket } from './socket';
@@ -379,6 +381,41 @@ export function useAceitarConvite() {
       setToken(data.token);
       setMe(null);
       qc.invalidateQueries();
+    },
+  });
+}
+
+// ─── Esqueci minha senha ─────────────────────────────────────────────────────
+
+export function usePedirRecuperacao() {
+  return useMutation({
+    mutationFn: async (email: string) => (await api.post('/api/r/auth/recuperar', { email })).data,
+  });
+}
+
+export function useAcesso(token: string) {
+  return useQuery({
+    queryKey: ['acesso', token],
+    queryFn: async () => (await api.get<PrimeiroAcessoResponse>(`/api/acesso/${token}`)).data,
+    enabled: token !== '',
+    // Os erros aqui são definitivos — expirado, já usado, inexistente.
+    retry: false,
+    staleTime: Infinity,
+  });
+}
+
+export function useDefinirSenha() {
+  const qc = useQueryClient();
+  const setMe = useAuth((s) => s.setMe);
+  return useMutation({
+    mutationFn: async ({ token, password }: { token: string; password: string }) =>
+      (await api.post<DefinirSenhaResponse>(`/api/acesso/${token}/senha`, { password })).data,
+    onSuccess: (data) => {
+      setToken(data.token);
+      // O /me completo vem no próximo carregamento; aqui só limpa o cache
+      // antigo pra não mostrar a cozinha de quem estava logado antes.
+      setMe(null);
+      if (data.app === 'cozinha') qc.invalidateQueries();
     },
   });
 }

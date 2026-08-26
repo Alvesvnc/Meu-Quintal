@@ -4,6 +4,7 @@ import { Button } from '@mq/design-system';
 import { mensagemDeErro } from '@mq/shared';
 import { useLogin } from '../api/hooks';
 import { getToken } from '../api/client';
+import { EsqueciSenha } from '../components/EsqueciSenha';
 
 /** Tela de login do operador da cozinha. */
 export function LoginScreen() {
@@ -102,6 +103,8 @@ export function LoginScreen() {
           {login.isPending ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>
+
+      <EsqueciSenha emailInicial={email} />
 
       {/* Dev: atalhos pra users seedados */}
       {import.meta.env.DEV && (

@@ -225,3 +225,79 @@ export function boasVindas(dados: BoasVindas): Email {
     texto,
   };
 }
+
+export interface RecuperarSenha {
+  para: string;
+  nome: string | null;
+  /** Nome da conta ou da cozinha — pra pessoa reconhecer de onde é o pedido. */
+  ondeEntra: string;
+  link: string;
+  expiraEm: Date;
+}
+
+/**
+ * Esqueci minha senha.
+ *
+ * Dois cuidados que parecem detalhe:
+ *
+ * **Diz de onde é.** "Alguém pediu para trocar a senha" sem dizer de qual
+ * sistema é indistinguível de phishing — e treina a pessoa a clicar assim.
+ *
+ * **Diz o que fazer se não foi ela.** Um e-mail de recuperação que a pessoa não
+ * pediu é o primeiro sinal de que alguém está tentando entrar. Ignorar é a ação
+ * certa (sem clicar, nada acontece), mas isso precisa estar escrito.
+ */
+export function recuperarSenha(dados: RecuperarSenha): Email {
+  const validade = dados.expiraEm.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const onde = esc(dados.ondeEntra);
+  const saudacao = dados.nome ? `Oi, ${esc(dados.nome)}.` : 'Pedido de nova senha.';
+
+  const texto = [
+    dados.nome ? `Oi, ${dados.nome}.` : 'Pedido de nova senha.',
+    '',
+    `Alguem pediu pra trocar a senha de acesso a ${dados.ondeEntra}, no Meu Quintal.`,
+    '',
+    'Para criar uma senha nova:',
+    dados.link,
+    '',
+    `O link vale ate as ${validade} de hoje e serve uma vez so.`,
+    '',
+    'Se nao foi voce, ignore este email — sua senha continua a mesma.',
+  ].join('\n');
+
+  const html = `
+<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
+  <p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#777;margin:0 0 8px">
+    Meu Quintal
+  </p>
+  <h1 style="font-size:24px;line-height:1.25;margin:0 0 16px;font-weight:600">
+    ${esc(saudacao)}
+  </h1>
+  <p style="font-size:16px;line-height:1.55;color:#444;margin:0 0 16px">
+    Alguém pediu pra trocar a senha de acesso a <strong>${onde}</strong>.
+  </p>
+  <p style="margin:24px 0">
+    <a href="${esc(dados.link)}"
+       style="display:inline-block;background:#c8501e;color:#fff;text-decoration:none;
+              padding:14px 22px;border-radius:8px;font-size:16px;font-weight:500">
+      Criar uma senha nova
+    </a>
+  </p>
+  <p style="font-size:14px;line-height:1.5;color:#777;margin:0 0 4px">
+    O link vale até as ${validade} de hoje e serve uma vez só.
+  </p>
+  <p style="font-size:14px;line-height:1.5;color:#777;margin:0">
+    Se não foi você, ignore este email — sua senha continua a mesma.
+  </p>
+</div>`.trim();
+
+  return {
+    para: dados.para,
+    assunto: `Nova senha para ${dados.ondeEntra}`,
+    html,
+    texto,
+  };
+}

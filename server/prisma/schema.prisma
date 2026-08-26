@@ -54,19 +54,35 @@ model Account {
 /// Hoje so serve pro PRIMEIRO ACESSO. Recuperacao de senha vai usar a mesma
 /// mecanica — quando existir, ganha um campo `kind` e prazos diferentes.
 model AccessToken {
-  id        String      @id @default(uuid()) @db.Uuid
+  id        String          @id @default(uuid()) @db.Uuid
   /// sha256 do token. O texto puro so existe no email.
-  tokenHash String      @unique
-  userId    String      @db.Uuid
-  user      AccountUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String          @unique
+  kind      AccessTokenKind
+
+  /// Exatamente UM dos dois e preenchido — ha CHECK no banco garantindo.
+  /// Duas colunas em vez de um par (tipo, id) generico pra nao abrir mao da
+  /// integridade referencial: com FK, apagar o usuario leva os links dele.
+  userId        String?      @db.Uuid
+  user          AccountUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kitchenUserId String?      @db.Uuid
+  kitchenUser   KitchenUser? @relation(fields: [kitchenUserId], references: [id], onDelete: Cascade)
 
   expiresAt DateTime
   /// Carimbo de uso. `null` = ainda vale. Uso unico.
   usedAt    DateTime?
-  createdAt DateTime    @default(now())
+  createdAt DateTime        @default(now())
 
   @@index([userId])
+  @@index([kitchenUserId])
   @@map("access_tokens")
+}
+
+enum AccessTokenKind {
+  /// Conta recem-criada, senha ainda nao existe. Vale 7 dias.
+  primeiro_acesso  @map("primeiro-acesso")
+  /// Esqueceu a senha. Vale 1 HORA: quem pediu esta na frente do computador
+  /// agora, e uma janela longa e uma janela de ataque a mais.
+  recuperar_senha  @map("recuperar-senha")
 }
 
 /// O plano E o que diferencia restaurante unico de praca de alimentacao.
@@ -104,6 +120,10 @@ model AccountUser {
   lastLoginAt  DateTime?
 
   acessos AccessToken[]
+
+  /// Sobe a cada troca de senha e invalida todo JWT emitido antes. Ver o
+  /// mesmo campo em KitchenUser.
+  tokenVersion Int @default(0)
 
   /// Preenchido no RESTAURANTE UNICO, onde o dono e o operador da cozinha sao
   /// a mesma pessoa. Com este vinculo, o token de dono tambem abre as rotas
@@ -272,6 +292,15 @@ model KitchenUser {
   kitchenId    String    @db.Uuid
   kitchen      Kitchen   @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
   role         String    @default("owner") // owner | operator (futuro)
+
+  /// Sobe a cada troca de senha e invalida todo JWT emitido antes.
+  ///
+  /// Sem isto, trocar a senha nao expulsa ninguem: o token e stateless e vale
+  /// 7 dias. Quem trocasse a senha JUSTAMENTE porque desconfia de invasao
+  /// continuaria com o invasor dentro, achando que resolveu.
+  tokenVersion Int       @default(0)
+
+  acessos      AccessToken[]
   createdAt    DateTime  @default(now())
   lastLoginAt  DateTime?
 

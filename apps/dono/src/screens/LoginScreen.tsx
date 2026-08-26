@@ -4,6 +4,7 @@ import { Button } from '@mq/design-system';
 import { mensagemDeErro } from '@mq/shared';
 import { useLogin } from '../api/hooks';
 import { getToken } from '../api/client';
+import { EsqueciSenha } from '../components/EsqueciSenha';
 
 /** Entrada do dono do quintal. */
 export function LoginScreen() {
@@ -97,6 +98,8 @@ export function LoginScreen() {
           {login.isPending ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>
+
+      <EsqueciSenha emailInicial={email} />
 
       {import.meta.env.DEV && (
         <div className="mt-10 pt-6 border-t border-hairlineSoft">

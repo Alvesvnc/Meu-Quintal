@@ -2,7 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { AuthGuard } from './components/AuthGuard';
 import { LoginScreen } from './screens/LoginScreen';
-import { PrimeiroAcessoScreen } from './screens/PrimeiroAcessoScreen';
+import { SenhaScreen } from './screens/SenhaScreen';
 import { OverviewScreen } from './screens/OverviewScreen';
 import { RestaurantesScreen } from './screens/RestaurantesScreen';
 import { OnboardScreen } from './screens/OnboardScreen';
@@ -18,12 +18,12 @@ export function App() {
   // estar logado pra saber o nome do quintal. E o primeiro acesso e publico —
   // quem chega nele ainda nao consegue logar, e passar pelo AuthGuard o
   // mandaria pro login, onde ele nao tem senha pra digitar.
-  const fora = loc.pathname === '/login' || loc.pathname.startsWith('/primeiro-acesso/');
+  const fora = loc.pathname === '/login' || loc.pathname.startsWith('/senha/');
   if (fora) {
     return (
       <Routes>
         <Route path="/login" element={<LoginScreen />} />
-        <Route path="/primeiro-acesso/:token" element={<PrimeiroAcessoScreen />} />
+        <Route path="/senha/:token" element={<SenhaScreen />} />
       </Routes>
     );
   }

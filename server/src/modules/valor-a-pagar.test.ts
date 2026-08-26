@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { criarPrismaMock, ESPACO, CONTA, usuarioDono, type PrismaMock } from '../test/prismaMock.js';
+import { criarPrismaMock, ESPACO, CONTA, usuarioDono, type PrismaMock , cozinhaLogada } from '../test/prismaMock.js';
 
 const prismaMock: PrismaMock = criarPrismaMock();
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
@@ -78,6 +78,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   emitidos.length = 0;
   Object.assign(prismaMock, criarPrismaMock());
+  cozinhaLogada(prismaMock, 'k1', 'ku1');
   prismaMock.table.findUnique.mockResolvedValue(MESA);
   prismaMock.accountUser.findUnique.mockResolvedValue(usuarioDono('owner'));
   prismaMock.space.findFirst.mockResolvedValue(ESPACO);

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
-import { criarPrismaMock, type PrismaMock } from '../test/prismaMock.js';
+import { criarPrismaMock, type PrismaMock , cozinhaLogada } from '../test/prismaMock.js';
 
 const prismaMock: PrismaMock = criarPrismaMock();
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
@@ -52,6 +52,7 @@ const aceitar = (body: Record<string, unknown> = { password: 'senha-forte-123' }
 beforeEach(async () => {
   vi.clearAllMocks();
   Object.assign(prismaMock, criarPrismaMock());
+  cozinhaLogada(prismaMock, 'k-novo', 'ku-novo');
   prismaMock.invite.findUnique.mockResolvedValue(convite());
   prismaMock.kitchenUser.findUnique.mockResolvedValue(null);
   prismaMock.kitchen.count.mockResolvedValue(0);

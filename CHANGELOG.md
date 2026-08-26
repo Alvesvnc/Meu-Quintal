@@ -131,7 +131,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   todos os componentes, com resync ao voltar para a aba.
 - **`mensagemDeErro`** em `@mq/shared`: extrai a mensagem do servidor sem
   depender de axios e sem `any`.
-- **489 testes** (funções puras, rotas HTTP com Prisma mockado, integração
+- **506 testes** (funções puras, rotas HTTP com Prisma mockado, integração
   real do Socket.io, hooks) e uma sonda de isolamento multi-tenant contra
   Postgres real. Cobertura: 62% de linha, 85% de branch.
 - **LICENSE proprietária.** O README anunciava MIT e o arquivo nunca existiu.
@@ -158,6 +158,11 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
 
 ### Corrigido
 
+- **Remover um funcionário da cozinha não revogava o acesso dele.** O auth do
+  app do restaurante reconferia a *cozinha* a cada requisição, mas nunca a
+  *pessoa*: o token de quem foi desligado seguia valendo até expirar, por até
+  sete dias. Agora o usuário é relido junto — existe, ainda pertence àquela
+  cozinha, e a versão do token bate.
 - **Login com hash inválido respondia 500 em vez de 401.** `argon2.verify`
   **lança** quando a string guardada não é um hash válido — não devolve
   `false`. Uma conta recém-criada guarda um marcador de "sem senha utilizável"
@@ -240,6 +245,18 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
 
 ### Segurança
 
+- **Esqueci minha senha.** Dono e cozinha pedem um link de uso único e criam a
+  própria senha. A resposta é sempre a mesma, exista o e-mail ou não — inclusive
+  para e-mail malformado: responder "não encontrado" transformaria a rota num
+  oráculo de quais endereços têm conta aqui. A tela também não contradiz isso,
+  e fala em condicional. O link vale **uma hora**, contra sete dias do primeiro
+  acesso: quem pediu está na frente do computador agora. Pedir de novo invalida
+  o anterior.
+- **Trocar a senha derruba as sessões abertas.** O JWT é stateless e vale sete
+  dias, então sem isso quem trocasse a senha *justamente por desconfiar de
+  invasão* continuaria com o invasor dentro por mais uma semana. Os dois
+  usuários ganharam `tokenVersion`, o token carrega a versão, e os dois plugins
+  de auth comparam com o banco.
 - **Senha nunca trafega.** Nem para o dono da conta, nem para a cozinha: os
   dois recebem um link de uso único e escolhem a própria senha. O `bootstrap`
   gerava uma senha, imprimia no terminal e mandava "passe pro dono por canal

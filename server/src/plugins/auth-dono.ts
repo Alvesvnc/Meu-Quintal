@@ -39,6 +39,8 @@ export function setupAuthDono(fastify: FastifyInstance) {
         id: true,
         role: true,
         accountId: true,
+        // Ver a checagem logo abaixo.
+        tokenVersion: true,
         // A cozinha que este dono opera, se operar alguma (restaurante unico,
         // ou dono de praca que tambem toca uma casinha). E o que permite ele
         // ver o PROPRIO faturamento mesmo sem cobrar comissao de si.
@@ -49,6 +51,19 @@ export function setupAuthDono(fastify: FastifyInstance) {
 
     if (!usuario || usuario.accountId !== accountId) {
       return reply.code(401).send({ error: 'Usuario nao encontrado.' });
+    }
+
+    // TROCAR A SENHA EXPULSA QUEM JA ESTAVA DENTRO.
+    //
+    // O JWT e stateless e vale 7 dias: sem esta comparacao, trocar a senha
+    // JUSTAMENTE por desconfiar de invasao nao adiantaria nada — o invasor
+    // seguiria com o token dele por mais uma semana, e a pessoa acharia que
+    // resolveu.
+    //
+    // Token emitido antes do campo existir chega sem `v`; tratado como 0, que
+    // e o valor de quem nunca trocou a senha.
+    if ((req.user.v ?? 0) !== usuario.tokenVersion) {
+      return reply.code(401).send({ error: 'Sua sessao expirou. Entre de novo.' });
     }
 
     if (usuario.account.status === 'cancelada') {

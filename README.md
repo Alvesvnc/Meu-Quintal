@@ -519,7 +519,7 @@ em cinco jobs:
 
 | Job | O que garante |
 |---|---|
-| `check` | typecheck, lint, os 489 testes e build de todos os workspaces |
+| `check` | typecheck, lint, os 506 testes e build de todos os workspaces |
 | `migrations` | As migrations aplicam **num Postgres real e vazio**, o `schema.prisma` bate com elas, e o seed roda |
 | `isolamento` | Sobe o server contra um Postgres real **com dois tenants** e roda 20 verificações de vazamento entre clientes |
 | `image-server` | A imagem do server monta **e o container sobe respondendo `/health`** — imagem que builda mas não sobe não serve de nada |
@@ -1003,7 +1003,8 @@ imagem com ela.
 - [x] Planos (`restaurante` / `praca`) decidindo formato e teto de cozinhas
 - [ ] **Cobrança da assinatura** — sem provedor de pagamento, ninguém assina
       sozinho; hoje quem cria conta é um operador rodando `bootstrap`
-- [ ] **Recuperar senha** — não existe para dono nem para cozinha
+- [x] Recuperar senha, com o link expirando em uma hora e derrubando as
+      sessões abertas
 - [ ] **Deploy em produção** — imagens prontas, provedor de banco não escolhido
       e nenhum backup restaurado ainda
 - [ ] Alertas lendo o `/metrics`

@@ -78,3 +78,13 @@ export const aceitarConviteSchema = z.object({
 export const definirSenhaSchema = z.object({
   password: z.string().min(8, 'Senha de pelo menos 8 caracteres'),
 });
+
+/**
+ * Body de POST /api/a/auth/recuperar e /api/r/auth/recuperar.
+ *
+ * A resposta é sempre a mesma, exista o e-mail ou não — responder "não
+ * encontrado" transformaria a rota num oráculo de quais endereços têm conta.
+ */
+export const recuperarSenhaSchema = z.object({
+  email: z.string().email(),
+});

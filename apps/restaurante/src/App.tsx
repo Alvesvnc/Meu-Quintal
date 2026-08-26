@@ -4,6 +4,7 @@ import { BottomTabs } from './components/BottomTabs';
 import { AuthGuard } from './components/AuthGuard';
 import { LoginScreen } from './screens/LoginScreen';
 import { ConviteScreen } from './screens/ConviteScreen';
+import { SenhaScreen } from './screens/SenhaScreen';
 import { QueueScreen } from './screens/QueueScreen';
 import { PushScreen } from './screens/PushScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
@@ -18,14 +19,18 @@ export function App() {
   // O convite e PUBLICO: quem chega nele ainda nao tem conta, e passar pelo
   // AuthGuard mandaria a pessoa pro login — onde ela nao tem o que digitar.
   const isConvite = loc.pathname.startsWith('/convite/');
+  // Idem: quem chega em /senha/:token esqueceu a senha, entao nao consegue
+  // passar pelo login.
+  const isSenha = loc.pathname.startsWith('/senha/');
 
   return (
     <div className="min-h-screen mx-auto max-w-[480px] bg-bg text-ink">
       {/* Login renderiza fora do shell (sem header/tabs) */}
-      {isLogin || isConvite ? (
+      {isLogin || isConvite || isSenha ? (
         <Routes>
           <Route path="/login" element={<LoginScreen />} />
           <Route path="/convite/:token" element={<ConviteScreen />} />
+          <Route path="/senha/:token" element={<SenhaScreen />} />
         </Routes>
       ) : (
         <AuthGuard>

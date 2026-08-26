@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
-import { criarPrismaMock, type PrismaMock } from '../test/prismaMock.js';
+import { criarPrismaMock, type PrismaMock , cozinhaLogada } from '../test/prismaMock.js';
 
 const prismaMock: PrismaMock = criarPrismaMock();
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
@@ -43,6 +43,7 @@ const auth = () => ({ authorization: `Bearer ${token()}` });
 beforeEach(async () => {
   vi.clearAllMocks();
   Object.assign(prismaMock, criarPrismaMock());
+  cozinhaLogada(prismaMock, COZINHA.id, 'kuser-1');
   prismaMock.kitchen.findUnique.mockResolvedValue(COZINHA);
   prismaMock.$transaction.mockResolvedValue([{ count: 1 }]);
   app = await buildApp({ socket: false, logger: false, cron: false });
