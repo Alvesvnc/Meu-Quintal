@@ -1,0 +1,33 @@
+# Tudo que nao precisa entrar no contexto de build. Cada arquivo aqui e menos
+# byte trafegado pro daemon e menos chance de invalidar cache de camada.
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.turbo
+**/.vite
+**/*.tsbuildinfo
+
+.git
+.github
+.vscode
+
+# Segredos NUNCA vao pro contexto — um COPY descuidado assaria .env na imagem
+**/.env
+**/.env.*
+!**/.env.example
+
+# Documentacao e prototipo nao entram em imagem nenhuma
+docs
+*.md
+!README.md
+pendencias.txt
+Meu Quintal.html
+docker-compose*.yml
+
+# NAO excluir apps/*/public: e de la que sai o favicon.svg que o index.html
+# referencia. A imagem do server nao copia apps/ nenhum, entao excluir isso
+# nunca ajudou o server e so quebrava as imagens de front (favicon 404).
+
+# Fotos enviadas: nunca entram na imagem. Em producao vem de volume.
+**/uploads/

@@ -1,0 +1,18 @@
+{
+  // Sugeridas ao abrir o repo. Sao as que o settings.json assume existirem —
+  // sem elas, formatOnSave e o autocomplete de Tailwind simplesmente nao
+  // funcionam, e a pessoa descobre isso pelo diff sujo no primeiro commit.
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "Prisma.prisma",
+    "bradlc.vscode-tailwindcss",
+    "vitest.explorer"
+  ],
+  "unwantedRecommendations": [
+    // Formata em conflito com o Prettier
+    "hookyqr.beautify",
+    // Sobra da epoca do prototipo HTML; o projeto roda com `pnpm dev`
+    "ritwickdey.liveserver"
+  ]
+}

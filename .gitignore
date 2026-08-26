@@ -1,19 +1,49 @@
+# ─── Dependências e build ───────────────────────────────────────────────────
 node_modules
 dist
 build
-.DS_Store
-.env
-.env.local
-.env.*.local
-*.log
+coverage
 .vite
 .turbo
-coverage
 *.tsbuildinfo
+
+# ─── Segredos ───────────────────────────────────────────────────────────────
+#
+# NEGA TUDO e libera só os exemplos. A lista antiga cobria `.env`, `.env.local`
+# e `.env.prod` — um `.env.production` ou `.env.staging` com credencial de
+# verdade passava direto, e ninguém perceberia até estar publicado.
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# ─── Gerenciador de pacotes ─────────────────────────────────────────────────
+#
+# O gerenciador é o pnpm, travado em `packageManager`. Rodar npm aqui gera um
+# package-lock.json conflitante — ignorá-lo impede que ele volte por descuido
+# de alguém que digitou `npm install` sem pensar.
+package-lock.json
+yarn.lock
+
+# ─── Arquivos enviados ──────────────────────────────────────────────────────
+#
+# Fotos que as cozinhas sobem. Em produção isto é um volume (ver
+# docker-compose.prod.yml); aqui é só uma pasta local.
+server/uploads/
+
+# ─── Lixo de sistema e de editor ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
 .idea
+
+# Do VS Code sobem só as duas configurações do projeto: quais extensões ele
+# recomenda e como formatar ao salvar. O resto é preferência de cada um.
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# protótipo HTML original — não versionar
+# ─── Protótipo original ─────────────────────────────────────────────────────
+# O HTML de onde o projeto nasceu. Não versionar.
 Meu Quintal.html

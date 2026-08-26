@@ -1,0 +1,59 @@
+{
+  // Versionado de proposito (ver .gitignore): estas configuracoes garantem que
+  // todo mundo que abrir o repo formate igual e use as mesmas ferramentas.
+
+  // ─── Formatacao ───────────────────────────────────────────────────────────
+  // O Prettier e a autoridade sobre formato; o ESLint nao opina sobre estilo
+  // (eslint-config-prettier desliga essas regras). Sem isto, cada pessoa
+  // formata do seu jeito e o `pnpm format:check` vira ruido no CI.
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[yaml]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[prisma]": { "editor.defaultFormatter": "Prisma.prisma" },
+
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // ─── TypeScript ───────────────────────────────────────────────────────────
+  // Usa o TS do workspace, nao o embutido no editor: erro de tipo no editor
+  // precisa ser o mesmo erro que o `pnpm typecheck` aponta.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "relative",
+
+  // ─── ESLint ───────────────────────────────────────────────────────────────
+  "eslint.useFlatConfig": true,
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+
+  // ─── Busca e explorer ─────────────────────────────────────────────────────
+  // pnpm-lock.yaml tem milhares de linhas e polui toda busca no projeto.
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/pnpm-lock.yaml": true,
+    "**/*.tsbuildinfo": true
+  },
+  "files.exclude": {
+    "**/.turbo": true,
+    "**/*.tsbuildinfo": true
+  },
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+
+  // ─── Tailwind ─────────────────────────────────────────────────────────────
+  // O preset compartilhado vive em packages/design-system; sem apontar os
+  // configs, o autocomplete de classe nao funciona nos apps.
+  "tailwindCSS.experimental.configFile": {
+    "apps/cliente/tailwind.config.ts": "apps/cliente/src/**",
+    "apps/restaurante/tailwind.config.ts": "apps/restaurante/src/**",
+    "apps/dono/tailwind.config.ts": "apps/dono/src/**"
+  }
+}

@@ -1,0 +1,331 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+# PR novo cancela o run anterior do mesmo branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  check:
+    name: typecheck · lint · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # prisma generate exige a var declarada no datasource, mesmo sem conectar.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      JWT_SECRET: ci-secret-nao-usar-em-producao
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # versao vem do campo "packageManager" do package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma client
+        run: pnpm db:generate
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Migrations rodam contra um Postgres real. Migration que nao aplica so
+  # aparece no deploy se ninguem testar aqui.
+  migrations:
+    name: migrations aplicam do zero
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: meu_quintal_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ci -d meu_quintal_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/meu_quintal_ci?schema=public
+      JWT_SECRET: ci-secret-nao-usar-em-producao
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: migrate deploy (banco vazio)
+        run: pnpm --filter @mq/server exec prisma migrate deploy
+
+      - name: schema bate com as migrations
+        # Compara o banco JA MIGRADO com o schema.prisma. Diferenca significa
+        # que alguem editou o schema sem gerar a migration correspondente.
+        # Usa --from-url de proposito: a variante --from-migrations exigiria um
+        # shadow database e RESETARIA o banco que acabou de ser migrado.
+        run: >-
+          pnpm --filter @mq/server exec prisma migrate diff
+          --from-url "$DATABASE_URL"
+          --to-schema-datamodel prisma/schema.prisma
+          --exit-code
+
+      - name: seed roda sem erro
+        run: pnpm db:seed
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # O isolamento multi-tenant e a coisa que, se quebrar, vaza dado de um
+  # cliente do SaaS pro outro. Os testes unitarios cobrem os guardas com Prisma
+  # mockado; este job prova o comportamento contra um Postgres de verdade, com
+  # dois tenants no banco.
+  isolamento:
+    name: isolamento multi-tenant
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [check]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: meu_quintal_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ci -d meu_quintal_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/meu_quintal_ci?schema=public
+      JWT_SECRET: ci-secret-nao-usar-em-producao
+      NODE_ENV: test
+      PORT: 3001
+      CORS_ORIGINS: http://localhost:5173
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma client
+        run: pnpm db:generate
+
+      - name: Migrations
+        run: pnpm --filter @mq/server exec prisma migrate deploy
+
+      - name: Dois tenants no banco
+        run: |
+          pnpm db:seed
+          pnpm --filter @mq/server seed:tenant2
+
+      # Roda o BUNDLE, nao o tsx: e o mesmo artefato que vai pra imagem.
+      - name: Sobe o server
+        run: |
+          pnpm --filter @mq/server build
+          node server/dist/server.js &
+          echo $! > /tmp/server.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3001/health > /dev/null 2>&1; then
+              echo "server de pe na tentativa $i"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::server nao subiu em 30s"
+          exit 1
+
+      - name: Sonda de isolamento
+        working-directory: server
+        run: node scripts/isolamento.mjs
+
+      - name: Derruba o server
+        if: always()
+        run: kill "$(cat /tmp/server.pid)" || true
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # ───────────────────────────────────────────────────────────────────────────
+  image-server:
+    name: imagem do server
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [check, migrations, isolamento]
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}/server
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Metadados da tag
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,format=long
+
+      # Em PR: so builda, pra provar que a imagem monta. Push exige credencial
+      # que PR de fork nao tem — e nao deveria ter.
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          push: false
+          load: true
+          tags: ${{ env.IMAGE }}:ci
+          cache-from: type=gha,scope=server
+          cache-to: type=gha,mode=max,scope=server
+
+      # Imagem que builda mas nao sobe nao serve de nada. Este passo pega
+      # dependencia nativa faltando, entrypoint errado e env quebrada.
+      - name: Smoke test — o container sobe e responde?
+        run: |
+          docker run -d --name smoke             -e NODE_ENV=production             -e DATABASE_URL='postgresql://x:x@127.0.0.1:5432/x'             -e JWT_SECRET="$(openssl rand -base64 48)"             -e CORS_ORIGINS='https://app.exemplo.com.br'             -p 3001:3001             ${{ env.IMAGE }}:ci
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3001/health > /dev/null 2>&1; then
+              echo "/health respondeu na tentativa $i"
+              curl -sS http://localhost:3001/health
+              docker rm -f smoke
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "::error::container nao respondeu /health em 60s"
+          docker logs smoke
+          docker rm -f smoke
+          exit 1
+
+      - name: Login no GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=server
+          cache-to: type=gha,mode=max,scope=server
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # As tres imagens de front sao o MESMO Dockerfile com APP diferente.
+  #
+  # ATENCAO — A IMAGEM E POR AMBIENTE. O Vite assa VITE_API_URL dentro do
+  # bundle, entao a imagem carrega a URL da API embutida. Uma tag "latest" NAO
+  # serve pra staging e producao ao mesmo tempo. Aqui o CI so prova que as tres
+  # buildam e servem; o build que vai pra producao precisa passar o
+  # VITE_API_URL daquele ambiente e receber tag propria.
+  image-front:
+    name: imagem do front (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [check]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [cliente, restaurante, dono]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/Dockerfile
+          push: false
+          load: true
+          build-args: |
+            APP=${{ matrix.app }}
+            VITE_API_URL=https://api.exemplo.invalid
+          tags: mq-${{ matrix.app }}:ci
+          cache-from: type=gha,scope=front-${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=front-${{ matrix.app }}
+
+      # Uma SPA que nao faz fallback devolve 404 quando o cliente recarrega
+      # /m/{qrToken} — ou seja, quem escaneia o QR da mesa cai numa pagina de
+      # erro. E o tipo de quebra que so aparece em producao.
+      - name: Smoke test — serve, faz SPA fallback e tem o favicon?
+        run: |
+          docker run -d --name front -p 8080:8080 mq-${{ matrix.app }}:ci
+          sleep 4
+
+          falhou=0
+          checar() {
+            codigo=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "http://localhost:8080$1")
+            if [ "$codigo" = "$2" ]; then
+              echo "  ok    $1 -> $codigo"
+            else
+              echo "::error::$1 devolveu $codigo, esperado $2"
+              falhou=1
+            fi
+          }
+
+          checar /health 200
+          checar / 200
+          checar /favicon.svg 200
+          checar /uma/rota/so/do/router 200
+          checar /assets/nao-existe.js 404
+
+          docker logs front
+          docker rm -f front
+          exit $falhou
