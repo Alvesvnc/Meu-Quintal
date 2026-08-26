@@ -1,0 +1,813 @@
+================================================================================
+MEU QUINTAL - PENDENCIAS ABERTAS
+Ultima atualizacao: 2026-08-25 (primeiro acesso por link)
+================================================================================
+
+Este arquivo existe pra sobreviver a troca de sessao/chat. Se voce abriu um
+contexto novo, LEIA ISTO PRIMEIRO. Tudo aqui foi verificado, nao e chute.
+
+O historico do que ja foi feito NAO mora mais aqui — esta no CHANGELOG.md e no
+git. Ficaram so tres coisas: o que falta (secao 2), as REGRAS que nao podem ser
+reinventadas de outro jeito (secao 1), e as armadilhas que ja custaram tempo
+(secao 3).
+
+Estado em 2026-08-25:
+  - Trilhas 1, 2 e 3 (fundacao, seguranca+deploy, multi-tenant) ... CONCLUIDAS
+  - App do cliente ......................................... na API
+  - App do dono ............................................ na API
+  - App do restaurante ..................................... na API
+  - 489 testes | lint 0 erros/0 warnings | typecheck limpo | 4 imagens Docker OK
+
+NADA ESTA COMMITADO. Sao 100+ arquivos desde a594b82 (2026-06-09).
+
+Comando que reproduz o portao inteiro:  pnpm check
+Deploy e seguranca:                     README.md
+Historico:                              CHANGELOG.md
+
+LICENCA: proprietaria, todos os direitos reservados (decidido 2026-08-24).
+NAO trocar por MIT/Apache/etc sem decisao explicita — o README anunciava MIT
+por engano, o que permitiria a qualquer um revender o produto.
+
+DECISOES DE NEGOCIO (nao reabrir sem motivo):
+  1. O DINHEIRO NAO PASSA PELO APP. Cada cozinha cobra direto do cliente no
+     proprio caixa; no fim do ciclo ela DEVE comissao + aluguel ao dono do
+     quintal. Por isso o modelo se chama KitchenCharge (cobranca) e nao
+     Payout/repasse. Segurar dinheiro de terceiro traria implicacao
+     regulatoria.
+     NA INTERFACE: "a receber", nunca "a transferir"; "cobranca", nunca
+     "repasse". O mock antigo do app do dono dizia o contrario e gerava
+     cobranca invertida na frente do cliente.
+  2. E um SaaS vendido pra donos de espaco. Existe Account acima de Space, e
+     TODA query e escopada por accountId.
+  3. Uma cozinha pertence a um unico quintal. Kitchen.slug e unico por espaco,
+     nao no sistema inteiro.
+  4. Sem emissao fiscal (NFC-e/SAT). O produto e operacao, nao fiscal.
+  5. Dois formatos de espaco, decididos por Space.tipo: food-court e
+     restaurante-unico. NUNCA decidir por `kitchens.length === 1` — uma praca
+     que hoje tem uma cozinha so continua sendo uma praca.
+
+
+================================================================================
+1. REGRAS EM VIGOR - NAO REINVENTAR DE OUTRO JEITO
+================================================================================
+
+Estao implementadas e cobertas por teste. O que esta escrito aqui e o PORQUE,
+que o codigo sozinho nao conta.
+
+--- 1.1 QUEM VE O FATURAMENTO DE QUEM ---
+
+A linha NAO e "dinheiro se esconde". E: **nunca identificar quanto e de cada
+restaurante**. Agregado do espaco e outra coisa — o salao e do dono e ele
+precisa dele pra decidir layout, quantas mesas, horario.
+
+  QUEBRA POR COZINHA -> a regra vale
+    GET /api/a/cozinhas    E TELA DE CONFIGURACAO. Movimento do dia
+                           (ordersToday, grossTodayCents) vem `null` — nem com
+                           comissao. So aparece pra cozinha que o PROPRIO
+                           usuario opera. Nome, status e acordo continuam
+                           inteiros: esconde-los seria pior.
+    GET /api/a/financeiro  Bruto do CICLO so com comissao — ai ele e a base da
+                           conta e a cozinha precisa dele pra conferir. O total
+                           do rodape soma so o visivel.
+
+  AGREGADO DO ESPACO -> conta TUDO, inclusive cozinha so-aluguel
+    GET /api/a/overview
+    GET /api/a/mesas
+    GET /api/a/mesas/desempenho
+
+O QUE SEGURA O SEGUNDO GRUPO e a AUSENCIA de quebra por cozinha na resposta.
+Ha testes conferindo as CHAVES de cada uma e procurando slug/id de cozinha no
+JSON inteiro. Se alguem acrescentar um `porCozinha` ali, eles caem — e a regra
+volta a valer naquela rota.
+
+POR QUE A MESA CONTA TUDO: filtrar por acordo faria a mesa boa da cozinha
+so-aluguel parecer fraca, e o dono mudaria o salao de lugar por causa de um
+numero errado. Decidido em 2026-08-25.
+
+O CONSENTIMENTO E O PROPRIO ACORDO. Aceitar convite com comissao ja autoriza o
+dono a ver o bruto do ciclo. Nao existe checkbox separado e NAO deve passar a
+existir — seria uma segunda decisao sobre a mesma coisa.
+
+Regra mora em server/src/lib/faturamento.ts. Nao reescrever solto em rota
+nenhuma (ver armadilha "regra de negocio duplicada", secao 3).
+
+  [!] CUSTO ASSUMIDO CONSCIENTEMENTE
+      Somando as mesas chega-se ao bruto do espaco; subtraindo o total visivel
+      do financeiro chega-se a SOMA das cozinhas ocultas.
+        - com 2+ ocultas, nao identifica nenhuma;
+        - com EXATAMENTE UMA oculta, identifica ela.
+      Verificado no banco de dev (2 ocultas: Pasteloka e Taverna do Pico).
+      NAO "corrigir" mutilando a tela de mesas sem falar com quem decidiu. Se
+      um dia precisar fechar, o caminho e o financeiro parar de mostrar bruto
+      por linha — nao a mesa parar de somar.
+
+  DUAS ARMADILHAS FECHADAS, NAO REABRIR:
+    a) OCULTO E `null`, NUNCA `0`. Zero se le como "essa cozinha nao vendeu
+       nada" — o dono concluiria que ela esta morrendo e agiria em cima disso.
+    b) NA TELA QUE QUEBRA POR COZINHA, O TOTAL EXCLUI O OCULTO. Somar todo
+       mundo no rodape enquanto se esconde linha a linha se desfaz com uma
+       subtracao NA MESMA TELA. `somarVisiveis` existe pra isso — e NAO e usado
+       nos agregados de espaco, que somam tudo de proposito.
+
+  ROTA NOVA COM VALOR EM /api/a/*: pergunte se ela QUEBRA POR COZINHA. Se sim,
+  use brutoVisivel/somarVisiveis. Se e agregado do espaco, conte tudo — e
+  garanta que a resposta nao tenha campo por cozinha.
+
+--- 1.2 ALTERACAO DE PEDIDO PELA COZINHA ---
+
+A cozinha PROPOE reduzir quantidade ou cancelar itens; o cliente aceita ou
+recusa. A cozinha nao altera nada direto.
+
+  - RECUSA cancela o item INTEIRO, nao volta pro original. "Nao aceito 1 no
+    lugar de 2" so pode significar "entao nao quero" — a cozinha nao tem o
+    ingrediente pra entregar os 2.
+  - SEM RESPOSTA em 5 min vale como recusa. Constante EFEITO_DA_EXPIRACAO em
+    server/src/lib/alteracao.ts; trocar pra 'aceita' faria o cliente pagar por
+    quantidade com que nunca concordou.
+  - A COZINHA NAO TRAVA esperando: os itens nao afetados seguem sendo
+    preparados. Comida nao espera notificacao ser lida.
+  - SO REDUZ. Aumentar seria vender o que o cliente nao pediu.
+  - O cron de expiracao (plugins/cron.ts, 30s) e seguro com varias replicas
+    SEM lock distribuido: a trava e o `where: { status: 'pendente' }` do
+    updateMany. Se count === 0, outra replica chegou primeiro.
+
+--- 1.3 MOTIVO DE CANCELAMENTO ---
+
+DOIS campos com funcoes diferentes:
+    cancelMotivo  categoria fechada  -> vira numero
+    cancelReason  texto livre        -> o CLIENTE le
+
+Texto livre nao agrega: "acabou o pao", "sem pao" e "pao acabou" sao a mesma
+causa escrita de tres jeitos.
+
+REGRA: "outro" exige texto (min 3 chars). Sem isso "outro" vira a escolha mais
+rapida pra quem esta com a mao ocupada e a metrica morre. Validado no servidor
+(zod refine) e espelhado no botao da cozinha.
+
+Gravado NO ITEM, nao no pedido, com `canceledAt` proprio. Item que cai por
+RECUSA ou EXPIRACAO herda o motivo da proposta — sem isso metade dos
+cancelamentos ficaria sem categoria.
+
+server/src/lib/motivo.ts faz a traducao hifen<->underscore (Prisma nao aceita
+hifen em identificador de enum).
+
+--- 1.4 UM LOGIN PRA QUEM E DONO E COZINHA ---
+
+AccountUser.kitchenId preenchido => o token de dono tambem abre /api/r/* daquela
+cozinha. E o restaurante unico, onde exigir duas contas seria inaceitavel.
+
+A ASSIMETRIA E PROPOSITAL E NAO DEVE SER "SIMPLIFICADA":
+    dono   -> cozinha   permitido, so com vinculo
+    cozinha -> dono     NUNCA
+
+Descer de privilegio dentro da propria conta e seguro; subir nao seria.
+
+O VINCULO E RECONFERIDO NO BANCO a cada request, nunca so no token: o token vale
+7 dias e o vinculo pode ter sido removido nesse intervalo. Mesma logica vale pro
+PAPEL — `role` vem do banco, entao forjar `role: 'owner'` num token nao promove
+ninguem.
+
+O mesmo kitchenId e o que libera o dono a ver o caixa da PROPRIA cozinha (1.1).
+
+--- 1.5 RANKING DE MESAS ---
+
+Mora DENTRO de /mesas: o valor do mes fica em cima do numero da mesa, entao o
+ranking se le olhando o layout do salao. Media, giro e ticket ficam no painel
+lateral. Houve uma tela separada por algumas horas em 2026-08-25; foi removida
+a pedido, porque a pergunta "quem rende mais" e a mesma imagem mental do salao.
+
+Ranking cru por valor NAO responde "qual mesa da retorno" — responde "onde
+ficam as mesas grandes". Mesa de 6 lugares gasta mais por natureza. Por isso a
+tela mostra valor + comparacao com a MEDIA + giro (pedidos e em quantos dias
+distintos, que separa a mesa boa da que pegou uma noite cheia).
+
+QUEM ENTRA NA MEDIA: so mesa ativa que existia no comeco do periodo.
+  - Mesa criada dia 28 teve 3 dias pra faturar. Puxa a media pra baixo e faz
+    todas as outras parecerem melhores — o oposto do que a tela promete.
+    Continua no ranking, marcada "nova no periodo".
+  - Mesa desativada somaria dias parados a uma media que descreve o salao em
+    operacao.
+  - Mesa ativa que vendeu ZERO ENTRA na media. Isso e sinal, nao ruido: mesa
+    parada e o que o dono quer descobrir.
+
+Sem base de comparacao, vsMediaPct e `null` e a tela escreve "sem base" — 0%
+afirmaria "esta na media" sem dado que sustente.
+
+Ticket medio do salao = total/pedidos, NAO media das medias por mesa (que daria
+o mesmo peso a uma mesa com 1 pedido e a outra com 40).
+
+--- 1.6 CICLO FECHADO USA O ACORDO DA EPOCA ---
+
+KitchenCharge congela grossCents, chargeCommission, commissionPct e rentCents.
+Sem isso, ligar a comissao hoje revelaria o faturamento de todos os meses
+passados, que estavam protegidos pelo acordo vigente na epoca — e renegociar
+mudaria retroativamente uma cobranca ja emitida.
+
+
+--- 1.7 O DONO NAO VE PEDIDO. PONTO. ---
+
+Decidido em 2026-08-25. NAO EXISTE, e NAO DEVE PASSAR A EXISTIR:
+  - GET /api/a/pedidos (fila do espaco)
+  - sala de socket do dono
+  - qualquer campo em /api/a/* que diga O QUE foi pedido
+
+Chegou a estar em pendencias.txt como coisa a construir ("Pedidos ao vivo").
+Foi retirado de proposito: e a mesma regra da secao 1.1 levada ao limite. O que
+cada mesa pediu, de quem, e quando, e operacao do restaurante. O dono aluga o
+ponto — nao acompanha o balcao dos inquilinos.
+
+O QUE O DONO VE, E POR QUE PODE:
+  - CONTAGEM de pedidos (por mesa, do espaco). Nao diz o que foi pedido nem de
+    quem; serve pra medir o salao, que e dele.
+  - VALOR agregado. Ver 1.1.
+  Nenhuma rota de /api/a/* le `nameSnapshot`, `shortId` ou o vinculo item ->
+  cozinha na resposta. Ha teste procurando esses campos no JSON inteiro de
+  cada rota — se alguem os introduzir por descuido (um `...item` espalhado,
+  por exemplo), o teste cai.
+
+A UNICA EXCECAO E O RESTAURANTE UNICO, e ela ja funciona sem codigo novo: ali o
+dono E a cozinha, o token dele abre /api/r/* (secao 1.4) e a fila ao vivo esta
+no app do restaurante. Nao ha nada a construir — e construir uma fila DENTRO do
+app do dono seria abrir a porta pra praca de alimentacao de novo.
+
+--- 1.8 PAUSADA E SOBRE O CLIENTE, NAO SOBRE O OPERADOR ---
+
+Corrigido em 2026-08-25. `Kitchen.status` diz se o CLIENTE ve a cozinha e pode
+pedir dela. NAO controla acesso ao app.
+
+  ONDE `ativa` E EXIGIDO:
+    quintal.ts   a cozinha some da lista do quintal
+    kitchen.ts   o cardapio dela nao abre
+    order.ts     pedido e RECUSADO (409) mesmo com a pagina velha aberta
+
+  ONDE NAO E, E NAO PODE VOLTAR A SER:
+    auth-restaurante.ts e o login em /api/r/auth/login.
+
+O BUG QUE ISSO CONSERTOU: os dois barravam cozinha pausada com 403. Quando a
+tela de conta ganhou o botao "pausar" (2026-08-25), pausar passou a TRANCAR A
+COZINHA FORA DO PROPRIO APP — ela nao conseguia nem despausar, e a unica saida
+era editar o banco. Verificado antes e depois.
+
+E era o inverso do util: a criacao de pedido NAO conferia status, entao pausada
+trancava o operador e continuava recebendo pedido. A checagem mudou de lugar.
+
+COZINHA NOVA NASCE PAUSADA (aceite de convite): o cliente nao pode ver cozinha
+sem cardapio. Quem publica e o responsavel, depois de cadastrar os pratos — por
+isso ele PRECISA conseguir entrar estando pausado.
+
+--- 1.9 SENHA NUNCA TRAFEGA ---
+
+Feito em 2026-08-25. Ninguem recebe senha pronta — recebe um LINK de uso unico
+e escolhe a propria.
+
+  CONTA NOVA (bootstrap):  email de boas-vindas -> /primeiro-acesso/:token
+  COZINHA NOVA (convite):  email de convite     -> /convite/:token
+
+O QUE ISSO SUBSTITUIU: o bootstrap gerava uma senha, imprimia no terminal e
+dizia "passe pro dono por canal seguro". Na pratica: a credencial que abre a
+conta inteira — financeiro, cozinhas, tudo — ditada por WhatsApp e guardada no
+historico da conversa pra sempre.
+
+A CONTA NASCE SEM SENHA UTILIZAVEL. O passwordHash e um marcador
+(`sem-senha:<aleatorio>`) que nao casa com nada. Deixar hash de senha conhecida
+seria porta aberta ate alguem troca-la.
+
+  ARMADILHA QUE ISSO CRIOU, E JA ESTA FECHADA: `argon2.verify` LANCA quando o
+  hash guardado nao e um hash valido — nao devolve false. O login virava 500 em
+  vez de 401: erro de sistema pra uma tentativa de credencial, e alerta no
+  Sentry por nada. Todo login usa `lib/senha.ts` (senhaConfere), que trata
+  excecao como senha errada. NAO chamar argon2.verify direto.
+
+O token e de uso unico, expira em 7 dias, e definir a senha MATA os outros
+links pendentes do mesmo usuario — se alguem pediu dois, o antigo nao pode
+continuar valendo pra trocar a senha recem-criada.
+
+Ja entra logado depois de definir: a pessoa acabou de provar que tem o link e
+escolheu a senha; manda-la pro login seria pedir o que ela digitou ha dois
+segundos.
+
+[ ] NAO EXISTE RECUPERAR SENHA. Nem pro dono, nem pra cozinha. Quem esquecer
+    depende de alguem gerar um AccessToken no banco. A mecanica ja esta pronta
+    (model AccessToken + rotas /api/acesso/*): falta um "esqueci minha senha"
+    que crie o token, um prazo curto (1h, nao 7 dias) e um campo `kind` no
+    model pra separar os dois usos.
+
+--- 1.10 CONVITE DE COZINHA: O CICLO ---
+
+GET  /api/convite/:token          publica, 20/min
+POST /api/convite/:token/aceitar  publica, 5/min (cada tentativa custa argon2)
+Tela: /convite/:token no app do RESTAURANTE — e la que a pessoa vai trabalhar.
+
+  O TOKEN E A CREDENCIAL. 256 bits, so no email; o banco guarda o hash sha256.
+  Nao ha rota que devolva o link de novo, e nao deve haver.
+
+  A TELA MOSTRA O ACORDO ANTES DA SENHA. Aceitar comissao e aluguel sem ler
+  seria assinar em branco, e o convite e o unico momento em que esses termos
+  passam pela frente do responsavel.
+
+  O EMAIL VEM DO CONVITE, NUNCA DO BODY. Aceitar do body deixaria quem tem o
+  link criar acesso pra outro endereco.
+
+  ACEITE E UMA TRANSACAO SO, e a trava contra duplo clique e o
+  `updateMany({ where: { acceptedAt: null } })`: o segundo encontra count 0 e
+  desiste, em vez de criar cozinha gemea. Mesmo padrao da expiracao de
+  alteracao (1.2).
+
+  O TETO DO PLANO E RECONFERIDO NO ACEITE. Ja foi conferido na criacao, mas o
+  convite vale 7 dias e o quintal pode ter enchido — conferir so na criacao
+  deixaria dois convites de restaurante unico virarem duas cozinhas.
+
+  MENSAGENS DISTINGUEM expirado (410) de ja-aceito (409): sao saidas
+  diferentes — uma pede convite novo, a outra pede login.
+
+  O SLUG e gerado do nome, com sufixo se colidir dentro do espaco. Nao muda
+  depois: entra em URL e em QR impresso.
+
+--- 1.11 O PLANO E O QUE DIFERENCIA OS DOIS FORMATOS ---
+
+Decidido em 2026-08-25. Nao e rotulo comercial em cima de um sistema que faz
+tudo: o PLANO decide o formato do espaco e o teto de cozinhas.
+
+    PLANO          COZINHAS   TIPO DE ESPACO       COBRANCA COZINHA->DONO
+    restaurante        1      restaurante-unico    nao se aplica
+    praca           sem teto  food-court           comissao e/ou aluguel
+
+Tudo isso mora em server/src/lib/planos.ts. Plano novo entra ali, nao num `if`
+espalhado por rota.
+
+ONDE A TRAVA MORDE: POST /api/a/cozinhas/convite. Sem ela "restaurante unico"
+seria so um rotulo — qualquer assinante do plano mais barato convidaria uma
+segunda cozinha e viraria praca sozinho, sem pagar por isso. Devolve 402 (limite
+comercial, nao permissao) com a mensagem dizendo QUAL plano resolve.
+CONVITE PENDENTE OCUPA VAGA: sem contar, daria pra disparar cinco convites e
+estourar o teto quando fossem aceitos.
+
+O DONO NAO CONVERTE O PROPRIO ESPACO. Existiu por algumas horas
+PATCH /api/a/espaco/tipo, um botao que convertia praca <-> restaurante unico de
+graca; foi retirado no mesmo dia. Converter e MUDAR DE PLANO, e mudar de plano
+e decisao comercial. Ha teste conferindo que /api/a/espaco/tipo, /api/a/plano e
+/api/a/vinculo respondem 404.
+
+TRIAL NAO E PLANO. Quem testa ja escolheu um formato; ate quando testa vive em
+Account.trialEndsAt. Enquanto `trial` era valor do enum, trial expirado virava
+plano nenhum e nada sabia o que fazer com isso.
+
+O BOOTSTRAP EXIGE PLANO. Nao ha mais `TIPO=`: o tipo do espaco e consequencia.
+    PLANO=restaurante RESTAURANTE_NOME="Cantina da Rosa" ...
+    PLANO=praca ...
+
+[ ] NAO HA COMO TROCAR DE PLANO AINDA. Nem no app (de proposito) nem por
+    ferramenta. Hoje e UPDATE no banco, e trocar direito exige mudar
+    Account.plan E o tipo dos espacos E o vinculo dono<->cozinha, juntos.
+    Quando houver cobranca de assinatura isso vira consequencia do pagamento;
+    ate la, o caminho honesto e um script como o bootstrap
+    (server/src/mudar-plano.ts, no bundle). A tela de conta ja diz "fale com a
+    gente" em vez de oferecer botao.
+
+--- 1.12 FOTO ENVIADA NUNCA E GUARDADA COMO VEIO ---
+
+server/src/lib/imagem.ts reencoda TUDO. Nao e escolha de formato — sao quatro
+problemas resolvidos de uma vez, e nenhum e opcional:
+
+  1. VALIDACAO DE VERDADE. `content-type` e extensao sao escritos por quem
+     envia. A unica prova de que aquilo e imagem e decodificar. Arquivo que e
+     imagem E executavel (polyglot) nao sobrevive ao reencode.
+  2. EXIF, QUE INCLUI GPS. Foto de prato tirada no celular carrega a
+     coordenada de onde foi tirada. Cozinheira que fotografa em casa teria o
+     endereco publicado junto com o cardapio. `rotate()` APLICA a orientacao
+     antes de descartar o metadado — sem isso o prato chega deitado.
+  3. TAMANHO. Foto de celular tem 4 a 12 MB; o cliente abre o cardapio no 4G
+     dentro do restaurante. Sai em 1600px no lado maior, webp.
+  4. BOMBA DE DESCOMPRESSAO. PNG de 200 KB pode declarar 20000x20000 e pedir
+     1,2 GB de RAM. `limitInputPixels` corta antes de alocar.
+
+A CHAVE DO ARQUIVO E ALEATORIA, nunca o nome enviado — nome de upload e texto
+controlado por quem envia, e caminho pra path traversal.
+
+/api/fotos/:chave e PUBLICA de proposito: `<img src>` nao manda cabecalho
+Authorization, entao imagem com token simplesmente nao aparece. O que protege e
+a chave de 128 bits. O conteudo e publico por natureza — e a foto do prato.
+
+EXCLUIR ITEM DO CARDAPIO ARQUIVA, NAO APAGA (MenuItem.archivedAt). OrderItem
+referencia MenuItem com Restrict: DELETE de verdade falharia em item ja vendido,
+e trocar por Cascade apagaria o historico de pedidos junto, reescrevendo
+faturamento de ciclo ja fechado.
+
+
+================================================================================
+2. O QUE FALTA
+================================================================================
+
+--- 2.1 CONVITE DE COZINHA --- CICLO FECHADO EM 2026-08-25 ---
+
+O ciclo inteiro funciona: o dono convida, a pessoa recebe o link, abre, le o
+acordo, escolhe a senha e ja entra logada. Ver 1.10.
+
+[ ] RESEND SEM CHAVE. O codigo esta pronto e DESLIGADO — com RESEND_API_KEY
+    vazio nada e enviado, nenhuma requisicao sai, e o convite continua
+    devolvendo o link na tela (`emailEnviado: false`). Pra ligar:
+      1. criar conta no Resend e VERIFICAR O DOMINIO (sem dominio verificado
+         ele recusa o envio, e o erro so aparece no log)
+      2. RESEND_API_KEY=...
+      3. EMAIL_FROM="Meu Quintal <nao-responda@seudominio>"
+      4. APP_RESTAURANTE_URL=https://... (entra no link do convite; sem isso o
+         email manda pra localhost)
+
+[ ] CONVITE DE EQUIPE nao tem tela nem rota. InviteKind.equipe e o campo `role`
+    ja existem no schema, e a rota de aceite recusa explicitamente esse tipo
+    ("Este tipo de convite ainda nao pode ser aceito"). A ContaScreen avisa em
+    texto.
+
+[ ] NAO HA COMO REENVIAR NEM CANCELAR CONVITE. Se o email cair no spam, o
+    caminho e criar outro — e o antigo continua valido ate expirar. Uma tela de
+    "convites pendentes" com reenviar/cancelar resolveria.
+
+--- 2.2 APP DO RESTAURANTE --- CONCLUIDO EM 2026-08-25 ---
+
+Todas as telas leem do servidor. src/mocks/ e src/stores/queue.ts apagados.
+Rotas novas em server/src/modules/cozinha.ts (separado de restaurante.ts, que e
+a OPERACAO — fila e status, o caminho quente que fica aberto o dia inteiro):
+
+    GET    /api/r/cardapio          POST   /api/r/cardapio
+    PATCH  /api/r/cardapio/:id      DELETE /api/r/cardapio/:id  (ARQUIVA)
+    GET    /api/r/perfil            PATCH  /api/r/perfil
+    GET    /api/r/historico?dias=   GET    /api/r/metricas?dias=
+
+O que sobrou disso esta em 2.4 (upload de imagem) e 2.7.
+
+--- 2.3 APP DO DONO ---
+
+O TIPO DO ESPACO VEM DO PLANO. Ver 1.11 — nao ha conversao pelo app.
+
+DESCARTADOS em 2026-08-25 por nao servirem ao negocio:
+  - exportar CSV do financeiro
+  - metricas de cancelamento pro dono (alem de nao servir, CONTRARIA a 1.7:
+    motivo de cancelamento e operacao do restaurante)
+  - fila de pedidos ao vivo (ver 1.7 — e decisao, nao pendencia)
+
+[ ] RENEGOCIAR ACORDO SO PELO BANCO. Nao e "tela que falta", e buraco: a rota
+    PATCH /api/a/cozinhas/:slug/acordo existe, tem teste e ate hook pronto
+    (useSalvarAcordo), mas nenhuma tela chama. Enquanto isso, mudar a comissao
+    de uma cozinha depois do convite e UPDATE no banco na mao — e a comissao
+    move o financeiro inteiro. Deixado aqui de proposito: se tambem nao servir
+    ao negocio, apagar conscientemente.
+
+[ ] ROTACAO DE qrToken. Ver 2.5.
+
+--- 2.4 BURACOS CONHECIDOS ---
+
+[ ] CICLO ABERTO AINDA USA O ACORDO ATUAL (contraparte de 1.6).
+    O dono pode ligar a comissao, olhar o bruto do mes corrente e desligar. O
+    ciclo FECHADO esta protegido; o em andamento nao, porque nao existe
+    historico de acordo — so o estado atual da Kitchen.
+    Mitigacao hoje: a troca gera log ("acordo financeiro alterado", com o email
+    de quem mexeu, em modules/admin.ts). Fica registrado, nao e impedido.
+    Pra fechar: tabela de historico do acordo com vigencia por data, e o
+    calculo ao vivo passa a usar o acordo vigente em cada dia do periodo.
+
+[ ] REDUCAO ACEITA NAO ENTRA NA METRICA DE CANCELAMENTO. Se a cozinha propoe
+    3 -> 1 e o cliente aceita, o item fica com qty 1 e status 'novo' — as 2
+    unidades perdidas nao aparecem em /api/r/metricas/cancelamentos. Do ponto
+    de vista de "quanto deixei de vender", elas SAO perda. Se for tratar, o
+    lugar e o `aplicarResposta` de lib/alteracao.ts.
+
+[ ] A API ACEITA PEDIDO COM ITENS DE VARIAS COZINHAS, mas GET /api/m/pedidos
+    faz `const firstKitchen = o.items[0]?.kitchen` e rotula o pedido inteiro
+    com a PRIMEIRA. Num pedido multi-cozinha o cliente veria a cozinha errada.
+    O app nao cria pedidos assim (CartScreen chama createOrder uma vez por
+    grupo), mas o contrato permite.
+    Duas saidas, escolha de produto:
+      (a) o servidor RECUSAR pedido com mais de uma cozinha (400)
+      (b) GET /api/m/pedidos agrupar por cozinha, como GET /api/m/pedido/:id
+          ja faz
+
+[ ] FECHAMENTO DE CICLO E MANUAL. POST /api/a/financeiro/fechar funciona e tem
+    as travas certas (nao fecha mes em andamento, nao fecha duas vezes, so
+    owner — tudo testado). Mas ninguem chama isso sozinho no Space.closingDay.
+    Falta um job/cron.
+
+[!] NAO HA PAGAMENTO, ENTAO NAO HA CADASTRO SOZINHO.
+    O fluxo "pagou -> recebe email -> entra" existe do email pra frente (1.9),
+    mas quem dispara e VOCE rodando o bootstrap. Falta o comeco: provedor de
+    pagamento, tela de assinatura, e um webhook que chame o mesmo caminho do
+    bootstrap quando o pagamento confirmar.
+    O provedor e decisao sua (Stripe, Mercado Pago, Asaas...). O que ja esta
+    pronto e o pedaco que nao depende dele.
+
+[ ] ASSINATURA NAO E COBRADA. Account.plan agora DECIDE coisa (ver 1.11) e
+    Account.status ja e respeitado pelo auth (cancelada nao loga 403; suspensa
+    le mas nao escreve 402 — os tres casos tem teste). O que falta e o dinheiro:
+    nao ha cobranca da assinatura do SaaS, nem trial expirando sozinho. Hoje um
+    trial vencido continua funcionando.
+
+[ ] WEB PUSH (tela apagada). Hoje o aviso e in-app: socket + som (WebAudio) +
+    vibracao (Android; iOS nao expoe a Vibration API). Funciona em 100% dos
+    aparelhos com a aba aberta, sem pedir permissao.
+    Pra alcancar tela apagada precisa de service worker + chaves VAPID +
+    permissao. ATENCAO: no iOS, web push exige adicionar o site a tela de
+    inicio — no meio de uma refeicao, ninguem faz. Avaliar se vale so pelo
+    Android.
+
+--- 2.4-B FOTO: O QUE FICOU DE FORA ---
+
+Upload de foto de ITEM do cardapio esta FEITO (ver 1.12). O que sobrou:
+
+[ ] O PERFIL DA COZINHA ainda usa `photoUrl`, URL colada a mao. A foto de capa
+    da cozinha aparece na lista do quintal e no topo do cardapio — merece o
+    mesmo tratamento. E repetir o que ja existe: processarFoto + armazenamento
+    + uma coluna, ou reaproveitar MenuItemPhoto com um dono generico.
+
+[ ] REORDENAR ARRASTANDO. Hoje so da pra "virar capa", que resolve o caso que
+    importa (a unica ordem que o cliente enxerga na lista e quem esta em
+    primeiro). Arrastar exigiria gesto preciso num tablet engordurado.
+
+[ ] ARQUIVO ORFAO NAO E COLETADO. Apagar a foto remove linha e arquivo, mas se
+    o processo morrer entre os dois o arquivo fica no disco pra sempre. Uma
+    varredura semanal comparando disco com banco resolveria. Nao e urgente:
+    orfao e lixo, nao buraco.
+
+--- 2.5 OPERACAO / INFRAESTRUTURA ---
+
+[ ] ESCOLHER O PROVEDOR DE BANCO e rodar o PRIMEIRO TESTE DE RESTORE.
+    Backup que nunca foi restaurado nao e backup, e esperanca. O checklist do
+    que exigir esta em docs/runbook-banco.md; nada vale sem alguem executar uma
+    vez e anotar quanto demorou.
+
+[ ] ALERTAS. As metricas existem mas ninguem le. Falta Prometheus/Grafana
+    apontando pro /metrics e as 4 regras ja escritas em docs/observabilidade.md
+    (5xx > 1%, p95 do pedido > 1s, forca bruta no login, zero pedidos em 30min
+    no pico).
+
+[ ] SENTRY: CODIGO PRONTO, FALTA CRIAR A CONTA E COLAR O DSN.
+    Desligado por padrao — com SENTRY_DSN vazio nao ha requisicao, hook nem
+    custo. Pra ligar: criar projeto Node no Sentry e preencher SENTRY_DSN.
+    NO PAINEL, DEPOIS (o filtro do codigo NAO substitui):
+      [ ] ligar spike protection
+      [ ] rate limit por DSN key
+    Plano free (confirmado 2026-08-24): 1 usuario, alertas so por email, cota
+    fixa sem opcao de estourar pagando. Tracing incluso.
+    Ao adicionar campo sensivel novo, incluir em CHAVES_PROIBIDAS E no teste.
+
+[!] DISCO LOCAL NAO SOBREVIVE A MAIS DE UMA REPLICA.
+    As fotos ficam num volume da maquina (UPLOADS_DIR). Com duas replicas, a
+    foto enviada na A nao existe na B e o cardapio fica com buraco em metade
+    dos acessos. Enquanto for um container so, funciona.
+    ANTES DE ESCALAR HORIZONTALMENTE: trocar por objeto (S3/R2). E reescrever
+    server/src/lib/armazenamento.ts — guardar/ler/apagar e toda a superficie,
+    de proposito. Nada mais no servidor toca `fs`.
+    Tambem: subir sem montar o volume apaga o cardapio no primeiro deploy, e
+    nada avisa — a rota devolve 404 por foto e o app so mostra buraco.
+
+[ ] IMAGENS DO FRONT SAO POR AMBIENTE. Cada uma carrega VITE_API_URL assada
+    dentro, entao "latest" nao serve pra staging e producao ao mesmo tempo. O
+    CI so PROVA que buildam (URL falsa); o build que vai pro ar precisa da URL
+    do ambiente e de tag propria. Falta definir esquema de tag e workflow de
+    release.
+
+[ ] qrToken DA MESA NAO EXPIRA NEM ROTACIONA — e um bearer permanente impresso
+    no QR. Quem fotografar o QR mantem acesso a mesa pra sempre. O bootstrap ja
+    gera token aleatorio (nao sequencial), mas nao ha rota nem tela pra
+    rotacionar.
+
+[ ] PRETTIER NUNCA RODOU NO REPO. ~91 arquivos fora do padrao. Esta configurado
+    e funcionando; nao foi executado pra nao enterrar trabalho em progresso num
+    diff de formatacao.
+    Nesta ordem, senao vira bagunca:
+      1. commitar tudo que estiver pendente
+      2. pnpm format
+      3. commitar SOZINHO ("chore: formata o repo com prettier")
+      4. devolver "pnpm format:check" ao script "check" da raiz (foi retirado
+         de proposito ate isso acontecer)
+
+--- 2.6 COBERTURA DE TESTE ---
+
+489 testes. Cobertura medida: ~62% de linha, 85% de branch.
+Rodar com: pnpm test:coverage (relatorio HTML em coverage/index.html)
+
+[ ] Rotas de LEITURA do cliente: GET /api/m/pedido/:id, GET /api/m/pedidos e
+    POST /api/m/pedidos/fechar-conta. O fechar-conta dispara o evento pra
+    cozinha cobrar — vale teste.
+[ ] Login e /me do restaurante (caminho feliz).
+[ ] kitchen.ts e quintal.ts: montagem do cardapio e da home do cliente. Menos
+    criticos: nao decidem dinheiro nem permissao.
+[ ] apps/*: formato.ts, sound.ts e stores/auth.ts em 0%.
+[ ] packages/design-system: zero testes. Componentes de apresentacao; retorno
+    baixo sem snapshot visual.
+[ ] Nenhum e2e de navegador. Precisa de Playwright e ambiente com banco. E o
+    proximo degrau de verdade, mas e um projeto proprio.
+
+COMO ESCREVER MAIS:
+  server/src/test/prismaMock.ts + qualquer *.test.ts em modules/.
+  Padrao: buildApp({ socket: false, logger: false, cron: false }) +
+  fastify.inject() + Prisma mockado. Sem banco, roda em milissegundos.
+  Pra testar socket, ver plugins/socket.test.ts — sobe em porta efemera (0).
+
+--- 2.7 INCOMODOS MENORES ---
+
+[ ] BANCO DE DEV MOSTRA TODA MESA COMO "NOVA NO PERIODO": as mesas do seed
+    foram criadas agora, entao nenhuma existia no comeco do mes e a media do
+    ranking fica zerada. Nao e bug — em producao se resolve com o tempo. Pra
+    ver a tela com numero cheio seria preciso semear pedidos com data passada.
+
+[ ] CONTA DE TESTE DE RESTAURANTE UNICO no banco de dev, pode apagar:
+    rosa@cantina.test / rosa12345 — espaco "cantina-da-rosa", 5 itens de
+    cardapio, 3 mesas.
+
+
+================================================================================
+3. ARMADILHAS JA RESOLVIDAS - NAO REINTRODUZIR
+================================================================================
+
+Cada uma custou tempo pra descobrir. Estao comentadas no codigo, mas ficam aqui
+pra quem chegar depois.
+
+--- FERRAMENTAL E BUILD ---
+
+- NAO rodar "npm install" neste repo. O gerenciador e pnpm, travado em
+  packageManager. npm gera um package-lock.json conflitante.
+
+- Dependencias internas usam workspace:* , nunca * . Com * o pnpm tenta baixar
+  @mq/shared do registry publico, onde ele nao existe.
+
+- O build do server e esbuild (server/build.mjs), nao tsc. O tsc deixaria o
+  import de @mq/shared resolvendo pra um arquivo .ts em runtime.
+
+- A VERSAO EXIBIDA EM GET / VEM DO package.json DA RAIZ, injetada pelo esbuild
+  (`define: __VERSAO__`). Nao chumbar string de versao no codigo.
+
+- O ESLINT ISENTA SCRIPTS POR GLOB (**/scripts/**, server/prisma/**). Mover um
+  script pra outra pasta faz 20+ erros de no-console aparecerem do nada. O glob
+  esta em eslint.config.mjs, bloco "Scripts de build e de banco".
+
+- REGRAS DE LINT PROMOVIDAS A `error` em 2026-08-24: purity,
+  set-state-in-effect, refs, exhaustive-deps, no-explicit-any,
+  only-export-components. Nao rebaixar pra warning — cada uma foi promovida
+  depois de o problema real aparecer.
+
+--- DOCKER E DEPLOY ---
+
+- NAO adicionar "name:" ao docker-compose.yml (o de desenvolvimento). Mudaria o
+  prefixo do volume quintal-pg-data e o banco de dev apareceria vazio. O
+  docker-compose.prod.yml TEM name proprio — e por isso que os dois convivem.
+
+- Dockerfile: depois do "pnpm deploy", PRECISA rodar "prisma generate" de novo
+  dentro de /deploy. O deploy reinstala do zero e nao traz o client gerado.
+
+- BUILD E RUNTIME PRECISAM DA MESMA LIBC. O engine do Prisma e compilado no
+  stage de build e copiado pro runtime; misturar Alpine (musl) com Debian
+  (glibc) faz o server morrer no boot sem mensagem util.
+
+- NAO EXCLUIR apps/*/public DO .dockerignore. E de la que sai o favicon.svg que
+  o index.html referencia. Excluir gera 404 em toda visita — e a imagem builda
+  normalmente, entao nada avisa.
+
+- VITE_API_URL E BUILD-TIME. O Vite substitui import.meta.env.VITE_API_URL por
+  texto literal no bundle. Passar a variavel no `docker run` nao tem efeito —
+  cada ambiente precisa do proprio build. No compose ela e `build.args`, nao
+  `environment`, de proposito.
+
+- O CSP DO NGINX PRECISA CONTER A MESMA ORIGEM DA API. O connect-src e gerado
+  no build a partir do VITE_API_URL (apps/Dockerfile). Se divergirem, o app
+  carrega e nao fala com a API — e o erro so aparece no console do navegador.
+
+- SPA FALLBACK NAO E OPCIONAL. Sem `try_files $uri $uri/ /index.html`, abrir ou
+  recarregar /m/{qrToken} devolve 404 do nginx — o cliente que escaneia o QR
+  cai numa pagina de erro.
+
+- NAO RODAR `nginx -t` COMO ROOT NA IMAGEM UNPRIVILEGED. Deixa /tmp com dono
+  errado e o processo (uid 101) morre no boot com "open() /tmp/nginx.pid failed
+  (13: Permission denied)".
+
+--- BANCO E PRISMA ---
+
+- `prisma migrate dev` E INTERATIVO e nao roda em ambiente automatizado. Pra
+  criar migration aqui: gerar o SQL com
+    prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel prisma/schema.prisma --script
+  editar a mao, colocar em prisma/migrations/<timestamp>_<nome>/migration.sql e
+  aplicar com `prisma migrate deploy`.
+
+- COLUNA NOT NULL NOVA EM TABELA COM DADO precisa de backfill em tres passos:
+  adicionar NULAVEL -> popular -> ALTER COLUMN SET NOT NULL. Ver a migration
+  20260824000000_multi_tenant_e_cobranca (spaces.accountId).
+
+- @map NO PRISMA RENOMEIA A COLUNA. Ao trocar o nome de um campo, se o @map nao
+  apontar pro nome REAL da coluna existente, o Prisma dropa e recria — levando
+  o dado junto. Quase aconteceu com Space.commissionPct ->
+  defaultCommissionPct.
+
+- O PRISMA NAO ACEITA COMENTARIO DE BLOCO (/** */) no schema. So /// e //.
+
+- ENUM DO PRISMA NAO ACEITA HIFEN no identificador. Usar underscore + @map, e
+  traduzir na borda (ver lib/motivo.ts).
+
+- `db:seed` APAGA O BANCO. Nunca rodar em producao. Pra criar cliente novo o
+  comando e o bootstrap (src/bootstrap.ts), que so insere.
+
+- KitchenCharge GUARDA SNAPSHOT DE PROPOSITO. Nao trocar por join na Kitchen —
+  ver regra 1.6.
+
+--- SEGURANCA ---
+
+- OS DOIS JWT (cozinha e dono) USAM O MESMO SEGREDO. Sem o campo `kind` no
+  payload, um token de cozinha seria criptograficamente valido nas rotas
+  /api/a/*. Os dois plugins conferem `kind` explicitamente. Terceiro tipo de
+  token = repetir a trava.
+
+- PAPEL E VINCULO VEM DO BANCO, NUNCA SO DO TOKEN. O token vale 7 dias;
+  rebaixar alguem de owner pra staff precisa valer na hora.
+
+- SALA DE SOCKET NUNCA PELO SLUG. Kitchen.slug e unico apenas dentro do
+  quintal; duas cozinhas homonimas de clientes diferentes cairiam na mesma
+  sala. Usar sempre lib/salas.ts, que endereca por ID.
+
+- QUERY DE ROTA DO DONO SEM accountId E VAZAMENTO. Buscar Space por id/slug sem
+  filtrar a conta e o furo classico. Usar `espacoDaConta()` em admin.ts. Nos
+  updates, `updateMany` com spaceId no where — nao `update` por slug.
+
+- qrToken NUNCA NA RESPOSTA DA API. E a credencial da mesa: quem tem o token
+  abre a mesa. A versao mockada da tela de mesas exibia o token num painel
+  lateral.
+
+- /metrics NAO PODE SER PUBLICA. Expoe rotas, volumes e memoria. Fica atras de
+  METRICS_TOKEN e responde 404 (nao 401) sem ele — 401 confirmaria que ha
+  metricas ali. A comparacao do token e de tempo constante de proposito.
+
+- LABEL DE METRICA NUNCA COM URL CONCRETA. Usar req.url em vez do template da
+  rota cria uma serie por pedido e derruba o Prometheus. Usar
+  req.routeOptions.url.
+
+- errorResponseBuilder do @fastify/rate-limit TEM que devolver um Error com
+  statusCode. Objeto simples vira 500 e o rate limit some das metricas.
+
+- /health nao pode consultar o banco. Liveness com dependencia de banco faz o
+  orquestrador matar o container quando o Postgres pisca. Quem checa banco e o
+  /ready.
+
+--- DINHEIRO E REGRA DE NEGOCIO ---
+
+- REGRA DE NEGOCIO DUPLICADA EM DOIS ARQUIVOS VAI DIVERGIR. Foi o que aconteceu
+  com aggregateStatus: uma copia em lib/ e outra em modules/restaurante.ts,
+  cada uma tratando 'cancelado' de um jeito — cliente e cozinha mostravam
+  status diferentes do mesmo pedido. Se precisar da mesma regra em dois
+  lugares, ela vira funcao em lib/ e os dois importam.
+
+- NUNCA SOMAR `o.totalCents` PRA SABER QUANTO COBRAR. E o snapshot do que foi
+  PEDIDO e nao acompanha cancelamento nem reducao. Use `totalAtivoCents()` dos
+  itens. Isso ja escapou em TRES rotas de uma vez, incluindo a de fechar conta
+  (a cozinha era avisada pra cobrar o valor original, no balcao, na frente do
+  cliente) — travado agora por valor-a-pagar.test.ts.
+
+- `Order.totalCents` E SNAPSHOT E NAO SE REESCREVE. O valor a pagar e calculado
+  na resposta, em `totalAtivosCents` — nunca alterando a coluna.
+
+- CANCELADO SIGNIFICA "NAO ACONTECEU" EM TODO LUGAR: fora do agregado de
+  status, fora do total a pagar, fora do bruto do financeiro. Calculo novo
+  envolvendo itens? Conferir se filtra cancelado.
+
+- COMPARAR CONTAGEM DE `WHERE id IN` COM CONTAGEM DE LINHAS E ARMADILHA. O IN
+  devolve distintos. Foi o bug que recusava "mesmo prato em duas linhas com
+  observacoes diferentes".
+
+--- TESTES ---
+
+- COVERAGE SO MEDE O QUE ESTA NO `include`. Um diretorio esquecido la produz um
+  numero bonito escondendo codigo critico — aconteceu com server/src/plugins/
+  ate 2026-08-24.
+
+- TESTE DE ROTA PRECISA DE buildApp({ socket: false, cron: false }). Com socket
+  ligado o Socket.io segura handles abertos e a suite nao encerra. O stub de
+  `io` em app.ts existe porque os handlers chamam fastify.io.to(...) sem
+  checar.
+
+- TESTE DE SOCKET PRECISA DE PORTA 0 (efemera) E DE app.close() no afterAll.
+  Porta fixa briga com o que estiver rodando na maquina.
+
+- TESTE DE HOOK COM ESTADO DE MODULO PRECISA DE `cleanup()` no afterEach. A
+  limpeza automatica do Testing Library so roda com `globals: true`.
+
+- server.ts NAO MONTA MAIS O APP. Quem monta e src/app.ts (buildApp), pra que
+  os testes usem fastify.inject() sem abrir porta. Rota nova entra em app.ts.
+
+--- REACT ---
+
+- Zustand v5: nao derivar arrays em selector (loop infinito de render). Derivar
+  com useMemo ou funcao pura fora do store — ver groupByKitchen em
+  apps/cliente/src/stores/cart.ts.
+
+- NAO ESCREVER EM REF DURANTE O RENDER (`ref.current = x` no corpo do
+  componente). Sob render concorrente o React pode executar e descartar um
+  render, e a escrita vaza. Atualizar dentro de useEffect. Ha regra
+  `react-hooks/refs` em error.
+
+- OBJETO LITERAL COMO DEPENDENCIA DE EFFECT refaz o effect a cada render. Em
+  assinatura de socket isso abre janela sem ouvinte. Usar ref atualizada em
+  effect — ver useKitchenSocket em apps/restaurante/src/api/hooks.ts.
+
+- HOOK EXPORTADO JUNTO DE COMPONENTE quebra o Fast Refresh: cada salvamento
+  remonta a tela e perde estado e rolagem. Hook vai pra arquivo proprio.
+
+- TOKEN DO DONO E DO RESTAURANTE EM CHAVES SEPARADAS de localStorage
+  ('mq:a:token' e 'mq:r:token'). No restaurante unico a mesma pessoa abre os
+  dois apps; chave unica faria um login derrubar o outro.
+
+================================================================================

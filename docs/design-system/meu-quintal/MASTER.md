@@ -7,7 +7,7 @@ status: source-of-truth
 
 # Meu Quintal — Design System Master
 
-> **Hierarquia:** Antes de construir uma página, **leia primeiro** `design-system/meu-quintal/pages/[persona].md`. Se existir, sobrescreve este MASTER. Caso contrário, siga estritamente o que está aqui.
+> **Hierarquia:** Antes de construir uma página, **leia primeiro** `docs/design-system/meu-quintal/pages/[persona].md`. Se existir, sobrescreve este MASTER. Caso contrário, siga estritamente o que está aqui.
 
 ---
 

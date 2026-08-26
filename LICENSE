@@ -1,0 +1,59 @@
+Copyright (c) 2026 Meu Quintal. Todos os direitos reservados.
+All rights reserved.
+
+SOFTWARE PROPRIETÁRIO — NÃO É CÓDIGO ABERTO
+
+Este software e todo o seu código-fonte, documentação, design, marca e demais
+materiais contidos neste repositório são propriedade exclusiva dos seus
+titulares e estão protegidos pela Lei nº 9.610/1998 (Direitos Autorais) e pela
+Lei nº 9.609/1998 (Programa de Computador), bem como por tratados
+internacionais aplicáveis.
+
+Nenhuma licença de uso é concedida por este arquivo.
+
+É EXPRESSAMENTE PROIBIDO, sem autorização prévia e por escrito dos titulares:
+
+  a) copiar, reproduzir ou armazenar o software, no todo ou em parte;
+  b) modificar, adaptar, traduzir ou criar obras derivadas;
+  c) distribuir, sublicenciar, vender, alugar, emprestar ou de qualquer forma
+     disponibilizar o software a terceiros;
+  d) executar o software para fins comerciais ou de produção;
+  e) realizar engenharia reversa, descompilação ou desmontagem, ressalvadas as
+     hipóteses legalmente asseguradas;
+  f) remover, ocultar ou alterar avisos de titularidade, marca ou licença.
+
+O acesso a este repositório, quando concedido, destina-se exclusivamente a
+avaliação, desenvolvimento ou colaboração autorizada, e não transfere qualquer
+direito de propriedade intelectual.
+
+DEPENDÊNCIAS DE TERCEIROS
+Este projeto utiliza bibliotecas de terceiros distribuídas sob suas próprias
+licenças. Esses termos permanecem válidos para os respectivos componentes e não
+são alterados por este arquivo. A relação completa está nos arquivos
+package.json e pnpm-lock.yaml.
+
+AUSÊNCIA DE GARANTIA
+O software é fornecido "COMO ESTÁ", sem garantias de qualquer natureza,
+expressas ou implícitas, incluindo, sem limitação, garantias de comercialização,
+adequação a uma finalidade específica e não violação de direitos. Em nenhuma
+hipótese os titulares serão responsáveis por qualquer reclamação, dano ou outra
+responsabilidade decorrente do software ou de seu uso.
+
+Para solicitar autorização de uso, entre em contato com os titulares.
+
+--------------------------------------------------------------------------------
+
+PROPRIETARY SOFTWARE — NOT OPEN SOURCE
+
+This software and all associated source code, documentation, design assets and
+branding are the exclusive property of their owners and are protected by
+Brazilian copyright and software law and by applicable international treaties.
+
+No license is granted by this file. Copying, modifying, distributing,
+sublicensing, selling, or running this software for commercial or production
+purposes is prohibited without prior written permission from the owners.
+
+Third-party dependencies remain governed by their own licenses.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED.
