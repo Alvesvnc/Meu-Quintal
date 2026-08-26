@@ -15,7 +15,7 @@ export async function quintalRoutes(fastify: FastifyInstance) {
       where: { spaceId: mesa.spaceId, status: 'ativa' },
       include: {
         menuItems: {
-          where: { available: true },
+          where: { available: true, archivedAt: null },
           select: { priceCents: true },
         },
       },
@@ -27,6 +27,7 @@ export async function quintalRoutes(fastify: FastifyInstance) {
         id: mesa.spaceId,
         slug: mesa.spaceSlug,
         name: '', // preenche abaixo
+        tipo: 'food-court', // idem
       },
       table: {
         id: mesa.tableId,
@@ -53,9 +54,12 @@ export async function quintalRoutes(fastify: FastifyInstance) {
     // Buscar nome do space (1 query a mais — em scale, dava pra cachar)
     const space = await prisma.space.findUnique({
       where: { id: mesa.spaceId },
-      select: { name: true },
+      select: { name: true, tipo: true },
     });
-    if (space) response.space.name = space.name;
+    if (space) {
+      response.space.name = space.name;
+      response.space.tipo = space.tipo === 'restaurante_unico' ? 'restaurante-unico' : 'food-court';
+    }
 
     return response;
   });

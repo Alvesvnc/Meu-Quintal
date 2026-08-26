@@ -17,8 +17,19 @@ export async function kitchenRoutes(fastify: FastifyInstance) {
         where: { slug: req.params.slug, spaceId: mesa.spaceId, status: 'ativa' },
         include: {
           menuItems: {
-            // Inclui esgotados — front mostra com chip + disabled
+            // Inclui esgotados — front mostra com chip + disabled.
+            // ARQUIVADO nao: item excluido pela cozinha some do cardapio, mas
+            // continua no banco porque os pedidos antigos apontam pra ele.
+            where: { archivedAt: null },
             orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+            include: {
+              // A capa primeiro. E a unica que a lista mostra; as outras so
+              // aparecem quando o cliente abre o item.
+              fotos: {
+                orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+                select: { id: true, storageKey: true, width: true, height: true },
+              },
+            },
           },
         },
       });
@@ -44,6 +55,12 @@ export async function kitchenRoutes(fastify: FastifyInstance) {
           description: i.description,
           priceCents: i.priceCents,
           photoUrl: i.photoUrl,
+          fotos: i.fotos.map((f) => ({
+            id: f.id,
+            url: `/api/fotos/${f.storageKey}`,
+            width: f.width,
+            height: f.height,
+          })),
           available: i.available,
           badge: i.badge === 'sem_estoque' ? 'sem-estoque' : i.badge,
         })),
