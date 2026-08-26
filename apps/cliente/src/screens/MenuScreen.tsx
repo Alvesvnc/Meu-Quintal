@@ -3,7 +3,9 @@ import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { Button, Divider } from '@mq/design-system';
 import type { MenuCategory } from '@mq/shared';
 import { useKitchenMenu } from '../api/hooks';
-import { TabBar, useActiveSection } from '../components/TabBar';
+import { useRestauranteUnico } from '../lib/useTipoDeEspaco';
+import { TabBar } from '../components/TabBar';
+import { useActiveSection } from '../lib/useActiveSection';
 import { MenuItemRow } from '../components/MenuItemRow';
 import { ScreenError } from '../components/ScreenError';
 import { useCart, selectItemCount, selectTotalCents } from '../stores/cart';
@@ -21,6 +23,7 @@ const ORDER: MenuCategory[] = ['entradas', 'pratos', 'sobremesas', 'bebidas'];
 export function MenuScreen() {
   const { slug = '' } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const restauranteUnico = useRestauranteUnico();
   const { data, isLoading, error, refetch } = useKitchenMenu(slug);
   const cartCount = useCart(selectItemCount);
   const cartTotal = useCart(selectTotalCents);
@@ -76,9 +79,15 @@ export function MenuScreen() {
         <p className="font-display italic text-display-md text-ink mb-5 text-pretty">
           O {data.kitchen.name} ainda está montando o cardápio aqui.
         </p>
-        <Button variant="secondary" size="lg" fullWidth onClick={() => navigate('/')}>
-          Voltar pro quintal
-        </Button>
+        {/*
+          Num restaurante unico nao ha pra onde voltar: `/` redireciona pra
+          esta mesma tela. Botao que nao faz nada e pior que botao nenhum.
+        */}
+        {!restauranteUnico && (
+          <Button variant="secondary" size="lg" fullWidth onClick={() => navigate('/')}>
+            Voltar pro quintal
+          </Button>
+        )}
       </main>
     );
   }

@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Button, Chip, Divider } from '@mq/design-system';
+import { Button, Chip, Divider, useMinutosDesde } from '@mq/design-system';
 import type { OrderItemStatus, OrderKitchenGroup } from '@mq/shared';
-import { useOrder } from '../api/hooks';
+import { useOrder, useResponderAlteracao } from '../api/hooks';
+import { AlteracaoSheet } from '../components/AlteracaoSheet';
+import { mensagemDeErro } from '@mq/shared';
 import { ScreenError } from '../components/ScreenError';
-import { fmtTime } from '../lib/format';
+import { fmtBRL, fmtTime } from '../lib/format';
 
 const STATUS_LABEL: Record<OrderItemStatus, string> = {
   novo:       'Recebido',
@@ -19,6 +21,9 @@ const STATUS_FLOW: OrderItemStatus[] = ['novo', 'preparando', 'pronto', 'retirad
 export function TrackScreen() {
   const { orderId = '' } = useParams<{ orderId: string }>();
   const { data: order, isLoading, error, refetch } = useOrder(orderId);
+
+  const responder = useResponderAlteracao(orderId);
+  const [erroResposta, setErroResposta] = useState<string | null>(null);
 
   // Vibrar 1x quando uma cozinha fica pronta
   const buzzedRef = useRef<Set<string>>(new Set());
@@ -52,8 +57,37 @@ export function TrackScreen() {
 
   const allDone = order.kitchens.every((k) => k.status === 'retirado');
 
+  const alteracao = order.alteracaoPendente;
+
   return (
     <main className="pb-10 px-5">
+      {/*
+        Interrompe tudo: a cozinha propos mudar o pedido e o prazo corre. A
+        tela por baixo continua montada, mas o sheet nao deixa sair sem
+        responder — ignorar equivale a recusar.
+      */}
+      {alteracao && (
+        <AlteracaoSheet
+          alteracao={alteracao}
+          enviando={responder.isPending}
+          erro={erroResposta}
+          onAceitar={() => {
+            setErroResposta(null);
+            responder.mutate(
+              { alteracaoId: alteracao.id, resposta: 'aceitar' },
+              { onError: (e) => setErroResposta(mensagemDeErro(e, 'Nao consegui responder.')) },
+            );
+          }}
+          onRecusar={() => {
+            setErroResposta(null);
+            responder.mutate(
+              { alteracaoId: alteracao.id, resposta: 'recusar' },
+              { onError: (e) => setErroResposta(mensagemDeErro(e, 'Nao consegui responder.')) },
+            );
+          }}
+        />
+      )}
+
       <section className="pt-6 pb-2">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           Pedido #{order.shortId} · Mesa {String(order.mesaNumero).padStart(2, '0')}
@@ -66,6 +100,18 @@ export function TrackScreen() {
             ? 'Pode caprichar nas fotos.'
             : 'Cada cozinha vai te avisar quando o seu sair.'}
         </p>
+
+        {/*
+          Aviso do corte. O valor a pagar cai quando um item e cancelado, e
+          mudar o numero em silencio geraria duvida sobre o que aconteceu.
+        */}
+        {order.totalAtivosCents !== order.totalCents && (
+          <p className="mt-4 rounded-md border border-hairline bg-surface px-4 py-3 font-sans text-body-sm text-inkMuted">
+            Algum item foi cancelado pela cozinha. O total caiu de{' '}
+            <span className="font-mono line-through">{fmtBRL(order.totalCents)}</span> para{' '}
+            <span className="font-mono text-ink">{fmtBRL(order.totalAtivosCents)}</span>.
+          </p>
+        )}
       </section>
 
       <div className="space-y-8 mt-6">
@@ -101,12 +147,10 @@ function KitchenTimeline({ k }: { k: OrderKitchenGroup }) {
   const isReady = k.status === 'pronto';
   const isInProgress = k.status === 'preparando';
 
-  const remaining = (() => {
-    const start = k.acceptedAt ?? null;
-    if (!start) return null;
-    const elapsedMin = Math.floor((Date.now() - new Date(start).getTime()) / 60_000);
-    return Math.max(0, k.slaMinutes - elapsedMin);
-  })();
+  // Conta regressiva do SLA. Precisa andar sozinha: e a tela que o cliente
+  // deixa aberta esperando o pedido ficar pronto.
+  const decorridos = useMinutosDesde(k.acceptedAt ?? null);
+  const remaining = decorridos === null ? null : Math.max(0, k.slaMinutes - decorridos);
 
   const headerRight = (() => {
     if (k.status === 'pronto') return <Chip tone="primary">retire no balcão</Chip>;
@@ -130,13 +174,37 @@ function KitchenTimeline({ k }: { k: OrderKitchenGroup }) {
       </div>
 
       <ul className="mt-4 space-y-1">
-        {k.items.map((it) => (
-          <li key={it.id} className="font-sans text-body text-inkMuted">
-            <span className="font-mono text-mono text-ink mr-2 tabular-nums">{it.qty}×</span>
-            {it.name}
-            {it.note && <span className="ml-2 italic text-inkDim">— {it.note}</span>}
-          </li>
-        ))}
+        {k.items.map((it) => {
+          // Item cancelado precisa APARECER, riscado. Some-lo faria o pedido
+          // encolher sem explicacao: a pessoa lembra de ter pedido tres coisas
+          // e ve duas na tela.
+          const cancelado = it.status === 'cancelado';
+          return (
+            <li
+              key={it.id}
+              className={[
+                'font-sans text-body',
+                cancelado ? 'text-inkDim line-through' : 'text-inkMuted',
+              ].join(' ')}
+            >
+              <span
+                className={[
+                  'font-mono text-mono mr-2 tabular-nums',
+                  cancelado ? 'text-inkDim' : 'text-ink',
+                ].join(' ')}
+              >
+                {it.qty}×
+              </span>
+              {it.name}
+              {it.note && <span className="ml-2 italic text-inkDim">— {it.note}</span>}
+              {cancelado && (
+                <span className="ml-2 font-mono text-mono-sm uppercase tracking-wider text-danger no-underline">
+                  cancelado
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       <div className="mt-5">

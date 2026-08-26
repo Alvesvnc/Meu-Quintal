@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Divider, Button } from '@mq/design-system';
 import { useQuintal } from '../api/hooks';
 import { KitchenRow } from '../components/KitchenRow';
@@ -38,6 +39,19 @@ export function LandingScreen() {
   const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const openCount = data.kitchens.length;
   const mesaNumero = data.table.numero;
+
+  // ─── Restaurante único: pula a lista ─────────────────────────────────────
+  //
+  // Uma lista com um item só não ajuda ninguém — é um toque a mais entre o QR
+  // e a comida. `replace` para o botão "voltar" do navegador não trazer a
+  // pessoa de volta a essa tela intermediária.
+  //
+  // Decide pelo TIPO do espaço, não por `kitchens.length === 1`: uma praça de
+  // alimentação que hoje tem uma cozinha só continua sendo uma praça, e a
+  // lista deve aparecer.
+  if (data.space.tipo === 'restaurante-unico' && data.kitchens[0]) {
+    return <Navigate to={`/k/${data.kitchens[0].slug}`} replace />;
+  }
 
   return (
     <main className="pb-10">

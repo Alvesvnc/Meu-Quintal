@@ -1,13 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Chip, Sheet, SheetBody, SheetFooter, SheetHeader } from '@mq/design-system';
 import { useKitchenMenu } from '../api/hooks';
 import { useCart } from '../stores/cart';
 import { QtyStepper } from '../components/QtyStepper';
 import { fmtBRL } from '../lib/format';
+import { fotosDoItem } from '../lib/fotos';
 
-/** Tela 03 — Detalhe do item. Sheet sobre MenuScreen. */
+/**
+ * Tela 03 — Detalhe do item. Sheet sobre MenuScreen.
+ *
+ * O `key` remonta o formulario quando o item muda, e o estado volta a ser lido
+ * das props. A alternativa — um useEffect chamando setQty/setNote — pinta o
+ * item novo com a quantidade do anterior por um frame antes de corrigir.
+ */
 export function ItemDetailSheet() {
+  const { itemId = '' } = useParams<{ itemId: string }>();
+  return <DetalheDoItem key={itemId} />;
+}
+
+function DetalheDoItem() {
   const { slug = '', itemId = '' } = useParams<{ slug: string; itemId: string }>();
   const navigate = useNavigate();
   const { data } = useKitchenMenu(slug);
@@ -18,11 +30,6 @@ export function ItemDetailSheet() {
 
   const [qty, setQty] = useState(existing?.qty ?? 1);
   const [note, setNote] = useState(existing?.note ?? '');
-
-  useEffect(() => {
-    setQty(existing?.qty ?? 1);
-    setNote(existing?.note ?? '');
-  }, [itemId]);
 
   const close = () => navigate(`/k/${slug}`);
 
@@ -67,11 +74,7 @@ export function ItemDetailSheet() {
   return (
     <Sheet open onClose={close} ariaLabel={`Detalhe ${item.name}`}>
       <SheetBody>
-        <div className="rounded-lg overflow-hidden bg-surface aspect-[4/3] mb-5 -mx-1">
-          {item.photoUrl && (
-            <img src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
-          )}
-        </div>
+        <Galeria fotos={fotosDoItem(item)} nome={item.name} />
 
         <SheetHeader>
           <div className="flex items-start gap-2">
@@ -127,5 +130,70 @@ export function ItemDetailSheet() {
         </div>
       </SheetFooter>
     </Sheet>
+  );
+}
+
+interface GaleriaProps {
+  fotos: string[];
+  nome: string;
+}
+
+/**
+ * As fotos do prato.
+ *
+ * Rolagem horizontal com encaixe (`snap`), não carrossel com setas: o gesto de
+ * arrastar já é o esperado num celular, e setas ocupariam área de toque em cima
+ * da própria imagem.
+ *
+ * Os pontos embaixo existem porque, com encaixe, a segunda foto não "espia" na
+ * borda — sem eles não há nada dizendo que existe mais.
+ */
+function Galeria({ fotos, nome }: GaleriaProps) {
+  const [atual, setAtual] = useState(0);
+
+  if (fotos.length === 0) {
+    return <div className="rounded-lg bg-surface aspect-[4/3] mb-5 -mx-1" />;
+  }
+
+  return (
+    <div className="mb-5 -mx-1">
+      <div
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          // Divide pela largura do container, que é a de uma foto: com
+          // `snap-center` e largura total, o índice é a posição inteira.
+          setAtual(Math.round(el.scrollLeft / el.clientWidth));
+        }}
+        className="flex overflow-x-auto snap-x snap-mandatory rounded-lg
+                   [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {fotos.map((src, i) => (
+          <img
+            key={src}
+            src={src}
+            alt={fotos.length > 1 ? `${nome} — foto ${i + 1} de ${fotos.length}` : nome}
+            // A primeira carrega logo: é a que já está na tela quando o sheet
+            // abre. As outras só quando o cliente arrastar.
+            loading={i === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            className="w-full shrink-0 snap-center aspect-[4/3] object-cover bg-surface"
+          />
+        ))}
+      </div>
+
+      {fotos.length > 1 && (
+        <div className="mt-2 flex justify-center gap-1.5" aria-hidden>
+          {fotos.map((src, i) => (
+            <span
+              key={src}
+              className={[
+                'h-1.5 rounded-full transition-all duration-base ease-out',
+                i === atual ? 'w-4 bg-ink' : 'w-1.5 bg-inkDim/40',
+              ].join(' ')}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

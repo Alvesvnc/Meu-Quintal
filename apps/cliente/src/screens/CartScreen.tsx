@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@mq/design-system';
+import { mensagemDeErro } from '@mq/shared';
 import { useCreateOrder, useQuintal } from '../api/hooks';
 import {
   useCart,
@@ -61,10 +62,10 @@ export function CartScreen() {
       });
       clearKitchen(g.kitchenSlug);
       onDone?.(res.id);
-    } catch (e: any) {
+    } catch (e) {
       setErrorBySlug((prev) => ({
         ...prev,
-        [g.kitchenSlug]: e?.response?.data?.error ?? 'Não rolou enviar.',
+        [g.kitchenSlug]: mensagemDeErro(e, 'Não rolou enviar.'),
       }));
     } finally {
       setSendingSlugs((prev) => {

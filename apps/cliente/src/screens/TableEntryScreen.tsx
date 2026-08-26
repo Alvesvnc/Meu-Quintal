@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { setTableToken } from '../api/client';
+import { disconnectSocket } from '../api/socket';
 
 /**
  * Tela acessada via QR — `/m/:tableToken`.
@@ -13,6 +14,9 @@ export function TableEntryScreen() {
   useEffect(() => {
     if (tableToken) {
       setTableToken(tableToken);
+      // Trocar de mesa troca a credencial: o socket aberto carrega o qrToken
+      // anterior no handshake e continuaria autorizado como a mesa antiga.
+      disconnectSocket();
     }
     navigate('/', { replace: true });
   }, [tableToken, navigate]);

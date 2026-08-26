@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useCart, selectItemCount } from '../stores/cart';
 import { useOrders } from '../api/hooks';
+import { useRestauranteUnico } from '../lib/useTipoDeEspaco';
 
 export const TABS_HEIGHT = 64;
 
@@ -22,6 +23,7 @@ export function BottomTabs() {
   // Se só 1 pedido ativo, tab leva direto pra ele. 2+, leva pra lista.
   const orderTo =
     activeOrders.length === 1 ? `/pedido/${activeOrders[0].id}` : '/pedidos';
+  const restauranteUnico = useRestauranteUnico();
   const orderLabel = activeOrders.length > 1 ? 'Pedidos' : 'Pedido';
   const orderBadge =
     activeOrders.length === 1
@@ -31,7 +33,9 @@ export function BottomTabs() {
         : null;
 
   const tabs: Tab[] = [
-    { to: '/', label: 'Quintal' },
+    // Num restaurante unico nao ha "quintal": `/` redireciona pro cardapio,
+    // entao a aba leva ao mesmo lugar — so o rotulo muda pra fazer sentido.
+    { to: '/', label: restauranteUnico ? 'Cardápio' : 'Quintal' },
     {
       to: '/carrinho',
       label: 'Carrinho',

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Chip, ConfirmSheet, Divider } from '@mq/design-system';
-import type { OrderItemStatus, OrderListItem } from '@mq/shared';
+import { mensagemDeErro, type OrderItemStatus, type OrderListItem } from '@mq/shared';
 import { useOrders, useRequestPayment } from '../api/hooks';
 import { ScreenError } from '../components/ScreenError';
 import { fmtBRL, fmtTime } from '../lib/format';
@@ -19,6 +19,9 @@ interface KitchenGroup {
   kitchenSlug: string;
   kitchenName: string;
   orders: OrderListItem[];
+  /** O que foi pedido. So aparece riscado, quando difere do de baixo. */
+  totalPedidoCents: number;
+  /** O que vai chegar — exclui itens cancelados. E o valor que se paga. */
   totalCents: number;
   itemCount: number;
   hasReady: boolean;
@@ -37,7 +40,10 @@ export function OrdersListScreen() {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useOrders();
 
-  const orders = data?.orders ?? [];
+  // `data?.orders ?? []` cria um array novo a cada render quando `data` e
+  // undefined, o que faria o useMemo abaixo recalcular sempre — anulando o
+  // proprio memo.
+  const orders = useMemo(() => data?.orders ?? [], [data]);
 
   const groups = useMemo<KitchenGroup[]>(() => {
     const map = new Map<string, KitchenGroup>();
@@ -46,6 +52,7 @@ export function OrdersListScreen() {
         kitchenSlug: o.kitchenSlug,
         kitchenName: o.kitchenName,
         orders: [],
+        totalPedidoCents: 0,
         totalCents: 0,
         itemCount: 0,
         hasReady: false,
@@ -53,7 +60,9 @@ export function OrdersListScreen() {
         paymentRequestedAt: null,
       };
       g.orders.push(o);
-      g.totalCents += o.totalCents;
+      g.totalPedidoCents += o.totalCents;
+      // O que a pessoa vai pagar no balcao: item cancelado nao entra.
+      g.totalCents += o.totalAtivosCents;
       g.itemCount += o.itemCount;
       if (o.status === 'pronto') g.hasReady = true;
       if (!o.paymentRequestedAt) g.allPaymentRequested = false;
@@ -157,9 +166,9 @@ function KitchenSection({ group: g }: { group: KitchenGroup }) {
       { kitchenSlug: g.kitchenSlug },
       {
         onSuccess: () => setConfirmOpen(false),
-        onError: (e: any) => {
+        onError: (e) => {
           setConfirmOpen(false);
-          setErrorMsg(e?.response?.data?.error ?? 'Não rolou pedir cobrança.');
+          setErrorMsg(mensagemDeErro(e, 'Não rolou pedir cobrança.'));
         },
       },
     );
@@ -178,6 +187,13 @@ function KitchenSection({ group: g }: { group: KitchenGroup }) {
           </p>
         </div>
         <p className="shrink-0 font-mono text-mono-lg text-ink tabular-nums">
+          {g.totalPedidoCents !== g.totalCents && (
+            // Riscado deixa claro que o valor caiu por causa de cancelamento,
+            // em vez de o numero simplesmente mudar sem explicacao.
+            <span className="mr-2 text-body text-inkDim line-through">
+              {fmtBRL(g.totalPedidoCents)}
+            </span>
+          )}
           {fmtBRL(g.totalCents)}
         </p>
       </header>

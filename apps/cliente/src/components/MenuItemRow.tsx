@@ -4,6 +4,7 @@ import type { MenuItem } from '@mq/shared';
 import { fmtBRL } from '../lib/format';
 import { useCart } from '../stores/cart';
 import { QtyStepper } from './QtyStepper';
+import { fotosDoItem } from '../lib/fotos';
 
 interface MenuItemRowProps {
   item: MenuItem;
@@ -17,6 +18,8 @@ export function MenuItemRow({ item, kitchen }: MenuItemRowProps) {
   const setQty = useCart((s) => s.setQty);
   const inCart = lines.find((l) => l.menuItemId === item.id);
   const unavailable = !item.available;
+  const fotos = fotosDoItem(item);
+  const capa = fotos[0];
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -30,15 +33,26 @@ export function MenuItemRow({ item, kitchen }: MenuItemRowProps) {
         to={`/k/${kitchen.slug}/i/${item.id}`}
         className="flex-1 flex gap-4 no-underline text-inherit min-w-0"
       >
-        <div className="shrink-0 w-[88px] h-[88px] rounded-md overflow-hidden bg-surface">
-          {item.photoUrl && (
+        <div className="shrink-0 w-[88px] h-[88px] rounded-md overflow-hidden bg-surface relative">
+          {capa && (
             <img
-              src={item.photoUrl}
+              src={capa}
               alt=""
               loading="lazy"
               decoding="async"
               className="w-full h-full object-cover"
             />
+          )}
+          {/* Marca de "tem mais foto": dá motivo pra abrir o item, que é onde
+              o cliente decide. Sem ela, a lista parece ter tudo. */}
+          {fotos.length > 1 && (
+            <span
+              className="absolute bottom-1 right-1 px-1.5 rounded-sm bg-ink/70
+                         font-mono text-mono-sm text-white tabular-nums"
+              aria-label={`${fotos.length} fotos`}
+            >
+              {fotos.length}
+            </span>
           )}
         </div>
 
