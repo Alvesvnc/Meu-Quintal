@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
  * O Vite serve a API no MESMO endereco do app, via proxy.
  *
  * Sem isto o front precisa saber o endereco absoluto do servidor
- * (`VITE_API_URL=http://192.168.1.126:3001`) — e ai:
+ * (`VITE_API_URL=http://192.168.0.10:3001`) — e ai:
  *
  *   - testar no celular exige descobrir o IP da maquina e reescrever o .env
  *     toda vez que a rede muda;

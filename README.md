@@ -48,6 +48,7 @@ fila ao vivo) e **Dono do espaço** (web responsivo, administração).
 ## Sumário
 
 - [Funcionalidades](#funcionalidades)
+- [Cobrança da assinatura](#cobrança-da-assinatura-o-qro-cobrando-o-dono)
 - [Stack tecnológica](#stack-tecnológica)
 - [Arquitetura](#arquitetura)
 - [Pré-requisitos](#pré-requisitos)
@@ -77,7 +78,16 @@ fila ao vivo) e **Dono do espaço** (web responsivo, administração).
 - Envio de pedidos individuais por cozinha (uma comanda por restaurante)
 - Acompanhamento real-time do status de cada pedido via Socket.io
 - Solicitação de cobrança ("fechar conta") por cozinha
+- **Nome opcional no pedido, para separar as contas de quem divide a mesa.**
+  Pedido no carrinho e não na entrada — atrito antes de ver o cardápio custa
+  venda. Quem não preenche cai na conta da mesa, como era antes. Sem nome,
+  "fechar conta" levava junto o pedido do vizinho
 - Avaliação pós-consumo
+
+> **Um pedido, uma cozinha.** O carrinho é multi-cozinha, mas cada cozinha vira
+> um pedido próprio — e o servidor recusa um pedido que misture as duas. O resto
+> do sistema conta com isso: o total é um número só e a conta se fecha por
+> cozinha, então um pedido misto exibiria valor que não bate com nenhum balcão.
 
 ### Restaurante (app instalável — tablet, celular ou desktop)
 
@@ -125,10 +135,45 @@ A foto de capa da **cozinha** ainda é uma URL colada à mão — só o item do 
 - Conta, quintal e troca de espaço
 - O plano assinado e o que ele permite — leitura, porque trocar de plano é
   decisão comercial, não um interruptor
+- **Assinatura do QRO**: ver o estado, assinar e cancelar. O checkout é
+  hospedado pelo provedor, então dado de cartão nunca toca neste servidor
 
 Sem tela ainda: convite de equipe e o detalhe de cada cozinha — listados em
 `pendencias.txt`. Fila de pedidos do espaço **não** está na lista: é decisão de
 produto que o dono não vê pedido.
+
+### Cobrança da assinatura (o QRO cobrando o dono)
+
+> Não confundir com o **financeiro**, que é o dono cobrando as cozinhas dele —
+> aquele dinheiro nunca passa pelo app, cada cozinha acerta no próprio balcão.
+> Esta seção é sobre a mensalidade do SaaS, que passa por um provedor de verdade.
+
+- **Asaas**, com checkout hospedado e assinatura recorrente: **Pix e cartão**
+- **O cartão não passa pelo servidor.** A pessoa digita na página do provedor;
+  número de cartão não entra em log nem vira incidente aqui. O CPF/CNPJ também
+  fica lá — é opcional na API e o provedor coleta na página dele
+- **Boleto ficou de fora de propósito**: não debita sozinho, então todo mês o
+  cliente precisa agir. É rotatividade autoinfligida
+- O webhook responde **200 para quase tudo** — evento desconhecido, evento sem
+  dono, corpo torto. A fila do Asaas é sequencial e para depois de 15 falhas
+  seguidas, com os eventos sumindo em 14 dias: um erro nosso silenciaria a
+  cobrança inteira. As exceções são 401 (token errado) e 500 (banco fora)
+- **Cancelar deixa a conta `suspensa`, nunca `cancelada`.** `cancelada` bloqueia
+  o login — quem cancelasse ficaria trancado do lado de fora, sem conseguir nem
+  voltar a assinar
+- **Teste grátis que expira de verdade.** `TRIAL_DIAS` dias (padrão 7), varrido
+  de hora em hora; vencido sem assinatura, a conta vai para `suspensa` — lê tudo,
+  não altera nada. `TRIAL_DIAS=0` desliga o teste e exige assinatura desde o
+  primeiro dia
+
+**Desligado enquanto não houver chave.** Sem `ASAAS_API_KEY` nenhuma requisição
+sai, o webhook responde 503 e a tela do dono diz que o pagamento ainda não está
+ligado — mesma escolha do Resend e do Sentry.
+
+O boot recusa duas configurações perigosas: token de webhook igual à chave da
+API, e `NODE_ENV=production` com `ASAAS_AMBIENTE=sandbox` — esse segundo é o
+erro caro e silencioso, em que o cliente "paga" com dinheiro de mentira e a
+conta ativa.
 
 ## Stack tecnológica
 
@@ -316,6 +361,22 @@ Todas as rotas do cliente exigem o header
 | `POST` | `/api/m/pedidos/fechar-conta` | Solicitar cobrança a uma cozinha         |
 | `GET`  | `/health`                     | Healthcheck                              |
 | `GET`  | `/`                           | Info do servidor e endpoints disponíveis |
+
+A tabela acima cobre o app do **cliente**. As rotas do restaurante (`/api/r/*`),
+do dono (`/api/a/*`) e as públicas (convite, primeiro acesso, fotos, webhook)
+são muitas e mudam com frequência — em vez de duplicá-las aqui e deixá-las
+envelhecer, **`GET /` lista todas as que o servidor tem no ar naquele momento**:
+
+```bash
+curl -s http://localhost:3001/ | jq .endpoints
+```
+
+Vale reparar em duas:
+
+| Método | Rota                  | Descrição                                          |
+| ------ | --------------------- | -------------------------------------------------- |
+| `POST` | `/api/webhooks/asaas` | Cobrança. Público, autenticado pelo header próprio |
+| `GET`  | `/api/fotos/:chave`   | Foto do cardápio. Público, cache imutável          |
 
 ### Endpoints de desenvolvimento
 
