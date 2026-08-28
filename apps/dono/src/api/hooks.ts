@@ -219,8 +219,7 @@ export function usePrimeiroAcesso(token: string) {
  */
 export function usePedirRecuperacao() {
   return useMutation({
-    mutationFn: async (email: string) =>
-      (await api.post('/api/a/auth/recuperar', { email })).data,
+    mutationFn: async (email: string) => (await api.post('/api/a/auth/recuperar', { email })).data,
   });
 }
 
@@ -265,8 +264,7 @@ export function useAssinatura() {
  */
 export function useAssinar() {
   return useMutation({
-    mutationFn: async () =>
-      (await api.post<CheckoutResponse>('/api/a/assinatura/checkout')).data,
+    mutationFn: async () => (await api.post<CheckoutResponse>('/api/a/assinatura/checkout')).data,
     onSuccess: (data) => {
       window.location.href = data.link;
     },

@@ -45,14 +45,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           <span className="font-display text-body-lg text-ink truncate">
             {espaco?.name ?? 'QRO'}
           </span>
-          <span className="font-mono text-mono-sm text-inkDim hidden sm:inline">
-            admin
-          </span>
+          <span className="font-mono text-mono-sm text-inkDim hidden sm:inline">admin</span>
         </div>
         <div className="flex items-center gap-4 shrink-0">
-          <span className="font-sans text-body text-inkMuted hidden sm:inline">
-            {nome}
-          </span>
+          <span className="font-sans text-body text-inkMuted hidden sm:inline">{nome}</span>
           <button
             type="button"
             onClick={sair}

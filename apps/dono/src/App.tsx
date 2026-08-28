@@ -33,13 +33,16 @@ export function App() {
       <AppShell>
         <Routes>
           <Route path="/" element={<OverviewScreen />} />
-          <Route path="/restaurantes"       element={<RestaurantesScreen />} />
-          <Route path="/restaurantes/novo"  element={<OnboardScreen />} />
-          <Route path="/restaurantes/:slug" element={<PlaceholderScreen title="Detalhe da cozinha" note="Em construção." />} />
-          <Route path="/financeiro"         element={<FinanceiroScreen />} />
-          <Route path="/mesas"              element={<MesasScreen />} />
-          <Route path="/conta"              element={<ContaScreen />} />
-          <Route path="*"                   element={<Navigate to="/" replace />} />
+          <Route path="/restaurantes" element={<RestaurantesScreen />} />
+          <Route path="/restaurantes/novo" element={<OnboardScreen />} />
+          <Route
+            path="/restaurantes/:slug"
+            element={<PlaceholderScreen title="Detalhe da cozinha" note="Em construção." />}
+          />
+          <Route path="/financeiro" element={<FinanceiroScreen />} />
+          <Route path="/mesas" element={<MesasScreen />} />
+          <Route path="/conta" element={<ContaScreen />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
     </AuthGuard>

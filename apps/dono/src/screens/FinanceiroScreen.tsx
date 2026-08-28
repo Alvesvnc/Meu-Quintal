@@ -29,9 +29,7 @@ export function FinanceiroScreen() {
   return (
     <>
       <header className="mb-6">
-        <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">
-          Financeiro
-        </p>
+        <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">Financeiro</p>
         <h1 className="font-display text-display-xl text-ink leading-tight">
           {unico ? 'Seu faturamento.' : 'O que você tem a receber.'}
         </h1>
@@ -211,7 +209,11 @@ function Linha({ linha, fechado }: { linha: CobrancaLinha; fechado: boolean }) {
       </td>
 
       <td className="pr-4 text-right font-mono text-body text-inkMuted tabular-nums">
-        {linha.rentCents > 0 ? fmtBRLPrecise(linha.rentCents) : <span className="text-inkDim">—</span>}
+        {linha.rentCents > 0 ? (
+          fmtBRLPrecise(linha.rentCents)
+        ) : (
+          <span className="text-inkDim">—</span>
+        )}
       </td>
 
       <td className="pr-4 text-right font-mono text-body-lg text-primary tabular-nums">

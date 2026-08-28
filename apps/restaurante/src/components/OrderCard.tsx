@@ -62,8 +62,7 @@ export function OrderCard({ order }: OrderCardProps) {
   const elapsedMin = useMinutosDesde(startedAt) ?? 0;
   const createdMin = useMinutosDesde(order.createdAt) ?? 0;
 
-  const isPending =
-    accept.isPending || ready.isPending || delivered.isPending || cancel.isPending;
+  const isPending = accept.isPending || ready.isPending || delivered.isPending || cancel.isPending;
 
   const handleAdvance = () => {
     if (order.status === 'novo') accept.mutate(order.id);
@@ -73,9 +72,9 @@ export function OrderCard({ order }: OrderCardProps) {
 
   /** Rótulo e ícone da ação primária. O ícone diz o que acontece depois. */
   const CTA: Partial<Record<OrderItemStatus, { label: string; icone: typeof ChevronRight }>> = {
-    novo:       { label: 'Aceitar pedido', icone: ChevronRight },
-    preparando: { label: 'Marcar pronto',  icone: BellRing },
-    pronto:     { label: 'Entregue',       icone: ShoppingBasket },
+    novo: { label: 'Aceitar pedido', icone: ChevronRight },
+    preparando: { label: 'Marcar pronto', icone: BellRing },
+    pronto: { label: 'Entregue', icone: ShoppingBasket },
   };
   const cta = CTA[order.status] ?? null;
   const IconeCta = cta?.icone;
@@ -119,9 +118,7 @@ export function OrderCard({ order }: OrderCardProps) {
               Invertido, o olho pararia no nome e teria que voltar pra achar
               aonde ir.
             */}
-            {order.nomeCliente && (
-              <span className="text-neutral-700"> · {order.nomeCliente}</span>
-            )}
+            {order.nomeCliente && <span className="text-neutral-700"> · {order.nomeCliente}</span>}
           </span>
           <span
             className={[
@@ -129,8 +126,7 @@ export function OrderCard({ order }: OrderCardProps) {
               atrasado ? 'text-accent-700' : 'text-neutral-600',
             ].join(' ')}
           >
-            <Clock size={12} strokeWidth={2} aria-hidden className="shrink-0" />
-            #{order.shortId}
+            <Clock size={12} strokeWidth={2} aria-hidden className="shrink-0" />#{order.shortId}
             {tempoLabel && ` · ${tempoLabel}`}
           </span>
         </div>

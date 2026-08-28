@@ -78,14 +78,20 @@ export function efeitoDoEvento(evento: string): Efeito {
     case 'PAYMENT_UPDATED':
       return { tipo: 'ignorar', motivo: 'cobranca alterada, sem efeito no acesso' };
     case 'PAYMENT_DELETED':
-      return { tipo: 'ignorar', motivo: 'cobranca removida; quem encerra e o evento de assinatura' };
+      return {
+        tipo: 'ignorar',
+        motivo: 'cobranca removida; quem encerra e o evento de assinatura',
+      };
     case 'PAYMENT_PARTIALLY_REFUNDED':
       // Estorno parcial não diz se a assinatura segue. Registra e deixa pra
       // decisão humana em vez de chutar entre cortar acesso e ignorar.
       return { tipo: 'ignorar', motivo: 'estorno parcial: exige conferencia manual' };
     case 'PAYMENT_CHARGEBACK_DISPUTE':
     case 'PAYMENT_AWAITING_CHARGEBACK_REVERSAL':
-      return { tipo: 'ignorar', motivo: 'disputa em andamento; o acesso ja caiu no CHARGEBACK_REQUESTED' };
+      return {
+        tipo: 'ignorar',
+        motivo: 'disputa em andamento; o acesso ja caiu no CHARGEBACK_REQUESTED',
+      };
     case 'CHECKOUT_CREATED':
       return { tipo: 'ignorar', motivo: 'checkout criado por nos mesmos' };
     case 'SUBSCRIPTION_CREATED':

@@ -257,9 +257,7 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
     });
     const conhecidas = new Set(minhas.map((c) => c.id));
     if (ids.length !== minhas.length || ids.some((id) => !conhecidas.has(id))) {
-      return reply
-        .code(400)
-        .send({ error: 'A ordem precisa listar todas as secoes do cardapio.' });
+      return reply.code(400).send({ error: 'A ordem precisa listar todas as secoes do cardapio.' });
     }
 
     await prisma.$transaction(
@@ -695,10 +693,7 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
     // a escrita no banco falhasse — e o arquivo velho ja teria ido embora.
     if (anterior?.photoKey) await apagar(anterior.photoKey);
 
-    req.log.info(
-      { kitchenId: ctx.kitchenId, bytes: processada.bytes },
-      'foto da cozinha enviada',
-    );
+    req.log.info({ kitchenId: ctx.kitchenId, bytes: processada.bytes }, 'foto da cozinha enviada');
 
     return reply.code(201).send(montarPerfil(k));
   });
@@ -781,7 +776,8 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
       const datas = o.items
         .map((i) => i.pickedAt ?? i.canceledAt)
         .filter((d): d is Date => d != null);
-      const fechadoEm = datas.length > 0 ? new Date(Math.max(...datas.map((d) => +d))) : o.createdAt;
+      const fechadoEm =
+        datas.length > 0 ? new Date(Math.max(...datas.map((d) => +d))) : o.createdAt;
 
       pedidos.push({
         id: o.id,

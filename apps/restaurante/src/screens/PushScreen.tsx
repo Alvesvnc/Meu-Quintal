@@ -151,9 +151,7 @@ export function PushScreen() {
             </div>
 
             {avisoDeErro && (
-              <p className="mt-3 font-sans text-body-sm text-danger text-pretty">
-                {avisoDeErro}
-              </p>
+              <p className="mt-3 font-sans text-body-sm text-danger text-pretty">{avisoDeErro}</p>
             )}
 
             {/*

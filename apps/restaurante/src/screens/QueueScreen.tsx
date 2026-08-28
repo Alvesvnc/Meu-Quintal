@@ -39,16 +39,16 @@ export function QueueScreen() {
   const buckets = useMemo(() => {
     const orders = data?.orders ?? [];
     return {
-      novo:       orders.filter((o) => o.status === 'novo'),
+      novo: orders.filter((o) => o.status === 'novo'),
       preparando: orders.filter((o) => o.status === 'preparando'),
-      pronto:     orders.filter((o) => o.status === 'pronto'),
+      pronto: orders.filter((o) => o.status === 'pronto'),
     };
   }, [data]);
 
   const tabs = [
-    { id: 'novo',       label: 'Novos',      count: buckets.novo.length },
+    { id: 'novo', label: 'Novos', count: buckets.novo.length },
     { id: 'preparando', label: 'Preparando', count: buckets.preparando.length },
-    { id: 'pronto',     label: 'Prontos',    count: buckets.pronto.length },
+    { id: 'pronto', label: 'Prontos', count: buckets.pronto.length },
   ] as const;
 
   const list = buckets[active];
@@ -103,9 +103,9 @@ export function QueueScreen() {
 
 function EmptyState({ status }: { status: ActiveStatus }) {
   const copy = {
-    novo:       'Sem pedidos novos. Respira.',
+    novo: 'Sem pedidos novos. Respira.',
     preparando: 'Nada na chapa agora.',
-    pronto:     'Nada esperando no balcão.',
+    pronto: 'Nada esperando no balcão.',
   }[status];
   const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   // Centralizado a partir do `sm`: no monitor, a frase sozinha encostada na

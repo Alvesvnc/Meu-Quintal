@@ -28,28 +28,24 @@ const SECTIONS: NavSection[] = [
   {
     label: 'Diário',
     items: [
-      { to: '/',       label: 'Visão geral' },
-      { to: '/mesas',  label: 'Mesas' },
+      { to: '/', label: 'Visão geral' },
+      { to: '/mesas', label: 'Mesas' },
     ],
   },
   {
     label: 'Configurar',
     items: [
-      { to: '/restaurantes',       label: 'Restaurantes' },
-      { to: '/restaurantes/novo',  label: 'Adicionar cozinha' },
+      { to: '/restaurantes', label: 'Restaurantes' },
+      { to: '/restaurantes/novo', label: 'Adicionar cozinha' },
     ],
   },
   {
     label: 'Financeiro',
-    items: [
-      { to: '/financeiro',  label: 'Cobranças & receita' },
-    ],
+    items: [{ to: '/financeiro', label: 'Cobranças & receita' }],
   },
   {
     label: 'Eu',
-    items: [
-      { to: '/conta',       label: 'Conta' },
-    ],
+    items: [{ to: '/conta', label: 'Conta' }],
   },
 ];
 
@@ -69,14 +65,16 @@ export function Sidebar({ onNavegar }: SidebarProps = {}) {
                     to={item.to}
                     end={item.to === '/'}
                     onClick={onNavegar}
-                    className={({ isActive }) => [
-                      'block px-3 py-2 font-sans text-body cursor-pointer',
-                      'transition-colors duration-base ease-out',
-                      'border-l-2',
-                      isActive
-                        ? 'border-l-primary bg-primaryWash text-primary font-medium'
-                        : 'border-l-transparent text-inkMuted hover:bg-surface hover:text-ink',
-                    ].join(' ')}
+                    className={({ isActive }) =>
+                      [
+                        'block px-3 py-2 font-sans text-body cursor-pointer',
+                        'transition-colors duration-base ease-out',
+                        'border-l-2',
+                        isActive
+                          ? 'border-l-primary bg-primaryWash text-primary font-medium'
+                          : 'border-l-transparent text-inkMuted hover:bg-surface hover:text-ink',
+                      ].join(' ')
+                    }
                   >
                     {item.label}
                   </NavLink>

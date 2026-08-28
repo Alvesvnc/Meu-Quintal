@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { criarPrismaMock, ESPACO, CONTA, usuarioDono, type PrismaMock } from '../test/prismaMock.js';
+import {
+  criarPrismaMock,
+  ESPACO,
+  CONTA,
+  usuarioDono,
+  type PrismaMock,
+} from '../test/prismaMock.js';
 
 const prismaMock: PrismaMock = criarPrismaMock();
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
@@ -83,12 +89,26 @@ afterEach(async () => {
 describe('GET /api/a/cozinhas — e configuracao, nao acompanhamento', () => {
   function duasCozinhas() {
     prismaMock.kitchen.findMany.mockResolvedValue([
-      { ...COM_COMISSAO, category: null, status: 'ativa', slaMinutes: 12, commissionPct: null,
-        chargeRent: false, rentCents: 0,
-        orderItems: [{ qty: 2, unitPriceCents: 3000, orderId: 'o1' }] },
-      { ...SO_ALUGUEL, category: null, status: 'ativa', slaMinutes: 12, commissionPct: null,
-        chargeRent: true, rentCents: 300_000,
-        orderItems: [{ qty: 5, unitPriceCents: 4000, orderId: 'o2' }] },
+      {
+        ...COM_COMISSAO,
+        category: null,
+        status: 'ativa',
+        slaMinutes: 12,
+        commissionPct: null,
+        chargeRent: false,
+        rentCents: 0,
+        orderItems: [{ qty: 2, unitPriceCents: 3000, orderId: 'o1' }],
+      },
+      {
+        ...SO_ALUGUEL,
+        category: null,
+        status: 'ativa',
+        slaMinutes: 12,
+        commissionPct: null,
+        chargeRent: true,
+        rentCents: 300_000,
+        orderItems: [{ qty: 5, unitPriceCents: 4000, orderId: 'o2' }],
+      },
     ]);
   }
 
@@ -151,17 +171,31 @@ describe('GET /api/a/financeiro', () => {
   function comAncora() {
     prismaMock.billingCycle.findUnique.mockResolvedValue(null);
     prismaMock.kitchen.findMany.mockResolvedValue([
-      { ...COM_COMISSAO, commissionPct: null, chargeRent: false, rentCents: 0,
-        orderItems: [{ qty: 2, unitPriceCents: 3000 }] },
-      { ...SO_ALUGUEL, commissionPct: null, chargeRent: true, rentCents: 300_000,
-        orderItems: [{ qty: 5, unitPriceCents: 4000 }] },
+      {
+        ...COM_COMISSAO,
+        commissionPct: null,
+        chargeRent: false,
+        rentCents: 0,
+        orderItems: [{ qty: 2, unitPriceCents: 3000 }],
+      },
+      {
+        ...SO_ALUGUEL,
+        commissionPct: null,
+        chargeRent: true,
+        rentCents: 300_000,
+        orderItems: [{ qty: 5, unitPriceCents: 4000 }],
+      },
     ]);
   }
 
   it('o total NAO entrega a oculta por subtracao', async () => {
     comAncora();
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
 
     // A Taverna vendeu 20.000. Se o rodape somasse 26.000, bastaria subtrair a
@@ -174,7 +208,11 @@ describe('GET /api/a/financeiro', () => {
   it('o que a cozinha DEVE continua somando — isso e dinheiro do dono', async () => {
     comAncora();
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
 
     // Esconder o bruto nao pode esconder a cobranca: o aluguel da Taverna e
@@ -186,12 +224,21 @@ describe('GET /api/a/financeiro', () => {
   it('todo mundo visivel: o total volta a ser o do espaco', async () => {
     prismaMock.billingCycle.findUnique.mockResolvedValue(null);
     prismaMock.kitchen.findMany.mockResolvedValue([
-      { ...COM_COMISSAO, commissionPct: null, chargeRent: false, rentCents: 0,
-        orderItems: [{ qty: 2, unitPriceCents: 3000 }] },
+      {
+        ...COM_COMISSAO,
+        commissionPct: null,
+        chargeRent: false,
+        rentCents: 0,
+        orderItems: [{ qty: 2, unitPriceCents: 3000 }],
+      },
     ]);
 
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
 
     expect(j.totais.grossParcial).toBe(false);
@@ -225,7 +272,11 @@ describe('ciclo fechado usa o acordo DA EPOCA', () => {
     });
 
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
 
     // Fecha o buraco do "liga a comissao, olha o historico, desliga de novo".
@@ -255,7 +306,11 @@ describe('ciclo fechado usa o acordo DA EPOCA', () => {
     });
 
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
 
     // Sem o bruto, a cozinha nao teria como conferir se os 15% batem.
@@ -297,7 +352,11 @@ describe('agregado do espaco conta TODAS as cozinhas', () => {
   it('o consumo da mesa conta todas as cozinhas', async () => {
     prismaMock.table.findMany.mockResolvedValue([
       {
-        id: 't1', numero: 4, status: 'ocupada', isActive: true, qrToken: 'segredo',
+        id: 't1',
+        numero: 4,
+        status: 'ocupada',
+        isActive: true,
+        qrToken: 'segredo',
         orders: [{ items: [item(COM_COMISSAO, 2, 3000), item(SO_ALUGUEL, 5, 4000)] }],
       },
     ]);
@@ -312,7 +371,11 @@ describe('agregado do espaco conta TODAS as cozinhas', () => {
   it('a lista de mesas nao diz de que cozinha veio o consumo', async () => {
     prismaMock.table.findMany.mockResolvedValue([
       {
-        id: 't1', numero: 4, status: 'ocupada', isActive: true, qrToken: 'segredo',
+        id: 't1',
+        numero: 4,
+        status: 'ocupada',
+        isActive: true,
+        qrToken: 'segredo',
         orders: [{ items: [item(SO_ALUGUEL, 5, 4000)] }],
       },
     ]);
@@ -320,7 +383,12 @@ describe('agregado do espaco conta TODAS as cozinhas', () => {
     const j = (await app.inject({ method: 'GET', url: '/api/a/mesas', headers: auth() })).json();
 
     expect(Object.keys(j[0])).toEqual([
-      'id', 'numero', 'status', 'isActive', 'ordersToday', 'grossTodayCents',
+      'id',
+      'numero',
+      'status',
+      'isActive',
+      'ordersToday',
+      'grossTodayCents',
     ]);
     expect(JSON.stringify(j)).not.toContain('taverna');
   });
@@ -329,12 +397,22 @@ describe('agregado do espaco conta TODAS as cozinhas', () => {
     const CRIADA_ANTES = new Date('2026-01-01T00:00:00Z');
     prismaMock.table.findMany.mockResolvedValue([
       {
-        id: 't1', numero: 1, isActive: true, createdAt: CRIADA_ANTES,
-        orders: [{ createdAt: new Date('2026-01-15T20:00:00Z'), items: [item(COM_COMISSAO, 2, 3000)] }],
+        id: 't1',
+        numero: 1,
+        isActive: true,
+        createdAt: CRIADA_ANTES,
+        orders: [
+          { createdAt: new Date('2026-01-15T20:00:00Z'), items: [item(COM_COMISSAO, 2, 3000)] },
+        ],
       },
       {
-        id: 't2', numero: 2, isActive: true, createdAt: CRIADA_ANTES,
-        orders: [{ createdAt: new Date('2026-01-15T20:00:00Z'), items: [item(SO_ALUGUEL, 10, 5000)] }],
+        id: 't2',
+        numero: 2,
+        isActive: true,
+        createdAt: CRIADA_ANTES,
+        orders: [
+          { createdAt: new Date('2026-01-15T20:00:00Z'), items: [item(SO_ALUGUEL, 10, 5000)] },
+        ],
       },
     ]);
 
@@ -355,8 +433,13 @@ describe('agregado do espaco conta TODAS as cozinhas', () => {
   it('o ranking nao nomeia cozinha nenhuma', async () => {
     prismaMock.table.findMany.mockResolvedValue([
       {
-        id: 't2', numero: 2, isActive: true, createdAt: new Date('2026-01-01T00:00:00Z'),
-        orders: [{ createdAt: new Date('2026-01-15T20:00:00Z'), items: [item(SO_ALUGUEL, 10, 5000)] }],
+        id: 't2',
+        numero: 2,
+        isActive: true,
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+        orders: [
+          { createdAt: new Date('2026-01-15T20:00:00Z'), items: [item(SO_ALUGUEL, 10, 5000)] },
+        ],
       },
     ]);
 
@@ -406,12 +489,21 @@ describe('o dono ve o caixa da PROPRIA cozinha', () => {
     prismaMock.accountUser.findUnique.mockResolvedValue(donoOperando('k2'));
     prismaMock.billingCycle.findUnique.mockResolvedValue(null);
     prismaMock.kitchen.findMany.mockResolvedValue([
-      { ...SO_ALUGUEL, chargeRent: false, rentCents: 0, commissionPct: null,
-        orderItems: [{ qty: 5, unitPriceCents: 4000 }] },
+      {
+        ...SO_ALUGUEL,
+        chargeRent: false,
+        rentCents: 0,
+        commissionPct: null,
+        orderItems: [{ qty: 5, unitPriceCents: 4000 }],
+      },
     ]);
 
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
 
     // Esconder do dono o proprio caixa seria absurdo.
@@ -423,14 +515,28 @@ describe('o dono ve o caixa da PROPRIA cozinha', () => {
     prismaMock.accountUser.findUnique.mockResolvedValue(donoOperando('k1'));
     prismaMock.billingCycle.findUnique.mockResolvedValue(null);
     prismaMock.kitchen.findMany.mockResolvedValue([
-      { ...COM_COMISSAO, commissionPct: null, chargeRent: false, rentCents: 0,
-        orderItems: [{ qty: 2, unitPriceCents: 3000 }] },
-      { ...SO_ALUGUEL, commissionPct: null, chargeRent: true, rentCents: 300_000,
-        orderItems: [{ qty: 5, unitPriceCents: 4000 }] },
+      {
+        ...COM_COMISSAO,
+        commissionPct: null,
+        chargeRent: false,
+        rentCents: 0,
+        orderItems: [{ qty: 2, unitPriceCents: 3000 }],
+      },
+      {
+        ...SO_ALUGUEL,
+        commissionPct: null,
+        chargeRent: true,
+        rentCents: 300_000,
+        orderItems: [{ qty: 5, unitPriceCents: 4000 }],
+      },
     ]);
 
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
 
     const taverna = j.linhas.find((l: { kitchenSlug: string }) => l.kitchenSlug === 'taverna');
@@ -494,7 +600,11 @@ describe('nenhuma rota do dono diz O QUE foi pedido', () => {
   it('/api/a/mesas nao vaza o conteudo do pedido', async () => {
     prismaMock.table.findMany.mockResolvedValue([
       {
-        id: 't1', numero: 4, status: 'ocupada', isActive: true, qrToken: 'segredo',
+        id: 't1',
+        numero: 4,
+        status: 'ocupada',
+        isActive: true,
+        qrToken: 'segredo',
         orders: [pedidoFalante([itemFalante(COM_COMISSAO)])],
       },
     ]);
@@ -507,7 +617,10 @@ describe('nenhuma rota do dono diz O QUE foi pedido', () => {
   it('/api/a/mesas/desempenho nao vaza o conteudo do pedido', async () => {
     prismaMock.table.findMany.mockResolvedValue([
       {
-        id: 't1', numero: 1, isActive: true, createdAt: new Date('2026-01-01T00:00:00Z'),
+        id: 't1',
+        numero: 1,
+        isActive: true,
+        createdAt: new Date('2026-01-01T00:00:00Z'),
         orders: [pedidoFalante([itemFalante(SO_ALUGUEL)])],
       },
     ]);
@@ -528,13 +641,19 @@ describe('nenhuma rota do dono diz O QUE foi pedido', () => {
     prismaMock.kitchen.findMany.mockResolvedValue([
       {
         ...COM_COMISSAO,
-        commissionPct: null, chargeRent: false, rentCents: 0,
+        commissionPct: null,
+        chargeRent: false,
+        rentCents: 0,
         orderItems: [itemFalante(COM_COMISSAO)],
       },
     ]);
 
     const j = (
-      await app.inject({ method: 'GET', url: '/api/a/financeiro?refMonth=2026-01', headers: auth() })
+      await app.inject({
+        method: 'GET',
+        url: '/api/a/financeiro?refMonth=2026-01',
+        headers: auth(),
+      })
     ).json();
     // `lou-burger` aparece aqui de proposito: o financeiro QUEBRA por cozinha,
     // e o dono precisa saber de quem e a cobranca. O que nao pode e o prato.

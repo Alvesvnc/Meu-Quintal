@@ -7,12 +7,8 @@ import { useCart, selectItemCount, selectTotalCents, groupByKitchen } from './ca
  * capa na linha, e um fixture sem ele quebraria por falta de dado — nao por
  * regra de carrinho, que e o que estes testes cobrem.
  */
-const item = (
-  id: string,
-  priceCents: number,
-  name = `item-${id}`,
-  extra: Partial<MenuItem> = {},
-) => ({ id, name, priceCents, fotos: [], photoUrl: null, ...extra }) as MenuItem;
+const item = (id: string, priceCents: number, name = `item-${id}`, extra: Partial<MenuItem> = {}) =>
+  ({ id, name, priceCents, fotos: [], photoUrl: null, ...extra }) as MenuItem;
 
 const nagoya = { slug: 'nagoya', name: 'Nagoya' };
 const forno = { slug: 'forno', name: 'Forno de Barro' };
@@ -107,9 +103,30 @@ describe('carrinho — totais', () => {
 describe('groupByKitchen', () => {
   it('agrupa por cozinha e soma subtotal de cada uma', () => {
     const groups = groupByKitchen([
-      { menuItemId: 'a', name: 'A', priceCents: 1000, kitchenSlug: 'nagoya', kitchenName: 'Nagoya', qty: 2 },
-      { menuItemId: 'b', name: 'B', priceCents: 500, kitchenSlug: 'forno', kitchenName: 'Forno de Barro', qty: 1 },
-      { menuItemId: 'c', name: 'C', priceCents: 250, kitchenSlug: 'nagoya', kitchenName: 'Nagoya', qty: 4 },
+      {
+        menuItemId: 'a',
+        name: 'A',
+        priceCents: 1000,
+        kitchenSlug: 'nagoya',
+        kitchenName: 'Nagoya',
+        qty: 2,
+      },
+      {
+        menuItemId: 'b',
+        name: 'B',
+        priceCents: 500,
+        kitchenSlug: 'forno',
+        kitchenName: 'Forno de Barro',
+        qty: 1,
+      },
+      {
+        menuItemId: 'c',
+        name: 'C',
+        priceCents: 250,
+        kitchenSlug: 'nagoya',
+        kitchenName: 'Nagoya',
+        qty: 4,
+      },
     ]);
 
     expect(groups).toHaveLength(2);

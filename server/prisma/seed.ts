@@ -67,17 +67,26 @@ async function main() {
 
   // ─── Cozinhas (5 ativas + 1 pausada) ───────────────────────────────────
   const PHOTOS = {
-    burger:    'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80&auto=format&fit=crop',
-    moqueca:   'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80&auto=format&fit=crop',
-    pastel:    'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80&auto=format&fit=crop',
-    salada:    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80&auto=format&fit=crop',
-    doce:      'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=80&auto=format&fit=crop',
-    batata:    'https://images.unsplash.com/photo-1639024471283-03518883512d?w=400&q=80&auto=format&fit=crop',
-    refri:     'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80&auto=format&fit=crop',
-    cerveja:   'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=400&q=80&auto=format&fit=crop',
-    smashVeg:  'https://images.unsplash.com/photo-1525059696034-4967a8e1dca2?w=400&q=80&auto=format&fit=crop',
-    brownie:   'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&q=80&auto=format&fit=crop',
-    agua:      'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&q=80&auto=format&fit=crop',
+    burger:
+      'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80&auto=format&fit=crop',
+    moqueca:
+      'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80&auto=format&fit=crop',
+    pastel:
+      'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80&auto=format&fit=crop',
+    salada:
+      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80&auto=format&fit=crop',
+    doce: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=80&auto=format&fit=crop',
+    batata:
+      'https://images.unsplash.com/photo-1639024471283-03518883512d?w=400&q=80&auto=format&fit=crop',
+    refri:
+      'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&q=80&auto=format&fit=crop',
+    cerveja:
+      'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=400&q=80&auto=format&fit=crop',
+    smashVeg:
+      'https://images.unsplash.com/photo-1525059696034-4967a8e1dca2?w=400&q=80&auto=format&fit=crop',
+    brownie:
+      'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&q=80&auto=format&fit=crop',
+    agua: 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&q=80&auto=format&fit=crop',
   };
 
   // Helper pra criar user da cozinha
@@ -115,10 +124,7 @@ async function main() {
    * topicos sao escritos por quem cozinha, e um banco de dev em que todo mundo
    * usa "Entradas/Pratos/Sobremesas/Bebidas" esconderia justamente isso.
    */
-  async function cardapio(
-    kitchenId: string,
-    secoes: Array<{ nome: string; itens: ItemDoSeed[] }>,
-  ) {
+  async function cardapio(kitchenId: string, secoes: Array<{ nome: string; itens: ItemDoSeed[] }>) {
     for (const [i, secao] of secoes.entries()) {
       const categoria = await prisma.menuCategoria.create({
         data: { kitchenId, name: secao.nome, sortOrder: i },
@@ -152,31 +158,95 @@ async function main() {
     {
       nome: 'Pra começar',
       itens: [
-        { name: 'Batata-doce frita', description: 'Cubos rústicos, sal de ervas, maionese de páprica defumada.', priceCents: 1800, photoUrl: PHOTOS.batata, sortOrder: 1 },
-        { name: 'Onion rings',       description: 'Cebola roxa em anéis grossos, empanado leve, molho ranch da casa.', priceCents: 2200, photoUrl: PHOTOS.batata, sortOrder: 2 },
+        {
+          name: 'Batata-doce frita',
+          description: 'Cubos rústicos, sal de ervas, maionese de páprica defumada.',
+          priceCents: 1800,
+          photoUrl: PHOTOS.batata,
+          sortOrder: 1,
+        },
+        {
+          name: 'Onion rings',
+          description: 'Cebola roxa em anéis grossos, empanado leve, molho ranch da casa.',
+          priceCents: 2200,
+          photoUrl: PHOTOS.batata,
+          sortOrder: 2,
+        },
       ],
     },
     {
       nome: 'Os smash',
       itens: [
-        { name: 'Smash Lou',         description: 'Dois smashes de 90g, queijo prato derretido, picles, molho da casa.', priceCents: 3200, photoUrl: PHOTOS.burger, sortOrder: 1, badge: 'novo' },
-        { name: 'Smash duplo bacon', description: 'Dois smashes 90g, bacon caramelizado, cheddar inglês, cebola crispy.', priceCents: 3800, photoUrl: PHOTOS.burger, sortOrder: 2 },
-        { name: 'Smash vegetariano', description: 'Burger de grão-de-bico e beterraba, queijo coalho, rúcula.', priceCents: 2900, photoUrl: PHOTOS.smashVeg, sortOrder: 3 },
-        { name: 'Smash triplo',      description: 'Três smashes 90g, cheddar duplo, sem firula.', priceCents: 4600, photoUrl: PHOTOS.burger, sortOrder: 4, available: false, badge: 'sem_estoque' },
+        {
+          name: 'Smash Lou',
+          description: 'Dois smashes de 90g, queijo prato derretido, picles, molho da casa.',
+          priceCents: 3200,
+          photoUrl: PHOTOS.burger,
+          sortOrder: 1,
+          badge: 'novo',
+        },
+        {
+          name: 'Smash duplo bacon',
+          description: 'Dois smashes 90g, bacon caramelizado, cheddar inglês, cebola crispy.',
+          priceCents: 3800,
+          photoUrl: PHOTOS.burger,
+          sortOrder: 2,
+        },
+        {
+          name: 'Smash vegetariano',
+          description: 'Burger de grão-de-bico e beterraba, queijo coalho, rúcula.',
+          priceCents: 2900,
+          photoUrl: PHOTOS.smashVeg,
+          sortOrder: 3,
+        },
+        {
+          name: 'Smash triplo',
+          description: 'Três smashes 90g, cheddar duplo, sem firula.',
+          priceCents: 4600,
+          photoUrl: PHOTOS.burger,
+          sortOrder: 4,
+          available: false,
+          badge: 'sem_estoque',
+        },
       ],
     },
     {
       nome: 'Doce',
       itens: [
-        { name: 'Brownie quente', description: 'Brownie meio amargo recém-saído do forno, sorvete de baunilha.', priceCents: 2400, photoUrl: PHOTOS.brownie, sortOrder: 1 },
+        {
+          name: 'Brownie quente',
+          description: 'Brownie meio amargo recém-saído do forno, sorvete de baunilha.',
+          priceCents: 2400,
+          photoUrl: PHOTOS.brownie,
+          sortOrder: 1,
+        },
       ],
     },
     {
       nome: 'Bebidas',
       itens: [
-        { name: 'Refrigerante lata', description: 'Coca, Guaraná, Sprite, Coca zero.', priceCents: 700, photoUrl: PHOTOS.refri, sortOrder: 1 },
-        { name: 'Água com gás',      description: '500ml, limão opcional.', priceCents: 600, photoUrl: PHOTOS.agua, sortOrder: 2 },
-        { name: 'Chopp artesanal',   description: 'Pilsen da microcervejaria parceira, 350ml.', priceCents: 1400, photoUrl: PHOTOS.cerveja, sortOrder: 3, badge: 'esgotando' },
+        {
+          name: 'Refrigerante lata',
+          description: 'Coca, Guaraná, Sprite, Coca zero.',
+          priceCents: 700,
+          photoUrl: PHOTOS.refri,
+          sortOrder: 1,
+        },
+        {
+          name: 'Água com gás',
+          description: '500ml, limão opcional.',
+          priceCents: 600,
+          photoUrl: PHOTOS.agua,
+          sortOrder: 2,
+        },
+        {
+          name: 'Chopp artesanal',
+          description: 'Pilsen da microcervejaria parceira, 350ml.',
+          priceCents: 1400,
+          photoUrl: PHOTOS.cerveja,
+          sortOrder: 3,
+          badge: 'esgotando',
+        },
       ],
     },
   ]);
@@ -206,14 +276,32 @@ async function main() {
     {
       nome: 'Do mar',
       itens: [
-        { name: 'Moqueca de peixe', description: 'Peixe branco do dia, leite de coco, dendê, arroz de coco e farofa.', priceCents: 5800, photoUrl: PHOTOS.moqueca, sortOrder: 1 },
-        { name: 'Moqueca grande',   description: 'Pra duas pessoas. Acompanha pirão.', priceCents: 8800, photoUrl: PHOTOS.moqueca, sortOrder: 2 },
+        {
+          name: 'Moqueca de peixe',
+          description: 'Peixe branco do dia, leite de coco, dendê, arroz de coco e farofa.',
+          priceCents: 5800,
+          photoUrl: PHOTOS.moqueca,
+          sortOrder: 1,
+        },
+        {
+          name: 'Moqueca grande',
+          description: 'Pra duas pessoas. Acompanha pirão.',
+          priceCents: 8800,
+          photoUrl: PHOTOS.moqueca,
+          sortOrder: 2,
+        },
       ],
     },
     {
       nome: 'Sucos',
       itens: [
-        { name: 'Suco de maracujá', description: 'Polpa fresca, sem açúcar.', priceCents: 1200, photoUrl: PHOTOS.refri, sortOrder: 1 },
+        {
+          name: 'Suco de maracujá',
+          description: 'Polpa fresca, sem açúcar.',
+          priceCents: 1200,
+          photoUrl: PHOTOS.refri,
+          sortOrder: 1,
+        },
       ],
     },
   ]);
@@ -242,14 +330,32 @@ async function main() {
     {
       nome: 'Pastéis',
       itens: [
-        { name: 'Pastel de carne',  description: 'Massa fininha, carne moída temperada.', priceCents: 1200, photoUrl: PHOTOS.pastel, sortOrder: 1 },
-        { name: 'Pastel de queijo', description: 'Queijo coalho derretido, recheio fartos.', priceCents: 1200, photoUrl: PHOTOS.pastel, sortOrder: 2 },
+        {
+          name: 'Pastel de carne',
+          description: 'Massa fininha, carne moída temperada.',
+          priceCents: 1200,
+          photoUrl: PHOTOS.pastel,
+          sortOrder: 1,
+        },
+        {
+          name: 'Pastel de queijo',
+          description: 'Queijo coalho derretido, recheio fartos.',
+          priceCents: 1200,
+          photoUrl: PHOTOS.pastel,
+          sortOrder: 2,
+        },
       ],
     },
     {
       nome: 'Pra beber',
       itens: [
-        { name: 'Caldo de cana 300ml', description: 'Da hora, com limão opcional.', priceCents: 900, photoUrl: PHOTOS.refri, sortOrder: 1 },
+        {
+          name: 'Caldo de cana 300ml',
+          description: 'Da hora, com limão opcional.',
+          priceCents: 900,
+          photoUrl: PHOTOS.refri,
+          sortOrder: 1,
+        },
       ],
     },
   ]);
@@ -279,8 +385,20 @@ async function main() {
     {
       nome: 'Tigelas',
       itens: [
-        { name: 'Tigela do Zé',  description: 'Quinoa, grão-de-bico, vegetais assados, molho de missô.', priceCents: 3200, photoUrl: PHOTOS.salada, sortOrder: 1 },
-        { name: 'Bowl de grãos', description: 'Arroz vermelho, feijão azuki, ovo, abobrinha.', priceCents: 2800, photoUrl: PHOTOS.salada, sortOrder: 2 },
+        {
+          name: 'Tigela do Zé',
+          description: 'Quinoa, grão-de-bico, vegetais assados, molho de missô.',
+          priceCents: 3200,
+          photoUrl: PHOTOS.salada,
+          sortOrder: 1,
+        },
+        {
+          name: 'Bowl de grãos',
+          description: 'Arroz vermelho, feijão azuki, ovo, abobrinha.',
+          priceCents: 2800,
+          photoUrl: PHOTOS.salada,
+          sortOrder: 2,
+        },
       ],
     },
   ]);
@@ -309,14 +427,32 @@ async function main() {
     {
       nome: 'Doces',
       itens: [
-        { name: 'Brigadeiro de colher', description: 'Pote 200g, com granulado belga.', priceCents: 1800, photoUrl: PHOTOS.doce, sortOrder: 1 },
-        { name: 'Pudim de leite',       description: 'Tradicional, calda escura.', priceCents: 1600, photoUrl: PHOTOS.doce, sortOrder: 2 },
+        {
+          name: 'Brigadeiro de colher',
+          description: 'Pote 200g, com granulado belga.',
+          priceCents: 1800,
+          photoUrl: PHOTOS.doce,
+          sortOrder: 1,
+        },
+        {
+          name: 'Pudim de leite',
+          description: 'Tradicional, calda escura.',
+          priceCents: 1600,
+          photoUrl: PHOTOS.doce,
+          sortOrder: 2,
+        },
       ],
     },
     {
       nome: 'Café',
       itens: [
-        { name: 'Café coado', description: 'Especial do dia, 200ml.', priceCents: 800, photoUrl: PHOTOS.refri, sortOrder: 1 },
+        {
+          name: 'Café coado',
+          description: 'Especial do dia, 200ml.',
+          priceCents: 800,
+          photoUrl: PHOTOS.refri,
+          sortOrder: 1,
+        },
       ],
     },
   ]);
@@ -372,7 +508,9 @@ Item ID pra criar pedido cliente (use no body):
 }
 
 main()
-  .then(async () => { await prisma.$disconnect(); })
+  .then(async () => {
+    await prisma.$disconnect();
+  })
   .catch(async (e) => {
     console.error(e);
     await prisma.$disconnect();

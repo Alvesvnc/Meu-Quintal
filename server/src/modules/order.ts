@@ -60,7 +60,9 @@ export async function orderRoutes(fastify: FastifyInstance) {
       // marca `available: false`, entao ha duas travas — mas depender so da
       // segunda deixaria o item pedivel se alguem religasse a disponibilidade.
       where: { id: { in: menuItemIds }, archivedAt: null },
-      include: { kitchen: { select: { id: true, slug: true, name: true, status: true, spaceId: true } } },
+      include: {
+        kitchen: { select: { id: true, slug: true, name: true, status: true, spaceId: true } },
+      },
     });
 
     // Comparar com os ids DISTINTOS, nao com o numero de linhas.
@@ -177,7 +179,9 @@ export async function orderRoutes(fastify: FastifyInstance) {
     }
 
     if (!order) {
-      return reply.code(500).send({ error: 'Nao foi possivel gerar shortId unico apos 5 tentativas.' });
+      return reply
+        .code(500)
+        .send({ error: 'Nao foi possivel gerar shortId unico apos 5 tentativas.' });
     }
 
     // Emit Socket.io order:new agrupado por cozinha
@@ -579,19 +583,24 @@ export async function orderRoutes(fastify: FastifyInstance) {
       const items = await prisma.orderItem.findMany({
         where: { orderId: id, kitchen: { slug: kitchenSlug } },
       });
-      if (items.length === 0) return reply.code(404).send({ error: 'Sem items dessa cozinha nesse pedido.' });
+      if (items.length === 0)
+        return reply.code(404).send({ error: 'Sem items dessa cozinha nesse pedido.' });
 
       const current = aggregateStatus(items.map((i) => i.status as OrderItemStatus));
       const next = nextStatus(current);
 
-      if (!next) return reply.code(400).send({ error: `Sem proximo status a partir de "${current}".` });
+      if (!next)
+        return reply.code(400).send({ error: `Sem proximo status a partir de "${current}".` });
 
       const now = new Date();
       const stamp =
-        next === 'preparando' ? { acceptedAt: now } :
-        next === 'pronto'     ? { readyAt: now } :
-        next === 'retirado'   ? { pickedAt: now } :
-        {};
+        next === 'preparando'
+          ? { acceptedAt: now }
+          : next === 'pronto'
+            ? { readyAt: now }
+            : next === 'retirado'
+              ? { pickedAt: now }
+              : {};
 
       await prisma.orderItem.updateMany({
         where: { orderId: id, kitchen: { slug: kitchenSlug } },

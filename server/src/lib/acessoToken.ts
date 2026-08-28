@@ -44,8 +44,7 @@ export async function criarLinkDeAcesso(
   const token = crypto.randomBytes(32).toString('base64url');
   const expiraEm = new Date(Date.now() + VALIDADE_MS[tipo]);
 
-  const where =
-    'userId' in dono ? { userId: dono.userId } : { kitchenUserId: dono.kitchenUserId };
+  const where = 'userId' in dono ? { userId: dono.userId } : { kitchenUserId: dono.kitchenUserId };
 
   await prisma.$transaction([
     prisma.accessToken.updateMany({

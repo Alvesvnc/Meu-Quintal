@@ -18,11 +18,11 @@ import { ScreenError } from '../components/ScreenError';
 import { fmtBRL, fmtTime } from '../lib/format';
 
 const STATUS_LABEL: Record<OrderItemStatus, string> = {
-  novo:       'Recebido',
+  novo: 'Recebido',
   preparando: 'Preparando',
-  pronto:     'Pronto',
-  retirado:   'Retirado',
-  cancelado:  'Cancelado',
+  pronto: 'Pronto',
+  retirado: 'Retirado',
+  cancelado: 'Cancelado',
 };
 /** As quatro etapas que a tela desenha. `cancelado` nao e etapa: e saida. */
 const STATUS_FLOW = ['novo', 'preparando', 'pronto', 'retirado'] as const;
@@ -35,10 +35,10 @@ function indiceDaEtapa(s: OrderItemStatus): number {
 
 /** Ícone de cada etapa. O concluído troca pelo check — ver `Etapa`. */
 const STATUS_ICON: Record<EtapaStatus, LucideIcon> = {
-  novo:       Check,
+  novo: Check,
   preparando: Flame,
-  pronto:     BellRing,
-  retirado:   ShoppingBasket,
+  pronto: BellRing,
+  retirado: ShoppingBasket,
 };
 
 /** Tela 06 ★ — Acompanhamento ao vivo via Socket.io. */
@@ -191,9 +191,7 @@ function BlocoDaCozinha({ k }: { k: OrderKitchenGroup }) {
         </div>
       ) : (
         <div className="px-4 py-4 flex flex-col gap-2">
-          <p className="font-display text-label font-bold uppercase text-accent">
-            {k.kitchenName}
-          </p>
+          <p className="font-display text-label font-bold uppercase text-accent">{k.kitchenName}</p>
 
           {retirado ? (
             <p className="font-display text-display-md text-ink">Pedido completo.</p>
@@ -250,21 +248,14 @@ function BlocoDaCozinha({ k }: { k: OrderKitchenGroup }) {
           // e ve duas na tela.
           const cancelado = it.status === 'cancelado';
           return (
-            <div
-              key={it.id}
-              className={`flex items-center gap-3 ${cancelado ? 'opacity-70' : ''}`}
-            >
+            <div key={it.id} className={`flex items-center gap-3 ${cancelado ? 'opacity-70' : ''}`}>
               <Foto src={it.foto} alt="" className="w-10 h-10 shrink-0" />
               <span className="font-display text-body-sm font-bold text-ink tabular shrink-0">
                 {it.qty}×
               </span>
-              <span
-                className={`text-body-sm text-ink min-w-0 ${cancelado ? 'line-through' : ''}`}
-              >
+              <span className={`text-body-sm text-ink min-w-0 ${cancelado ? 'line-through' : ''}`}>
                 {it.name}
-                {it.note && !cancelado && (
-                  <span className="text-neutral-600"> — {it.note}</span>
-                )}
+                {it.note && !cancelado && <span className="text-neutral-600"> — {it.note}</span>}
               </span>
               {cancelado && (
                 <span className="ml-auto shrink-0">
@@ -299,9 +290,7 @@ function Etapa({ status, label, feito, atual, hora, ultima }: EtapaProps) {
   const Icone = feito ? Check : STATUS_ICON[status];
 
   return (
-    <div
-      className={`flex items-center gap-3 py-3 ${ultima ? '' : 'border-b border-divider'}`}
-    >
+    <div className={`flex items-center gap-3 py-3 ${ultima ? '' : 'border-b border-divider'}`}>
       <span
         aria-hidden
         className={[
@@ -319,7 +308,11 @@ function Etapa({ status, label, feito, atual, hora, ultima }: EtapaProps) {
       <span
         className={[
           'text-body-sm',
-          feito ? 'font-medium text-ink' : atual ? 'font-medium text-accent-700' : 'text-neutral-500',
+          feito
+            ? 'font-medium text-ink'
+            : atual
+              ? 'font-medium text-accent-700'
+              : 'text-neutral-500',
         ].join(' ')}
       >
         {label}

@@ -29,9 +29,9 @@ faturamento — sem app para instalar e sem cadastro.
 
 Ele atende dois formatos, e **o plano assinado é o que decide qual**:
 
-| Plano | Cozinhas | Como funciona |
-|---|---|---|
-| **Restaurante** | 1 | Um espaço, uma cozinha. O dono opera a própria cozinha com **um login só**, e o cliente cai direto no cardápio. |
+| Plano                    | Cozinhas | Como funciona                                                                                                                                                                                                                          |
+| ------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Restaurante**          | 1        | Um espaço, uma cozinha. O dono opera a própria cozinha com **um login só**, e o cliente cai direto no cardápio.                                                                                                                        |
 | **Praça de alimentação** | sem teto | Várias cozinhas independentes no mesmo espaço (food halls, casas gastronômicas, pátios). O cliente pede de quantas quiser num carrinho só, cada cozinha recebe **apenas o que é dela**, e o dono cobra comissão e aluguel de cada uma. |
 
 O teto morde onde importa: quem está no plano Restaurante recebe 402 ao tentar
@@ -134,52 +134,52 @@ produto que o dono não vê pedido.
 
 ### Front-end (três apps)
 
-| Tecnologia | Versão | Função |
-|---|---|---|
-| [React](https://react.dev) | 18.3 | Biblioteca de UI |
-| [TypeScript](https://www.typescriptlang.org) | 5.6 | Tipagem estática estrita (`noUnusedLocals`, `strict`) |
-| [Vite](https://vitejs.dev) | 5.4 | Build tool e dev server com HMR |
-| [Tailwind CSS](https://tailwindcss.com) | 3.4 | Estilização utility-first com preset compartilhado |
-| [React Router](https://reactrouter.com) | 6.27 | Roteamento client-side |
-| [Zustand](https://github.com/pmndrs/zustand) | 5.0 | Estado global leve (carrinho, sessão) |
-| [TanStack Query](https://tanstack.com/query) | 5.62 | Cache e sincronização de estado servidor |
-| [axios](https://axios-http.com) | 1.7 | Cliente HTTP com interceptors |
-| [socket.io-client](https://socket.io/docs/v4/client-api/) | 4.8 | Cliente WebSocket para real-time |
+| Tecnologia                                                | Versão | Função                                                |
+| --------------------------------------------------------- | ------ | ----------------------------------------------------- |
+| [React](https://react.dev)                                | 18.3   | Biblioteca de UI                                      |
+| [TypeScript](https://www.typescriptlang.org)              | 5.6    | Tipagem estática estrita (`noUnusedLocals`, `strict`) |
+| [Vite](https://vitejs.dev)                                | 5.4    | Build tool e dev server com HMR                       |
+| [Tailwind CSS](https://tailwindcss.com)                   | 3.4    | Estilização utility-first com preset compartilhado    |
+| [React Router](https://reactrouter.com)                   | 6.27   | Roteamento client-side                                |
+| [Zustand](https://github.com/pmndrs/zustand)              | 5.0    | Estado global leve (carrinho, sessão)                 |
+| [TanStack Query](https://tanstack.com/query)              | 5.62   | Cache e sincronização de estado servidor              |
+| [axios](https://axios-http.com)                           | 1.7    | Cliente HTTP com interceptors                         |
+| [socket.io-client](https://socket.io/docs/v4/client-api/) | 4.8    | Cliente WebSocket para real-time                      |
 
 ### Backend
 
-| Tecnologia | Versão | Função |
-|---|---|---|
-| [Node.js](https://nodejs.org) | 20+ | Runtime JavaScript |
-| [Fastify](https://fastify.dev) | 5.1 | Framework HTTP (mais performático que Express) |
-| [Prisma](https://www.prisma.io) | 5.22 | ORM type-safe + migrations |
-| [PostgreSQL](https://www.postgresql.org) | 16 | Banco relacional principal |
-| [Socket.io](https://socket.io) | 4.8 | WebSocket para eventos em tempo real |
-| [Zod](https://zod.dev) | 3.23 | Validação de schemas (body, query, env) |
-| [tsx](https://github.com/privatenumber/tsx) | 4.19 | Hot reload do servidor em desenvolvimento |
-| [pino-pretty](https://github.com/pinojs/pino-pretty) | 11.3 | Logs legíveis em desenvolvimento |
+| Tecnologia                                           | Versão | Função                                         |
+| ---------------------------------------------------- | ------ | ---------------------------------------------- |
+| [Node.js](https://nodejs.org)                        | 20+    | Runtime JavaScript                             |
+| [Fastify](https://fastify.dev)                       | 5.1    | Framework HTTP (mais performático que Express) |
+| [Prisma](https://www.prisma.io)                      | 5.22   | ORM type-safe + migrations                     |
+| [PostgreSQL](https://www.postgresql.org)             | 16     | Banco relacional principal                     |
+| [Socket.io](https://socket.io)                       | 4.8    | WebSocket para eventos em tempo real           |
+| [Zod](https://zod.dev)                               | 3.23   | Validação de schemas (body, query, env)        |
+| [tsx](https://github.com/privatenumber/tsx)          | 4.19   | Hot reload do servidor em desenvolvimento      |
+| [pino-pretty](https://github.com/pinojs/pino-pretty) | 11.3   | Logs legíveis em desenvolvimento               |
 
 ### Design system
 
-| Tecnologia | Função |
-|---|---|
-| [Fraunces](https://fonts.google.com/specimen/Fraunces) | Tipografia display (italic preferido), opsz variável |
-| [DM Sans](https://fonts.google.com/specimen/DM+Sans) | Tipografia de interface |
-| [JetBrains Mono](https://www.jetbrains.com/lp/mono/) | Tipografia monoespaçada (valores, IDs, tempos) |
-| Tokens em TypeScript | Cores, espaçamento, raios, sombras — fonte única em `packages/design-system/src/tokens` |
-| Preset Tailwind compartilhado | Cada app importa de `packages/design-system/src/tailwind-preset` |
+| Tecnologia                                             | Função                                                                                  |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| [Fraunces](https://fonts.google.com/specimen/Fraunces) | Tipografia display (italic preferido), opsz variável                                    |
+| [DM Sans](https://fonts.google.com/specimen/DM+Sans)   | Tipografia de interface                                                                 |
+| [JetBrains Mono](https://www.jetbrains.com/lp/mono/)   | Tipografia monoespaçada (valores, IDs, tempos)                                          |
+| Tokens em TypeScript                                   | Cores, espaçamento, raios, sombras — fonte única em `packages/design-system/src/tokens` |
+| Preset Tailwind compartilhado                          | Cada app importa de `packages/design-system/src/tailwind-preset`                        |
 
 ### Workspace e infraestrutura
 
-| Tecnologia | Função |
-|---|---|
-| [pnpm workspaces](https://pnpm.io/workspaces) | Monorepo (`apps/*`, `packages/*`, `server`), versão fixada em `packageManager` |
-| [concurrently](https://github.com/open-cli-tools/concurrently) | Orquestra os quatro processos em `pnpm dev` |
-| [ESLint 10](https://eslint.org/) + [Prettier 3](https://prettier.io/) | Lint em flat config; Prettier cuida só de formatação |
-| [Vitest 3](https://vitest.dev/) | Testes, um projeto por workspace |
-| [GitHub Actions](https://docs.github.com/actions) | CI em `.github/workflows/ci.yml` |
-| [Docker](https://www.docker.com) + Compose | PostgreSQL para desenvolvimento local |
-| [Prisma Studio](https://www.prisma.io/studio) | Interface web para inspecionar o banco |
+| Tecnologia                                                            | Função                                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [pnpm workspaces](https://pnpm.io/workspaces)                         | Monorepo (`apps/*`, `packages/*`, `server`), versão fixada em `packageManager` |
+| [concurrently](https://github.com/open-cli-tools/concurrently)        | Orquestra os quatro processos em `pnpm dev`                                    |
+| [ESLint 10](https://eslint.org/) + [Prettier 3](https://prettier.io/) | Lint em flat config; Prettier cuida só de formatação                           |
+| [Vitest 3](https://vitest.dev/)                                       | Testes, um projeto por workspace                                               |
+| [GitHub Actions](https://docs.github.com/actions)                     | CI em `.github/workflows/ci.yml`                                               |
+| [Docker](https://www.docker.com) + Compose                            | PostgreSQL para desenvolvimento local                                          |
+| [Prisma Studio](https://www.prisma.io/studio)                         | Interface web para inspecionar o banco                                         |
 
 ### Por que essa stack
 
@@ -238,11 +238,11 @@ Nenhuma query atravessa Account. Ver "Multi-tenant e modelo de negócio".
 
 ## Pré-requisitos
 
-| Requisito | Versão mínima | Observação |
-|---|---|---|
-| Node.js | 20 (CI usa 24) | Veja `engines` e `.nvmrc` |
-| pnpm | 10 | `corepack enable` usa a versão fixada em `packageManager` |
-| Docker | 27 | PostgreSQL local e imagem de produção do server |
+| Requisito | Versão mínima  | Observação                                                |
+| --------- | -------------- | --------------------------------------------------------- |
+| Node.js   | 20 (CI usa 24) | Veja `engines` e `.nvmrc`                                 |
+| pnpm      | 10             | `corepack enable` usa a versão fixada em `packageManager` |
+| Docker    | 27             | PostgreSQL local e imagem de produção do server           |
 
 ## Instalação
 
@@ -279,12 +279,12 @@ pnpm db:seed
 pnpm dev
 ```
 
-| Aplicação | URL local |
-|---|---|
-| Cliente | http://localhost:5173 |
+| Aplicação   | URL local             |
+| ----------- | --------------------- |
+| Cliente     | http://localhost:5173 |
 | Restaurante | http://localhost:5174 |
-| Dono | http://localhost:5175 |
-| API | http://localhost:3001 |
+| Dono        | http://localhost:5175 |
+| API         | http://localhost:3001 |
 
 Cada workspace pode também ser iniciado isoladamente: `pnpm dev:cliente`,
 `pnpm dev:restaurante`, `pnpm dev:dono`, `pnpm dev:server`.
@@ -306,24 +306,24 @@ Todas as rotas do cliente exigem o header
 
 ### Endpoints
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/m/quintal` | Cozinhas ativas do espaço da mesa |
-| `GET` | `/api/m/k/:slug` | Cardápio de uma cozinha |
-| `POST` | `/api/m/pedido` | Criar pedido |
-| `GET` | `/api/m/pedido/:id` | Detalhes de um pedido com timeline |
-| `GET` | `/api/m/pedidos` | Pedidos ativos da mesa |
-| `POST` | `/api/m/pedidos/fechar-conta` | Solicitar cobrança a uma cozinha |
-| `GET` | `/health` | Healthcheck |
-| `GET` | `/` | Info do servidor e endpoints disponíveis |
+| Método | Rota                          | Descrição                                |
+| ------ | ----------------------------- | ---------------------------------------- |
+| `GET`  | `/api/m/quintal`              | Cozinhas ativas do espaço da mesa        |
+| `GET`  | `/api/m/k/:slug`              | Cardápio de uma cozinha                  |
+| `POST` | `/api/m/pedido`               | Criar pedido                             |
+| `GET`  | `/api/m/pedido/:id`           | Detalhes de um pedido com timeline       |
+| `GET`  | `/api/m/pedidos`              | Pedidos ativos da mesa                   |
+| `POST` | `/api/m/pedidos/fechar-conta` | Solicitar cobrança a uma cozinha         |
+| `GET`  | `/health`                     | Healthcheck                              |
+| `GET`  | `/`                           | Info do servidor e endpoints disponíveis |
 
 ### Endpoints de desenvolvimento
 
 > Registrados **apenas** quando `NODE_ENV=development`. Não têm autenticação —
 > por isso ficam fora do ar em qualquer outro ambiente.
 
-| Método | Rota | Descrição |
-|---|---|---|
+| Método  | Rota                          | Descrição                                                 |
+| ------- | ----------------------------- | --------------------------------------------------------- |
 | `PATCH` | `/api/_dev/order/:id/advance` | Avança o status de um pedido (simula ação do restaurante) |
 
 ### Exemplos
@@ -366,13 +366,13 @@ cliente            tela interrompe, com som e vibração
 cozinha            socket: order:alteracao-respondida
 ```
 
-| Regra | Por quê |
-|---|---|
-| **Só reduz** | Aumentar seria a cozinha vendendo o que o cliente não pediu |
-| **Recusar cancela o item inteiro** | "Não aceito 1 no lugar de 2" só pode significar "então não quero" |
-| **Sem resposta em 5 min vale como recusa** | Nada é entregue sem o cliente ter concordado. Constante `EFEITO_DA_EXPIRACAO` |
-| **A fila não trava** | Os itens não afetados seguem sendo preparados. Comida não espera notificação ser lida |
-| **Uma proposta pendente por vez** | Duas abertas alterariam os mesmos itens por baixo uma da outra |
+| Regra                                      | Por quê                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| **Só reduz**                               | Aumentar seria a cozinha vendendo o que o cliente não pediu                           |
+| **Recusar cancela o item inteiro**         | "Não aceito 1 no lugar de 2" só pode significar "então não quero"                     |
+| **Sem resposta em 5 min vale como recusa** | Nada é entregue sem o cliente ter concordado. Constante `EFEITO_DA_EXPIRACAO`         |
+| **A fila não trava**                       | Os itens não afetados seguem sendo preparados. Comida não espera notificação ser lida |
+| **Uma proposta pendente por vez**          | Duas abertas alterariam os mesmos itens por baixo uma da outra                        |
 
 O aviso é **in-app**: socket, som (WebAudio) e vibração (Android). Não depende
 de permissão nem de instalação. Web Push alcançaria a tela apagada, mas no iOS
@@ -407,32 +407,32 @@ A conexão é recusada sem credencial. Veja [Segurança](#segurança) para o
 raciocínio completo.
 
 ```ts
-io(API_BASE, { auth: { kind: 'mesa', token: qrToken } });      // app cliente
-io(API_BASE, { auth: { kind: 'cozinha', token: jwt } });       // app restaurante
+io(API_BASE, { auth: { kind: 'mesa', token: qrToken } }); // app cliente
+io(API_BASE, { auth: { kind: 'cozinha', token: jwt } }); // app restaurante
 ```
 
 ### Salas
 
-| Sala | Quem entra | Conferência no servidor |
-|---|---|---|
+| Sala              | Quem entra                     | Conferência no servidor               |
+| ----------------- | ------------------------------ | ------------------------------------- |
 | `order:{orderId}` | Cliente acompanhando um pedido | O pedido precisa ser **daquela mesa** |
-| `kitchen:{slug}` | Restaurante | O slug precisa bater com o do **JWT** |
+| `kitchen:{slug}`  | Restaurante                    | O slug precisa bater com o do **JWT** |
 
 ### Eventos emitidos pelo servidor
 
-| Evento | Sala | Payload |
-|---|---|---|
-| `order:status` | `order:{orderId}` | `{ orderId, kitchenSlug, status, at }` |
-| `payment:requested` | `kitchen:{slug}` | `{ tableNumero, orderIds, totalCents, at, ... }` |
+| Evento              | Sala              | Payload                                          |
+| ------------------- | ----------------- | ------------------------------------------------ |
+| `order:status`      | `order:{orderId}` | `{ orderId, kitchenSlug, status, at }`           |
+| `payment:requested` | `kitchen:{slug}`  | `{ tableNumero, orderIds, totalCents, at, ... }` |
 
 ### Eventos esperados do cliente
 
-| Evento | Propósito |
-|---|---|
-| `order:subscribe` | Entrar em uma sala de pedido |
-| `order:unsubscribe` | Sair da sala |
-| `kitchen:subscribe` | Restaurante entra na sala da própria cozinha |
-| `kitchen:unsubscribe` | Restaurante sai |
+| Evento                | Propósito                                    |
+| --------------------- | -------------------------------------------- |
+| `order:subscribe`     | Entrar em uma sala de pedido                 |
+| `order:unsubscribe`   | Sair da sala                                 |
+| `kitchen:subscribe`   | Restaurante entra na sala da própria cozinha |
+| `kitchen:unsubscribe` | Restaurante sai                              |
 
 ### Testando o real-time
 
@@ -481,39 +481,39 @@ deliberada de glassmorphism, bento grids e gradientes ditos "AI-native".
 
 ### Desenvolvimento
 
-| Script | Descrição |
-|---|---|
-| `pnpm dev` | Sobe os três apps + o servidor em paralelo |
-| `pnpm dev:cliente` | Apenas o app cliente |
-| `pnpm dev:restaurante` | Apenas o app restaurante |
-| `pnpm dev:dono` | Apenas o app dono |
-| `pnpm dev:server` | Apenas o servidor |
-| `pnpm build` | Build de produção de todos os workspaces |
+| Script                 | Descrição                                  |
+| ---------------------- | ------------------------------------------ |
+| `pnpm dev`             | Sobe os três apps + o servidor em paralelo |
+| `pnpm dev:cliente`     | Apenas o app cliente                       |
+| `pnpm dev:restaurante` | Apenas o app restaurante                   |
+| `pnpm dev:dono`        | Apenas o app dono                          |
+| `pnpm dev:server`      | Apenas o servidor                          |
+| `pnpm build`           | Build de produção de todos os workspaces   |
 
 ### Qualidade
 
-| Script | Descrição |
-|---|---|
-| `pnpm check` | **Portão do CI**: typecheck + lint + testes |
-| `pnpm typecheck` | `tsc` em todos os workspaces |
-| `pnpm lint` | ESLint (flat config em `eslint.config.mjs`) |
-| `pnpm lint:fix` | ESLint com `--fix` |
-| `pnpm test` | Vitest, todos os projetos |
-| `pnpm test:watch` | Vitest em modo watch |
+| Script               | Descrição                                   |
+| -------------------- | ------------------------------------------- |
+| `pnpm check`         | **Portão do CI**: typecheck + lint + testes |
+| `pnpm typecheck`     | `tsc` em todos os workspaces                |
+| `pnpm lint`          | ESLint (flat config em `eslint.config.mjs`) |
+| `pnpm lint:fix`      | ESLint com `--fix`                          |
+| `pnpm test`          | Vitest, todos os projetos                   |
+| `pnpm test:watch`    | Vitest em modo watch                        |
 | `pnpm test:coverage` | Cobertura via v8 (relatório em `coverage/`) |
-| `pnpm format` | Prettier `--write` no repositório |
-| `pnpm format:check` | Prettier em modo verificação |
+| `pnpm format`        | Prettier `--write` no repositório           |
+| `pnpm format:check`  | Prettier em modo verificação                |
 
 ### Banco
 
-| Script | Descrição |
-|---|---|
-| `pnpm db:up` | Inicia o container Postgres |
-| `pnpm db:down` | Para o container Postgres |
-| `pnpm db:migrate` | Aplica migrations pendentes |
-| `pnpm db:seed` | Popula o banco com dados de exemplo |
-| `pnpm db:studio` | Abre o Prisma Studio (GUI do banco) |
-| `pnpm db:generate` | Regenera o Prisma Client |
+| Script                               | Descrição                                                    |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `pnpm db:up`                         | Inicia o container Postgres                                  |
+| `pnpm db:down`                       | Para o container Postgres                                    |
+| `pnpm db:migrate`                    | Aplica migrations pendentes                                  |
+| `pnpm db:seed`                       | Popula o banco com dados de exemplo                          |
+| `pnpm db:studio`                     | Abre o Prisma Studio (GUI do banco)                          |
+| `pnpm db:generate`                   | Regenera o Prisma Client                                     |
 | `pnpm --filter @mq/server db:deploy` | Aplica migrations em produção (`migrate deploy`, sem prompt) |
 
 ## Qualidade e CI
@@ -527,24 +527,24 @@ pnpm check   # typecheck + lint + testes — o mesmo que roda no CI
 O workflow `.github/workflows/ci.yml` roda em todo push na `main` e em todo PR,
 em cinco jobs:
 
-| Job | O que garante |
-|---|---|
-| `check` | typecheck, lint, os 506 testes e build de todos os workspaces |
-| `migrations` | As migrations aplicam **num Postgres real e vazio**, o `schema.prisma` bate com elas, e o seed roda |
-| `isolamento` | Sobe o server contra um Postgres real **com dois tenants** e roda 20 verificações de vazamento entre clientes |
+| Job            | O que garante                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `check`        | typecheck, lint, os 506 testes e build de todos os workspaces                                                            |
+| `migrations`   | As migrations aplicam **num Postgres real e vazio**, o `schema.prisma` bate com elas, e o seed roda                      |
+| `isolamento`   | Sobe o server contra um Postgres real **com dois tenants** e roda 20 verificações de vazamento entre clientes            |
 | `image-server` | A imagem do server monta **e o container sobe respondendo `/health`** — imagem que builda mas não sobe não serve de nada |
-| `image-front` | As três imagens de app montam e servem: `/health`, favicon, **SPA fallback** e 404 de asset |
+| `image-front`  | As três imagens de app montam e servem: `/health`, favicon, **SPA fallback** e 404 de asset                              |
 
 O job `image` só publica no GHCR em push (nunca em PR de fork, que não tem — nem
 deveria ter — credencial de registry).
 
 ### Como os testes são organizados
 
-| Camada | Onde | O que prova |
-|---|---|---|
-| Funções puras | `lib/*.test.ts`, `stores/*.test.ts` | Cálculo de cobrança, agregação de status, carrinho, validação de env |
-| Rotas HTTP | `modules/*.test.ts` | Guardas de auth, papéis, tipo de token, validação de body — com Prisma mockado, sem banco |
-| Isolamento real | `server/scripts/isolamento.mjs` | 20 ataques de um tenant contra outro, contra Postgres de verdade |
+| Camada          | Onde                                | O que prova                                                                               |
+| --------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| Funções puras   | `lib/*.test.ts`, `stores/*.test.ts` | Cálculo de cobrança, agregação de status, carrinho, validação de env                      |
+| Rotas HTTP      | `modules/*.test.ts`                 | Guardas de auth, papéis, tipo de token, validação de body — com Prisma mockado, sem banco |
+| Isolamento real | `server/scripts/isolamento.mjs`     | 20 ataques de um tenant contra outro, contra Postgres de verdade                          |
 
 Teste de rota usa `buildApp({ socket: false, logger: false })` + `fastify.inject()`.
 O `socket: false` é obrigatório: com o Socket.io ligado, os handles ficam
@@ -557,7 +557,7 @@ isolamento multi-tenant, e uma query sem `accountId` é exatamente o vazamento.
 ### Convenções
 
 - **Um gerenciador só.** `pnpm`, versão travada em `packageManager`. Rodar `npm
-  install` aqui gera um `package-lock.json` conflitante — não faça.
+install` aqui gera um `package-lock.json` conflitante — não faça.
 - **Dependências internas usam `workspace:*`**, não `*`. Com `*` o pnpm tentaria
   baixar `@mq/shared` do registry público, onde ele não existe.
 - **Testes moram ao lado do código** (`src/**/*.test.ts`), não numa pasta
@@ -588,13 +588,13 @@ docker build -f server/Dockerfile -t qro-server .
 
 ### Como a imagem é montada
 
-| Etapa | O que acontece |
-|---|---|
-| Manifests primeiro | Só os `package.json` + lockfile são copiados antes do install, então a camada de dependências sobrevive a commits de código |
-| `pnpm build` | esbuild empacota o server num bundle único, **inlinando `@mq/shared`** |
-| `pnpm deploy --legacy --prod` | Gera uma árvore autocontida com `dist` + `prisma` + `node_modules` de produção |
-| `prisma generate` no `/deploy` | O deploy reinstala do zero e não traz o client gerado — sem este passo o container sobe sem `.prisma/client` |
-| Runtime | `node:24-alpine` (469 MB), usuário `node` (uid 1000), `dumb-init` como PID 1 |
+| Etapa                          | O que acontece                                                                                                              |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Manifests primeiro             | Só os `package.json` + lockfile são copiados antes do install, então a camada de dependências sobrevive a commits de código |
+| `pnpm build`                   | esbuild empacota o server num bundle único, **inlinando `@mq/shared`**                                                      |
+| `pnpm deploy --legacy --prod`  | Gera uma árvore autocontida com `dist` + `prisma` + `node_modules` de produção                                              |
+| `prisma generate` no `/deploy` | O deploy reinstala do zero e não traz o client gerado — sem este passo o container sobe sem `.prisma/client`                |
+| Runtime                        | `node:24-alpine` (469 MB), usuário `node` (uid 1000), `dumb-init` como PID 1                                                |
 
 > **Por que bundle e não `tsc`:** `@mq/shared` exporta TypeScript cru
 > (`main: src/index.ts`). O `tsc` deixaria `import '@mq/shared'` intacto no
@@ -627,11 +627,11 @@ docker build -f apps/Dockerfile   --build-arg APP=cliente   --build-arg VITE_API
 
 Cada imagem tem ~74 MB, roda como uid 101 (`nginx-unprivileged`) e serve:
 
-| Caminho | Comportamento |
-|---|---|
-| `/assets/*` | `Cache-Control: immutable, max-age=1y` — o Vite põe hash no nome |
-| `/health` | Liveness para o orquestrador |
-| qualquer outra | **SPA fallback** para `index.html`, com `no-cache` |
+| Caminho        | Comportamento                                                    |
+| -------------- | ---------------------------------------------------------------- |
+| `/assets/*`    | `Cache-Control: immutable, max-age=1y` — o Vite põe hash no nome |
+| `/health`      | Liveness para o orquestrador                                     |
+| qualquer outra | **SPA fallback** para `index.html`, com `no-cache`               |
 
 O SPA fallback não é opcional: sem ele, abrir ou recarregar `/m/{qrToken}`
 devolve 404 do nginx — o cliente que escaneia o QR da mesa cai numa página de
@@ -671,10 +671,10 @@ desatualizado.
 
 ### Probes
 
-| Rota | Papel | Toca o banco? |
-|---|---|---|
+| Rota          | Papel                                                                 | Toca o banco?     |
+| ------------- | --------------------------------------------------------------------- | ----------------- |
 | `GET /health` | **Liveness** — o processo está vivo? Se falhar, reiniciar o container | Não, de propósito |
-| `GET /ready` | **Readiness** — dá para mandar tráfego? Se falhar, tirar da rotação | Sim (`SELECT 1`) |
+| `GET /ready`  | **Readiness** — dá para mandar tráfego? Se falhar, tirar da rotação   | Sim (`SELECT 1`)  |
 
 A separação é deliberada: um `/health` que consulta o banco faz o orquestrador
 **matar o container** a cada indisponibilidade do Postgres, quando o correto
@@ -701,23 +701,23 @@ Gere o segredo com `openssl rand -base64 48`.
 
 ## Segurança
 
-| Camada | O que faz |
-|---|---|
-| **Rate limit** | 300 req/min por IP no global; **10/min no `POST /api/r/auth/login`**, onde cada tentativa custa um `argon2.verify` |
-| **Helmet** | `nosniff`, `X-Frame-Options`, HSTS (só em produção) |
-| **CORS** | Lista explícita de origens; `*` é recusado no boot |
-| **Body limit** | 256 KB — o maior pedido legítimo tem alguns KB |
+| Camada               | O que faz                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Rate limit**       | 300 req/min por IP no global; **10/min no `POST /api/r/auth/login`**, onde cada tentativa custa um `argon2.verify`              |
+| **Helmet**           | `nosniff`, `X-Frame-Options`, HSTS (só em produção)                                                                             |
+| **CORS**             | Lista explícita de origens; `*` é recusado no boot                                                                              |
+| **Body limit**       | 256 KB — o maior pedido legítimo tem alguns KB                                                                                  |
 | **Redaction de log** | `authorization` e `cookie` viram `[redigido]`; sem isso todo request logaria o qrToken da mesa e o JWT da cozinha em texto puro |
-| **Error handler** | 5xx desconhecido devolve só `{ error, requestId }` — erro de driver carrega host, query e às vezes credencial |
-| **Load shedding** | Event loop travado por mais de 1s passa a recusar tráfego novo |
-| **Rota `_dev`** | Só é registrada com `NODE_ENV=development`; ela não tem autenticação |
+| **Error handler**    | 5xx desconhecido devolve só `{ error, requestId }` — erro de driver carrega host, query e às vezes credencial                   |
+| **Load shedding**    | Event loop travado por mais de 1s passa a recusar tráfego novo                                                                  |
+| **Rota `_dev`**      | Só é registrada com `NODE_ENV=development`; ela não tem autenticação                                                            |
 
 ### Autenticação do Socket.io
 
 Cada conexão precisa se identificar no handshake:
 
 ```ts
-io(API_BASE, { auth: { kind: 'mesa' | 'cozinha', token } })
+io(API_BASE, { auth: { kind: 'mesa' | 'cozinha', token } });
 ```
 
 E a entrada em sala é conferida contra essa identidade:
@@ -757,16 +757,16 @@ A linha não é "dinheiro se esconde". É **nunca identificar quanto é de cada
 restaurante**. Onde a resposta quebra por cozinha, a regra vale; onde ela é um
 agregado do espaço, conta tudo.
 
-| Rota | O que faz |
-|---|---|
-| `GET /api/a/cozinhas` | Configuração. Nome, status e acordo à mostra; o **movimento do dia** vem `null` — nem com comissão. Exceção: a cozinha que o próprio usuário opera. |
-| `GET /api/a/financeiro` | Quebra por cozinha. O bruto do **ciclo** só aparece com comissão, porque aí é a base da conta. O total do rodapé soma só o visível. |
-| `GET /api/a/overview` | Agregado do espaço. Conta todas as cozinhas. |
-| `GET /api/a/mesas` | Agregado do espaço. Conta todas as cozinhas. |
-| `GET /api/a/mesas/desempenho` | Agregado do espaço. Conta todas as cozinhas. |
+| Rota                          | O que faz                                                                                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/a/cozinhas`         | Configuração. Nome, status e acordo à mostra; o **movimento do dia** vem `null` — nem com comissão. Exceção: a cozinha que o próprio usuário opera. |
+| `GET /api/a/financeiro`       | Quebra por cozinha. O bruto do **ciclo** só aparece com comissão, porque aí é a base da conta. O total do rodapé soma só o visível.                 |
+| `GET /api/a/overview`         | Agregado do espaço. Conta todas as cozinhas.                                                                                                        |
+| `GET /api/a/mesas`            | Agregado do espaço. Conta todas as cozinhas.                                                                                                        |
+| `GET /api/a/mesas/desempenho` | Agregado do espaço. Conta todas as cozinhas.                                                                                                        |
 
 **Pedido nenhuma delas mostra.** Não existe fila do espaço, sala de socket do
-dono, nem campo que diga *o que* foi pedido — só contagem e valor. O que cada
+dono, nem campo que diga _o que_ foi pedido — só contagem e valor. O que cada
 mesa pediu, de quem e quando é operação do restaurante; o dono aluga o ponto,
 não acompanha o balcão dos inquilinos. No **restaurante único** isso não é
 limitação: lá o dono é a cozinha, e o mesmo login abre a fila no app do
@@ -792,7 +792,7 @@ de alimentação tem poucas cozinhas, então é conta de guardanapo. Por isso os
 totais de lá vêm com `grossParcial` e `cozinhasOcultas`.
 
 **Custo assumido.** Somando as mesas e subtraindo o total visível do financeiro
-chega-se à *soma* das cozinhas ocultas: com duas ou mais, não identifica
+chega-se à _soma_ das cozinhas ocultas: com duas ou mais, não identifica
 nenhuma; com uma só, identifica ela. A troca foi feita de olhos abertos — o dono
 precisa do desempenho do salão mais do que esse caso custa.
 
@@ -809,10 +809,10 @@ pode carregar um `kitchenId`: com esse vínculo, o token de dono também abre
 
 A assimetria é proposital e não deve ser "simplificada":
 
-| Direção | Vale? |
-|---|---|
+| Direção        | Vale?                                                                                                                              |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Dono → cozinha | Sim, e só com o vínculo **reconferido no banco** a cada request — o token vale sete dias e pode ter sido revogado nesse intervalo. |
-| Cozinha → dono | **Nunca.** Não existe caminho, e não deve passar a existir. |
+| Cozinha → dono | **Nunca.** Não existe caminho, e não deve passar a existir.                                                                        |
 
 Descer de privilégio dentro da própria conta é seguro; subir não seria. No modo
 restaurante único a comissão e o aluguel nascem desligados — não faz sentido
@@ -824,11 +824,11 @@ com ele próprio.
 Nenhuma query pode atravessar `Account`. Toda rota resolve o escopo a partir da
 credencial e filtra por ele:
 
-| Credencial | Caminho até o escopo |
-|---|---|
-| `qrToken` da mesa | `Table` → `Space` |
-| JWT da cozinha | `Kitchen` → `Space` |
-| JWT do dono | `AccountUser` → `Account` |
+| Credencial        | Caminho até o escopo      |
+| ----------------- | ------------------------- |
+| `qrToken` da mesa | `Table` → `Space`         |
+| JWT da cozinha    | `Kitchen` → `Space`       |
+| JWT do dono       | `AccountUser` → `Account` |
 
 Em `modules/admin.ts` isso é centralizado no helper `espacoDaConta()`. Buscar um
 `Space` por id ou slug sem conferir a conta é o vazamento clássico de
@@ -855,17 +855,17 @@ por isso.
 
 Cada cozinha cobra direto do cliente no próprio caixa. No fim do ciclo, **a
 cozinha deve** comissão + aluguel ao dono do quintal — por isso o modelo se
-chama `KitchenCharge` (cobrança) e não *payout*. O app nunca segura dinheiro de
+chama `KitchenCharge` (cobrança) e não _payout_. O app nunca segura dinheiro de
 terceiro, o que evita a implicação regulatória de intermediar pagamento.
 
 O acordo é por cozinha, com comissão e aluguel **independentes**:
 
-| Campo | Efeito |
-|---|---|
-| `chargeCommission` | Liga/desliga a comissão |
-| `commissionPct` | `null` herda `Space.defaultCommissionPct` |
-| `chargeRent` | Liga/desliga o aluguel da casinha |
-| `rentCents` | Valor fixo mensal |
+| Campo              | Efeito                                    |
+| ------------------ | ----------------------------------------- |
+| `chargeCommission` | Liga/desliga a comissão                   |
+| `commissionPct`    | `null` herda `Space.defaultCommissionPct` |
+| `chargeRent`       | Liga/desliga o aluguel da casinha         |
+| `rentCents`        | Valor fixo mensal                         |
 
 Dá para cobrar só um, os dois ou nenhum — o caso da cozinha âncora que entra sem
 cobrança no primeiro ano. O cálculo vive em [`lib/cobranca.ts`](server/src/lib/cobranca.ts),
@@ -882,30 +882,30 @@ foi cobrado. O fechamento recusa mês em andamento e recusa fechar duas vezes.
 
 ### Papéis
 
-| Papel | Pode |
-|---|---|
-| `owner` | Tudo, incluindo fechar ciclo e mexer no plano |
+| Papel   | Pode                                                     |
+| ------- | -------------------------------------------------------- |
+| `owner` | Tudo, incluindo fechar ciclo e mexer no plano            |
 | `admin` | Opera o quintal e o financeiro, sem mexer em conta/plano |
-| `staff` | Salão: mesas e pedidos ao vivo. **Não** vê financeiro |
+| `staff` | Salão: mesas e pedidos ao vivo. **Não** vê financeiro    |
 
 Conta `suspensa` (inadimplente) continua lendo, mas não escreve — o
 `exigeContaAtiva` devolve `402`. Conta `cancelada` não loga.
 
 ### Rotas do dono
 
-| Método | Rota | Papel mínimo |
-|---|---|---|
-| `POST` | `/api/a/auth/login` | pública |
-| `GET` | `/api/a/auth/me` | staff |
-| `GET` | `/api/a/overview` | staff |
-| `GET` | `/api/a/cozinhas` | staff |
-| `PATCH` | `/api/a/cozinhas/:slug/acordo` | admin |
-| `POST` | `/api/a/cozinhas/convite` | admin |
-| `GET` | `/api/a/financeiro?refMonth=AAAA-MM` | admin |
-| `POST` | `/api/a/financeiro/fechar` | **owner** |
-| `PATCH` | `/api/a/cobrancas/:id` | admin |
-| `GET` | `/api/a/mesas` | staff |
-| `PATCH` | `/api/a/mesas/:numero` | staff |
+| Método  | Rota                                 | Papel mínimo |
+| ------- | ------------------------------------ | ------------ |
+| `POST`  | `/api/a/auth/login`                  | pública      |
+| `GET`   | `/api/a/auth/me`                     | staff        |
+| `GET`   | `/api/a/overview`                    | staff        |
+| `GET`   | `/api/a/cozinhas`                    | staff        |
+| `PATCH` | `/api/a/cozinhas/:slug/acordo`       | admin        |
+| `POST`  | `/api/a/cozinhas/convite`            | admin        |
+| `GET`   | `/api/a/financeiro?refMonth=AAAA-MM` | admin        |
+| `POST`  | `/api/a/financeiro/fechar`           | **owner**    |
+| `PATCH` | `/api/a/cobrancas/:id`               | admin        |
+| `GET`   | `/api/a/mesas`                       | staff        |
+| `PATCH` | `/api/a/mesas/:numero`               | staff        |
 
 ### Verificando o isolamento
 
@@ -926,11 +926,11 @@ semeados antes.
 
 ## Operação
 
-| Assunto | Onde |
-|---|---|
-| Banco: provedor, restore, dados sensíveis | [`docs/runbook-banco.md`](docs/runbook-banco.md) |
-| Logs, request id, métricas, alertas | [`docs/observabilidade.md`](docs/observabilidade.md) |
-| Histórico de versões | [`CHANGELOG.md`](CHANGELOG.md) |
+| Assunto                                   | Onde                                                 |
+| ----------------------------------------- | ---------------------------------------------------- |
+| Banco: provedor, restore, dados sensíveis | [`docs/runbook-banco.md`](docs/runbook-banco.md)     |
+| Logs, request id, métricas, alertas       | [`docs/observabilidade.md`](docs/observabilidade.md) |
+| Histórico de versões                      | [`CHANGELOG.md`](CHANGELOG.md)                       |
 
 ### Banco de dados
 

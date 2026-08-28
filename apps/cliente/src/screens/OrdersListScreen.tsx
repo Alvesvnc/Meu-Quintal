@@ -17,11 +17,11 @@ import { fmtBRL, fmtTime } from '../lib/format';
 
 const STATUS_FLOW: OrderItemStatus[] = ['novo', 'preparando', 'pronto', 'retirado'];
 const STATUS_LABEL: Record<OrderItemStatus, string> = {
-  novo:       'Recebido',
+  novo: 'Recebido',
   preparando: 'Preparando',
-  pronto:     'Retirar',
-  retirado:   'Retirado',
-  cancelado:  'Cancelado',
+  pronto: 'Retirar',
+  retirado: 'Retirado',
+  cancelado: 'Cancelado',
 };
 
 /** Quantas miniaturas cabem antes de a fileira virar uma lista de selos. */
@@ -150,9 +150,7 @@ export function OrdersListScreen() {
           <span className="font-display text-label font-bold uppercase text-neutral-600">
             Total da mesa
           </span>
-          <span className="font-display text-mono-lg text-ink tabular">
-            {fmtBRL(totalDaMesa)}
-          </span>
+          <span className="font-display text-mono-lg text-ink tabular">{fmtBRL(totalDaMesa)}</span>
         </div>
 
         <p className="flex items-center gap-1.5 text-meta text-neutral-600">
@@ -223,9 +221,7 @@ function PosterPronto({ order: o }: { order: OrderListItem }) {
     >
       <div className="flex items-center justify-between">
         <BellRing size={28} strokeWidth={2} aria-hidden />
-        <span className="font-display text-body-sm font-bold tabular">
-          {fmtTime(o.createdAt)}
-        </span>
+        <span className="font-display text-body-sm font-bold tabular">{fmtTime(o.createdAt)}</span>
       </div>
 
       <p className="font-display text-label font-bold uppercase opacity-85">
@@ -303,9 +299,7 @@ function CardEmAndamento({ order: o }: { order: OrderListItem }) {
             <span className="font-display text-label font-bold uppercase text-accent-700">
               {STATUS_LABEL[o.status]}
             </span>
-            <span className="text-label-sm text-neutral-600 tabular">
-              {fmtTime(o.createdAt)}
-            </span>
+            <span className="text-label-sm text-neutral-600 tabular">{fmtTime(o.createdAt)}</span>
           </div>
         </div>
       )}

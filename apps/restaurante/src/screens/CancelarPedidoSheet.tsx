@@ -56,8 +56,8 @@ export function CancelarPedidoSheet({ order, onClose }: Props) {
       <SheetBody>
         <p className="font-sans text-body text-inkMuted">
           O cliente vai ver o pedido como cancelado e não vai pagar por ele. Se você consegue
-          entregar parte, use <span className="text-ink">alterar itens</span> — assim ele
-          não perde o pedido todo.
+          entregar parte, use <span className="text-ink">alterar itens</span> — assim ele não perde
+          o pedido todo.
         </p>
 
         <ul className="mt-4 space-y-1">

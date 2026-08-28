@@ -29,15 +29,17 @@ const MESA = {
 
 const LOU = { slug: 'lou-burger', name: 'Lou Burger', slaMinutes: 12 };
 
-function item(over: Partial<{
-  id: string;
-  qty: number;
-  unitPriceCents: number;
-  nameSnapshot: string;
-  status: string;
-  note: string | null;
-  kitchen: { slug: string; name: string; slaMinutes: number };
-}> = {}) {
+function item(
+  over: Partial<{
+    id: string;
+    qty: number;
+    unitPriceCents: number;
+    nameSnapshot: string;
+    status: string;
+    note: string | null;
+    kitchen: { slug: string; name: string; slaMinutes: number };
+  }> = {},
+) {
   return {
     id: 'i1',
     qty: 1,
@@ -141,7 +143,13 @@ describe('cancelamento PARCIAL', () => {
   const comUmCancelado = () =>
     pedido(
       [
-        item({ id: 'i1', qty: 1, unitPriceCents: 3200, nameSnapshot: 'Smash Lou', status: 'pronto' }),
+        item({
+          id: 'i1',
+          qty: 1,
+          unitPriceCents: 3200,
+          nameSnapshot: 'Smash Lou',
+          status: 'pronto',
+        }),
         item({
           id: 'i2',
           qty: 1,

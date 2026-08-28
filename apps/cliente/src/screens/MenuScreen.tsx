@@ -71,10 +71,7 @@ export function MenuScreen() {
    * grade — a lista compacta lê melhor. A escolha explícita de quem usa ganha
    * dessa heurística; ela só decide quando ninguém decidiu.
    */
-  const temFoto = useMemo(
-    () => (data?.items ?? []).some((i) => fotosDoItem(i).length > 0),
-    [data],
-  );
+  const temFoto = useMemo(() => (data?.items ?? []).some((i) => fotosDoItem(i).length > 0), [data]);
   const layout: Layout = layoutEscolhido ?? (temFoto ? 'grade' : 'lista');
 
   const trocarLayout = () => {

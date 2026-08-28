@@ -5,12 +5,12 @@ linha até a resposta.
 
 ## As peças
 
-| Peça | Onde | Responde |
-|---|---|---|
-| `x-request-id` | header de toda resposta | "qual log é o desta requisição?" |
-| Log JSON | stdout (pino) | "o que aconteceu nessa requisição?" |
-| `/metrics` | Prometheus | "isso é geral ou foi só com essa pessoa?" |
-| Sentry | serviço externo, **opcional** | "o que quebrou e em que linha?" |
+| Peça           | Onde                          | Responde                                  |
+| -------------- | ----------------------------- | ----------------------------------------- |
+| `x-request-id` | header de toda resposta       | "qual log é o desta requisição?"          |
+| Log JSON       | stdout (pino)                 | "o que aconteceu nessa requisição?"       |
+| `/metrics`     | Prometheus                    | "isso é geral ou foi só com essa pessoa?" |
+| Sentry         | serviço externo, **opcional** | "o que quebrou e em que linha?"           |
 
 As três primeiras não dependem de conta em lugar nenhum e funcionam sozinhas. O
 Sentry é opcional e vem desligado — ver [a seção dele](#sentry).
@@ -85,11 +85,11 @@ usar a URL criaria uma série por pedido e explodiria a cardinalidade.
 
 **Negócio:**
 
-| Métrica | Para quê |
-|---|---|
+| Métrica                           | Para quê                                                            |
+| --------------------------------- | ------------------------------------------------------------------- |
 | `mq_pedidos_criados_total{space}` | Volume por quintal. Queda súbita = algo quebrou no fluxo do cliente |
-| `mq_logins_falhados_total{app}` | Pico = ataque de força bruta ou tela de login quebrada |
-| `mq_ciclos_fechados_total` | Confirma que o fechamento mensal rodou |
+| `mq_logins_falhados_total{app}`   | Pico = ataque de força bruta ou tela de login quebrada              |
+| `mq_ciclos_fechados_total`        | Confirma que o fechamento mensal rodou                              |
 
 ### Alertas que valem a pena
 
@@ -127,10 +127,10 @@ No boot o server diz em qual estado está: `Sentry ativo (traces 0)` ou
 
 ### Divisão de trabalho
 
-| Pergunta | Ferramenta |
-|---|---|
-| "quanto e por quanto tempo" | `/metrics` (Prometheus) |
-| "o que quebrou e em que linha" | Sentry |
+| Pergunta                       | Ferramenta              |
+| ------------------------------ | ----------------------- |
+| "quanto e por quanto tempo"    | `/metrics` (Prometheus) |
+| "o que quebrou e em que linha" | Sentry                  |
 
 Não são redundantes. O alerta vem da métrica; a causa, do Sentry.
 
@@ -155,12 +155,12 @@ key. O filtro do código não substitui isso.
 
 ### Tags em cada evento
 
-| Tag | Para quê |
-|---|---|
-| `request_id` | Costura com a linha do log e com o `x-request-id` que o usuário viu |
-| `account_id` | **Qual cliente do SaaS foi afetado.** Num sistema multi-tenant, erro sem dono é erro do qual você não sabe quem perdeu |
-| `kitchen_id`, `space_id` | Escopo mais fino quando existir |
-| `rota`, `metodo` | Agrupamento |
+| Tag                      | Para quê                                                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `request_id`             | Costura com a linha do log e com o `x-request-id` que o usuário viu                                                    |
+| `account_id`             | **Qual cliente do SaaS foi afetado.** Num sistema multi-tenant, erro sem dono é erro do qual você não sabe quem perdeu |
+| `kitchen_id`, `space_id` | Escopo mais fino quando existir                                                                                        |
+| `rota`, `metodo`         | Agrupamento                                                                                                            |
 
 ### Scrubbing
 
@@ -207,4 +207,3 @@ esforço no tamanho atual.
 - **Alertas só por e-mail.** Integração com Slack/PagerDuty é Team+.
 - **Cota fixa de eventos**, sem opção de estourar pagando — daí todo o cuidado
   acima.
-

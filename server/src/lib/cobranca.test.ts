@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  calcularCobranca,
-  janelaDoCiclo,
-  refMonthDe,
-  type AcordoCozinha,
-} from './cobranca.js';
+import { calcularCobranca, janelaDoCiclo, refMonthDe, type AcordoCozinha } from './cobranca.js';
 
 const acordo = (over: Partial<AcordoCozinha> = {}): AcordoCozinha => ({
   chargeCommission: true,
@@ -99,9 +94,9 @@ describe('calcularCobranca — entradas invalidas', () => {
   });
 
   it('recusa aluguel negativo', () => {
-    expect(() =>
-      calcularCobranca(1000, acordo({ chargeRent: true, rentCents: -1 }), 15),
-    ).toThrow(RangeError);
+    expect(() => calcularCobranca(1000, acordo({ chargeRent: true, rentCents: -1 }), 15)).toThrow(
+      RangeError,
+    );
   });
 
   it('total sempre bate com a soma das partes', () => {

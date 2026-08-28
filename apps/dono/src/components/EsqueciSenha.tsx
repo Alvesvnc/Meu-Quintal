@@ -21,7 +21,9 @@ export function EsqueciSenha({ emailInicial }: { emailInicial: string }) {
   if (pedir.isSuccess) {
     return (
       <div className="mt-6 border-l-2 border-l-accent pl-4">
-        <p className="font-sans text-body text-ink">Se houver uma conta com esse e-mail, o link já está a caminho.</p>
+        <p className="font-sans text-body text-ink">
+          Se houver uma conta com esse e-mail, o link já está a caminho.
+        </p>
         <p className="mt-1 font-sans text-body-sm text-inkMuted">
           Ele vale por uma hora. Confira a caixa de spam.
         </p>
@@ -47,7 +49,10 @@ export function EsqueciSenha({ emailInicial }: { emailInicial: string }) {
 
   return (
     <div className="mt-6 pt-5 border-t border-hairlineSoft">
-      <label htmlFor="email-recuperar" className="block font-mono text-label uppercase tracking-wider text-inkDim mb-2">
+      <label
+        htmlFor="email-recuperar"
+        className="block font-mono text-label uppercase tracking-wider text-inkDim mb-2"
+      >
         Seu e-mail
       </label>
       <input

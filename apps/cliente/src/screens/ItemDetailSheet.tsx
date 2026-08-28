@@ -60,9 +60,9 @@ function DetalheDoItem() {
     if (existing) {
       useCart.getState().setQty(item.id, qty);
       if (note !== existing.note) {
-        const next = useCart.getState().lines.map((l) =>
-          l.menuItemId === item.id ? { ...l, note } : l,
-        );
+        const next = useCart
+          .getState()
+          .lines.map((l) => (l.menuItemId === item.id ? { ...l, note } : l));
         useCart.setState({ lines: next });
       }
     } else {
@@ -108,9 +108,7 @@ function DetalheDoItem() {
             <p className="text-body-sm text-neutral-700 text-pretty">{item.description}</p>
           )}
 
-          <p className="font-display text-display-md text-ink tabular">
-            {fmtBRL(item.priceCents)}
-          </p>
+          <p className="font-display text-display-md text-ink tabular">{fmtBRL(item.priceCents)}</p>
 
           <div className="h-[2px] w-full bg-divider my-1" />
 

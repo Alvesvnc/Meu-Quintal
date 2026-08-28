@@ -77,14 +77,17 @@ export function OnboardScreen() {
           {internalName.trim() || 'Convidar uma cozinha pro quintal.'}
         </h1>
         <p className="mt-3 font-sans text-body-lg text-inkMuted max-w-xl">
-          Você só define quem vai operar e como vai ser o acordo financeiro.
-          O responsável preenche nome final, foto, cardápio e o resto quando aceita o convite.
+          Você só define quem vai operar e como vai ser o acordo financeiro. O responsável preenche
+          nome final, foto, cardápio e o resto quando aceita o convite.
         </p>
       </header>
 
       <div className="space-y-10 max-w-2xl">
         <Section label="Convite">
-          <Field label="Nome interno da cozinha" hint="só pra você identificar — o responsável pode mudar depois">
+          <Field
+            label="Nome interno da cozinha"
+            hint="só pra você identificar — o responsável pode mudar depois"
+          >
             <input
               type="text"
               value={internalName}
@@ -108,8 +111,8 @@ export function OnboardScreen() {
 
         <Section label="Acordo financeiro">
           <p className="font-sans text-body text-inkMuted mb-4">
-            Pelo menos uma das duas tem que estar ativa. Pode ser só comissão,
-            só aluguel fixo, ou os dois.
+            Pelo menos uma das duas tem que estar ativa. Pode ser só comissão, só aluguel fixo, ou
+            os dois.
           </p>
 
           {/* Comissão */}
@@ -122,12 +125,10 @@ export function OnboardScreen() {
                 className="w-4 h-4 mt-1 accent-primary cursor-pointer"
               />
               <div className="flex-1">
-                <p className="font-sans text-body-lg text-ink">
-                  Comissão sobre as vendas
-                </p>
+                <p className="font-sans text-body-lg text-ink">Comissão sobre as vendas</p>
                 <p className="mt-0.5 font-sans text-body-sm text-inkMuted">
-                  Percentual do que a cozinha fatura. Ela cobra o cliente no próprio caixa e te
-                  deve essa parte no fim do ciclo.
+                  Percentual do que a cozinha fatura. Ela cobra o cliente no próprio caixa e te deve
+                  essa parte no fim do ciclo.
                 </p>
                 <p className="mt-1 font-sans text-body-sm text-inkDim">
                   Com comissão, você passa a ver quanto essa cozinha vende — o bruto é a base do
@@ -142,7 +143,9 @@ export function OnboardScreen() {
                   <div className="flex items-center gap-4">
                     <input
                       type="range"
-                      min={5} max={25} step={1}
+                      min={5}
+                      max={25}
+                      step={1}
                       value={commissionPct}
                       onChange={(e) => setCommissionPct(parseInt(e.target.value))}
                       className="flex-1 accent-primary cursor-pointer"
@@ -169,12 +172,10 @@ export function OnboardScreen() {
                 className="w-4 h-4 mt-1 accent-primary cursor-pointer"
               />
               <div className="flex-1">
-                <p className="font-sans text-body-lg text-ink">
-                  Aluguel fixo mensal
-                </p>
+                <p className="font-sans text-body-lg text-ink">Aluguel fixo mensal</p>
                 <p className="mt-0.5 font-sans text-body-sm text-inkMuted">
-                  Valor fixo da casinha, devido todo mês independente do que ela vende — e por
-                  isso o faturamento dela não aparece pra você.
+                  Valor fixo da casinha, devido todo mês independente do que ela vende — e por isso
+                  o faturamento dela não aparece pra você.
                 </p>
               </div>
             </label>
@@ -215,8 +216,8 @@ export function OnboardScreen() {
       {erro && <p className="mt-3 max-w-2xl font-mono text-mono-sm text-danger">{erro}</p>}
 
       <p className="mt-6 max-w-2xl font-sans text-body-sm text-inkDim">
-        Ainda não há envio de email configurado: o link do convite aparece aqui na tela e você
-        manda pro responsável pelo canal que preferir. Ele vale 7 dias e serve uma vez só.
+        Ainda não há envio de email configurado: o link do convite aparece aqui na tela e você manda
+        pro responsável pelo canal que preferir. Ele vale 7 dias e serve uma vez só.
       </p>
     </>
   );
@@ -247,8 +248,8 @@ function ConviteCriado({ convite, aoNovo }: { convite: ConviteResponse; aoNovo: 
       <div className="max-w-2xl">
         <Divider label="Link de aceite" />
         <p className="mt-4 font-sans text-body text-inkMuted">
-          Copie agora. Este link não aparece de novo — daqui pra frente o sistema guarda só o
-          hash dele, do mesmo jeito que faz com senha.
+          Copie agora. Este link não aparece de novo — daqui pra frente o sistema guarda só o hash
+          dele, do mesmo jeito que faz com senha.
         </p>
 
         <div className="mt-4 p-4 bg-surface border border-hairline">
@@ -282,20 +283,24 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   return (
     <section>
       <Divider label={label} />
-      <div className="mt-4 space-y-5">
-        {children}
-      </div>
+      <div className="mt-4 space-y-5">{children}</div>
     </section>
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2 gap-3">
-        <label className="font-mono text-label uppercase tracking-wider text-inkDim">
-          {label}
-        </label>
+        <label className="font-mono text-label uppercase tracking-wider text-inkDim">{label}</label>
         {hint && (
           <span className="font-mono text-mono-sm text-inkDim normal-case tracking-normal text-right">
             {hint}

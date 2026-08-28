@@ -51,13 +51,9 @@ export function MenuItemRow({ item, kitchen }: MenuItemRowProps) {
             <p className="text-body-sm font-medium text-ink truncate">{item.name}</p>
             {item.badge === 'novo' && <Chip tone="solid">Novo</Chip>}
             {item.badge === 'esgotando' && <Chip tone="outline">Últimos</Chip>}
-            {(item.badge === 'sem-estoque' || unavailable) && (
-              <Chip tone="neutral">Esgotado</Chip>
-            )}
+            {(item.badge === 'sem-estoque' || unavailable) && <Chip tone="neutral">Esgotado</Chip>}
           </div>
-          <span className="font-display font-bold text-ink tabular">
-            {fmtBRL(item.priceCents)}
-          </span>
+          <span className="font-display font-bold text-ink tabular">{fmtBRL(item.priceCents)}</span>
         </div>
       </Link>
 

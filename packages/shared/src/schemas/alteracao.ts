@@ -15,16 +15,16 @@ export const criarAlteracaoSchema = z
     ]),
     /** Aparece pro cliente. Vale a pena explicar: "acabou o pão". */
     reason: z.string().max(140).optional(),
-  itens: z
-    .array(
-      z.object({
-        orderItemId: z.string().uuid(),
-        /** 0 = cancelar o item. Só reduz — o servidor recusa aumento. */
-        qtyProposta: z.number().int().min(0).max(20),
-      }),
-    )
-    .min(1, 'Escolha ao menos um item.')
-    .max(50),
+    itens: z
+      .array(
+        z.object({
+          orderItemId: z.string().uuid(),
+          /** 0 = cancelar o item. Só reduz — o servidor recusa aumento. */
+          qtyProposta: z.number().int().min(0).max(20),
+        }),
+      )
+      .min(1, 'Escolha ao menos um item.')
+      .max(50),
   })
   .refine((d) => d.motivo !== 'outro' || (d.reason?.trim().length ?? 0) >= 3, {
     message: 'Escolhendo "outro", explique o motivo.',

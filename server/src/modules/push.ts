@@ -24,21 +24,17 @@ export async function pushRoutes(fastify: FastifyInstance) {
   // não há chave no servidor — deixando uma permissão concedida à toa. E
   // permissão de notificação negada uma vez é quase impossível de recuperar:
   // o navegador para de perguntar.
-  fastify.get(
-    '/api/r/push/chave',
-    { preHandler: fastify.authRestaurante },
-    async (req, reply) => {
-      const aparelhos = pushAtivo()
-        ? await prisma.pushSubscription.count({ where: { kitchenId: req.kitchen!.kitchenId } })
-        : 0;
+  fastify.get('/api/r/push/chave', { preHandler: fastify.authRestaurante }, async (req, reply) => {
+    const aparelhos = pushAtivo()
+      ? await prisma.pushSubscription.count({ where: { kitchenId: req.kitchen!.kitchenId } })
+      : 0;
 
-      const resposta: ChavePushResponse = {
-        chavePublica: chavePublica(),
-        aparelhos,
-      };
-      return reply.send(resposta);
-    },
-  );
+    const resposta: ChavePushResponse = {
+      chavePublica: chavePublica(),
+      aparelhos,
+    };
+    return reply.send(resposta);
+  });
 
   // ─── POST /api/r/push/inscrever ───────────────────────────────────────────
   fastify.post(

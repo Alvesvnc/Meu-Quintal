@@ -13,7 +13,7 @@ export function PlaceholderScreen({ title }: { title: string }) {
 
       {Object.keys(params).length > 0 && (
         <pre className="mt-5 p-3 bg-surface border border-divider text-body-sm text-neutral-700 overflow-auto">
-{JSON.stringify(params, null, 2)}
+          {JSON.stringify(params, null, 2)}
         </pre>
       )}
 

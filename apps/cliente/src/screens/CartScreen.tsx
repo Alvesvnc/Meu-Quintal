@@ -98,9 +98,7 @@ export function CartScreen() {
   if (itemCount === 0) {
     return (
       <main className="px-4 py-8">
-        <h1 className="font-display text-display-lg text-ink text-pretty">
-          Carrinho vazio.
-        </h1>
+        <h1 className="font-display text-display-lg text-ink text-pretty">Carrinho vazio.</h1>
         <p className="mt-3 text-body-sm text-neutral-700 text-pretty">
           Junte itens de quantas cozinhas quiser. Cada uma recebe seu pedido separado — e cobra
           direto quando você retirar.
@@ -123,8 +121,8 @@ export function CartScreen() {
       <section className="px-4 py-4">
         <h1 className="font-display text-display-md text-ink">Seu pedido.</h1>
         <p className="mt-1 text-meta text-neutral-600 tabular">
-          {itemCount} {itemCount === 1 ? 'item' : 'itens'} ·{' '}
-          {groups.length} {groups.length === 1 ? 'cozinha' : 'cozinhas'}
+          {itemCount} {itemCount === 1 ? 'item' : 'itens'} · {groups.length}{' '}
+          {groups.length === 1 ? 'cozinha' : 'cozinhas'}
         </p>
       </section>
 

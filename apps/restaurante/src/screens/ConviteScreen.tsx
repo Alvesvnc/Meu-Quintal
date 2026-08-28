@@ -51,7 +51,9 @@ function Formulario({ token, convite }: { token: string; convite: ConvitePublico
   const confere = senha === repetir;
   const podeEnviar = senhaValida && confere && !aceitar.isPending;
 
-  const erro = aceitar.error ? mensagemDeErro(aceitar.error, 'Nao consegui aceitar o convite.') : null;
+  const erro = aceitar.error
+    ? mensagemDeErro(aceitar.error, 'Nao consegui aceitar o convite.')
+    : null;
 
   const enviar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,9 +111,7 @@ function Formulario({ token, convite }: { token: string; convite: ConvitePublico
             ))}
           </ul>
         ) : (
-          <p className="mt-3 font-sans text-body text-ink">
-            Sem comissão e sem aluguel.
-          </p>
+          <p className="mt-3 font-sans text-body text-ink">Sem comissão e sem aluguel.</p>
         )}
         <p className="mt-3 font-sans text-body-sm text-inkDim text-pretty">
           {/* Dito aqui de propósito: é a dúvida que todo mundo tem ao ver

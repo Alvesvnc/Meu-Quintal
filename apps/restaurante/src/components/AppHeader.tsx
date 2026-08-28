@@ -62,9 +62,7 @@ export function AppHeader() {
 
         <span className="shrink-0 inline-flex items-center gap-1.5 font-display text-label font-bold uppercase text-ink">
           {aberta && <Pulso />}
-          <span className={aberta ? '' : 'text-neutral-600'}>
-            {aberta ? 'Aberta' : 'Pausada'}
-          </span>
+          <span className={aberta ? '' : 'text-neutral-600'}>{aberta ? 'Aberta' : 'Pausada'}</span>
           <span className="text-neutral-600">·</span>
           <span className="tabular" aria-label="Hora atual">
             {agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

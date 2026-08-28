@@ -95,8 +95,8 @@ export function AlteracaoSheet({
         </div>
 
         <p className="mt-3 text-meta text-neutral-700">
-          Se recusar, {alteracao.linhas.length === 1 ? 'o item sai' : 'os itens saem'} do pedido
-          por completo — a cozinha não tem como entregar o que foi pedido.
+          Se recusar, {alteracao.linhas.length === 1 ? 'o item sai' : 'os itens saem'} do pedido por
+          completo — a cozinha não tem como entregar o que foi pedido.
         </p>
 
         {segundosRestantes > 0 ? (

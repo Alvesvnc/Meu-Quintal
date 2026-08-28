@@ -29,8 +29,7 @@ export function App() {
    * `#A2F4 · MESA 07`. Esse contexto mora na tela, não aqui, e passá-lo por
    * props obrigaria o App a buscar cozinha e pedido só pra escrever um título.
    */
-  const headerProprio =
-    loc.pathname.startsWith('/k/') || loc.pathname.startsWith('/pedido/');
+  const headerProprio = loc.pathname.startsWith('/k/') || loc.pathname.startsWith('/pedido/');
 
   // Tempo real dos pedidos ativos mora aqui, e nao na tela de detalhe: o App e
   // o unico ponto que continua montado em qualquer rota, entao o cancelamento

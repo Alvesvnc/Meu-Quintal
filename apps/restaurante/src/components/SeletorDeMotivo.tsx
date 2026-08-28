@@ -24,9 +24,7 @@ export function SeletorDeMotivo({ valor, onChange, texto, onTextoChange }: Props
 
   return (
     <div>
-      <p className="font-mono text-label uppercase tracking-wider text-inkDim">
-        Por que?
-      </p>
+      <p className="font-mono text-label uppercase tracking-wider text-inkDim">Por que?</p>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         {MOTIVOS_CANCELAMENTO.map((m) => {
@@ -40,9 +38,7 @@ export function SeletorDeMotivo({ valor, onChange, texto, onTextoChange }: Props
                 // min-h-11: alvo de toque numa tela que pode estar engordurada
                 'min-h-11 px-3 py-2 text-left',
                 'font-sans text-body-sm border transition-colors duration-base ease-out',
-                ativo
-                  ? 'border-primary bg-primary text-bg'
-                  : 'border-hairline text-inkDim',
+                ativo ? 'border-primary bg-primary text-bg' : 'border-hairline text-inkDim',
               ].join(' ')}
             >
               {MOTIVO_LABEL[m]}
@@ -60,9 +56,7 @@ export function SeletorDeMotivo({ valor, onChange, texto, onTextoChange }: Props
           value={texto}
           onChange={(e) => onTextoChange(e.target.value)}
           maxLength={140}
-          placeholder={
-            precisaDeTexto ? 'o que aconteceu?' : 'acabou a costela, só tenho frango…'
-          }
+          placeholder={precisaDeTexto ? 'o que aconteceu?' : 'acabou a costela, só tenho frango…'}
           className={[
             'mt-2 w-full bg-surface px-4 py-3',
             'font-sans text-body text-ink placeholder:text-inkDim border',

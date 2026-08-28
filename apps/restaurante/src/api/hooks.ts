@@ -99,11 +99,7 @@ export const useDelivered = () => useAdvance('retirado');
 export function useCancel() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: {
-      orderId: string;
-      motivo: MotivoCancelamento;
-      reason?: string;
-    }) => {
+    mutationFn: async (input: { orderId: string; motivo: MotivoCancelamento; reason?: string }) => {
       const { orderId, ...body } = input;
       return (await api.patch(`/api/r/pedido/${orderId}/cancelar`, body)).data;
     },
@@ -121,11 +117,8 @@ export function useMetricasCancelamento(dias = 30) {
   return useQuery({
     queryKey: ['metricas-cancelamentos', dias],
     queryFn: async () =>
-      (
-        await api.get<MetricasCancelamentoResponse>(
-          `/api/r/metricas/cancelamentos?dias=${dias}`,
-        )
-      ).data,
+      (await api.get<MetricasCancelamentoResponse>(`/api/r/metricas/cancelamentos?dias=${dias}`))
+        .data,
   });
 }
 
@@ -141,9 +134,8 @@ export function usePropormAlteracao() {
   return useMutation({
     mutationFn: async (input: { orderId: string } & CriarAlteracaoInput) => {
       const { orderId, ...body } = input;
-      return (
-        await api.post<CriarAlteracaoResponse>(`/api/r/pedido/${orderId}/alteracao`, body)
-      ).data;
+      return (await api.post<CriarAlteracaoResponse>(`/api/r/pedido/${orderId}/alteracao`, body))
+        .data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['fila'] });
@@ -256,8 +248,9 @@ function useCategoriaMutation<TVars>(fn: (vars: TVars) => Promise<unknown>) {
 }
 
 export function useCriarCategoria() {
-  return useCategoriaMutation(async (name: string) =>
-    (await api.post<CategoriaCardapio>('/api/r/cardapio/categorias', { name })).data,
+  return useCategoriaMutation(
+    async (name: string) =>
+      (await api.post<CategoriaCardapio>('/api/r/cardapio/categorias', { name })).data,
   );
 }
 
@@ -269,8 +262,8 @@ export function useRenomearCategoria() {
 }
 
 export function useOrdenarCategorias() {
-  return useCategoriaMutation(async (ids: string[]) =>
-    (await api.patch('/api/r/cardapio/categorias/ordem', { ids })).data,
+  return useCategoriaMutation(
+    async (ids: string[]) => (await api.patch('/api/r/cardapio/categorias/ordem', { ids })).data,
   );
 }
 
@@ -379,8 +372,7 @@ export function useEnviarFotoDaCozinha() {
 export function useExcluirFotoDaCozinha() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () =>
-      (await api.delete<PerfilCozinhaResponse>('/api/r/perfil/foto')).data,
+    mutationFn: async () => (await api.delete<PerfilCozinhaResponse>('/api/r/perfil/foto')).data,
     onSuccess: () => invalidarPerfil(qc),
   });
 }
@@ -581,4 +573,3 @@ export function useDesligarPush() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['push-chave'] }),
   });
 }
-

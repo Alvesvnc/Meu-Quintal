@@ -38,6 +38,7 @@ cliente; ela continua valendo, só que sobre outra paleta. Os hex antigos eram
 `#EFECE5 / #1F1A14 / #C9532E / #3F7A4B`.
 
 A intenção inicial era dark permanente pra reduzir fadiga em cozinha com luz forte. Na prática, validar visualmente mostrou que:
+
 - Continuidade visual entre cliente e restaurante reforça a marca QRO
 - O contraste do fundo claro com tinta quase preta e um vermelho saturado já é forte o suficiente pra leitura em ambiente iluminado
 - Manter dark exigia duplicar tokens (`inkInverse*`, `surfaceDeep*`, `hairlineDark`) e quebrava componentes do design-system
@@ -121,11 +122,11 @@ Pedidos em **colunas de status horizontais** (Kanban-style), arrastáveis com ta
 
 ## Telas do app restaurante
 
-| # | Nome | Rota |
-|---|---|---|
-| 01 | Fila de pedidos | `/r/fila` (default) |
-| 02 | Push notificação | OS-level + deep link `/r/pedido/:id` |
-| 03 | Histórico do dia | `/r/historico` |
-| 04 | Editar cardápio | `/r/cardapio` |
-| 05 | Métricas | `/r/metricas` |
-| 06 | Conta / sair | `/r/eu` |
+| #   | Nome             | Rota                                 |
+| --- | ---------------- | ------------------------------------ |
+| 01  | Fila de pedidos  | `/r/fila` (default)                  |
+| 02  | Push notificação | OS-level + deep link `/r/pedido/:id` |
+| 03  | Histórico do dia | `/r/historico`                       |
+| 04  | Editar cardápio  | `/r/cardapio`                        |
+| 05  | Métricas         | `/r/metricas`                        |
+| 06  | Conta / sair     | `/r/eu`                              |

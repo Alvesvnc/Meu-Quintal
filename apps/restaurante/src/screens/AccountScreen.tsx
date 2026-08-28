@@ -31,7 +31,11 @@ export function AccountScreen() {
   };
 
   if (q.isLoading) {
-    return <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">Carregando…</main>;
+    return (
+      <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">
+        Carregando…
+      </main>
+    );
   }
   if (q.isError || !q.data) {
     return (
@@ -51,9 +55,7 @@ export function AccountScreen() {
     <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 pb-28">
       <section className="pt-6">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">Cozinha</p>
-        <h1 className="mt-1 font-display text-display-lg text-ink leading-tight">
-          {perfil.name}
-        </h1>
+        <h1 className="mt-1 font-display text-display-lg text-ink leading-tight">{perfil.name}</h1>
         <p className="mt-2 font-sans text-body text-inkDim">
           {perfil.category ?? 'sem categoria'} · SLA {perfil.slaMinutes} min
         </p>

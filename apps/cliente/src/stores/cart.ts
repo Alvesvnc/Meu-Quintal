@@ -129,8 +129,7 @@ export const useCart = create<CartState>()(
 
 // ─── Selectors / helpers ────────────────────────────────────────────────────
 
-export const selectItemCount = (s: CartState) =>
-  s.lines.reduce((acc, l) => acc + l.qty, 0);
+export const selectItemCount = (s: CartState) => s.lines.reduce((acc, l) => acc + l.qty, 0);
 
 export const selectTotalCents = (s: CartState) =>
   s.lines.reduce((acc, l) => acc + l.priceCents * l.qty, 0);

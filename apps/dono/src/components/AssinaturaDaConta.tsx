@@ -82,9 +82,7 @@ export function AssinaturaDaConta() {
         </Chip>
       </div>
 
-      <p className="mt-2 font-sans text-body text-inkMuted text-pretty">
-        {explicar(dados)}
-      </p>
+      <p className="mt-2 font-sans text-body text-inkMuted text-pretty">{explicar(dados)}</p>
 
       {dados.proximaCobrancaEm && dados.status === 'ativa' && (
         <p className="mt-2 font-mono text-mono-sm text-inkDim">
@@ -122,8 +120,8 @@ export function AssinaturaDaConta() {
 
       {dados.pagamentoAtivo && dados.podeAssinar && (
         <p className="mt-3 font-sans text-body-sm text-inkDim text-pretty">
-          Pix ou cartão de crédito. Você paga na página do Asaas — os dados do cartão não passam
-          por aqui.
+          Pix ou cartão de crédito. Você paga na página do Asaas — os dados do cartão não passam por
+          aqui.
         </p>
       )}
 
@@ -229,6 +227,8 @@ const EXPLICACAO: Record<AssinaturaStatus, string> = {
   ativa: 'Tudo certo. A cobrança se repete sozinha todo mês.',
   // O texto diz a SAÍDA, não só o problema: quem lê isto está tentando
   // resolver, e "conta suspensa" sem instrução gera chamado.
-  atrasada: 'A última cobrança não foi paga. Enquanto isso você vê tudo, mas não consegue alterar nada — assine de novo para liberar.',
-  encerrada: 'A assinatura foi encerrada. Você continua vendo tudo; para voltar a alterar, é só assinar de novo.',
+  atrasada:
+    'A última cobrança não foi paga. Enquanto isso você vê tudo, mas não consegue alterar nada — assine de novo para liberar.',
+  encerrada:
+    'A assinatura foi encerrada. Você continua vendo tudo; para voltar a alterar, é só assinar de novo.',
 };

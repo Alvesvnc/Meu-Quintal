@@ -9,14 +9,14 @@
  */
 export const fonts = {
   display: '"Archivo", system-ui, sans-serif',
-  sans:    '"Archivo", system-ui, sans-serif',
-  mono:    '"Archivo", system-ui, sans-serif',
+  sans: '"Archivo", system-ui, sans-serif',
+  mono: '"Archivo", system-ui, sans-serif',
 } as const;
 
 export const weights = {
-  body:  400,
-  name:  600,
-  bold:  800,
+  body: 400,
+  name: 600,
+  bold: 800,
 } as const;
 
 /**
@@ -39,28 +39,28 @@ export type TokenDeFonte = [
  */
 export const fontSize: Record<string, TokenDeFonte> = {
   // Números-pôster: o "~8" da tela de acompanhar, o contador da fila.
-  'display-xl': ['56px', { lineHeight: '1',    letterSpacing: '-0.02em' }],
+  'display-xl': ['56px', { lineHeight: '1', letterSpacing: '-0.02em' }],
   // Título de tela — "5 cozinhas abertas."
   'display-lg': ['30px', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
   // Título de bloco — "Seu pedido.", "Retire no balcão.", totais.
   'display-md': ['26px', { lineHeight: '1.05', letterSpacing: '-0.015em' }],
   // Título de item aberto no detalhe.
-  'display-sm': ['24px', { lineHeight: '1.1',  letterSpacing: '-0.015em' }],
+  'display-sm': ['24px', { lineHeight: '1.1', letterSpacing: '-0.015em' }],
   // Contagem do placar da fila (3 células de status).
-  'counter':    ['26px', { lineHeight: '1' }],
+  counter: ['26px', { lineHeight: '1' }],
 
-  'body-lg':    ['16px', { lineHeight: '1.35' }],
-  'body':       ['15px', { lineHeight: '1.5' }],
-  'body-sm':    ['13px', { lineHeight: '1.5' }],
-  'meta':       ['12px', { lineHeight: '1.4' }],
+  'body-lg': ['16px', { lineHeight: '1.35' }],
+  body: ['15px', { lineHeight: '1.5' }],
+  'body-sm': ['13px', { lineHeight: '1.5' }],
+  meta: ['12px', { lineHeight: '1.4' }],
 
   // Labels e kickers: sempre 800 + uppercase + tracking positivo.
-  'label':      ['11px', { lineHeight: '1.2', letterSpacing: '0.08em' }],
-  'label-sm':   ['10px', { lineHeight: '1.2', letterSpacing: '0.08em' }],
-  'tag':        ['9px',  { lineHeight: '1.2', letterSpacing: '0.08em' }],
+  label: ['11px', { lineHeight: '1.2', letterSpacing: '0.08em' }],
+  'label-sm': ['10px', { lineHeight: '1.2', letterSpacing: '0.08em' }],
+  tag: ['9px', { lineHeight: '1.2', letterSpacing: '0.08em' }],
 
   // Apelidos da escala anterior — ver a nota em `colors.ts`.
-  'mono-lg':    ['28px', { lineHeight: '1.1', letterSpacing: '-0.015em' }],
-  'mono':       ['14px', { lineHeight: '1.35' }],
-  'mono-sm':    ['11px', { lineHeight: '1.3', letterSpacing: '0.06em' }],
+  'mono-lg': ['28px', { lineHeight: '1.1', letterSpacing: '-0.015em' }],
+  mono: ['14px', { lineHeight: '1.35' }],
+  'mono-sm': ['11px', { lineHeight: '1.3', letterSpacing: '0.06em' }],
 } as const;

@@ -6,15 +6,7 @@ import type { ReactNode } from 'react';
  * mantida porque as telas do dono e as secundárias do restaurante ainda a
  * escrevem — cada um aponta pra variante que corresponde ao seu papel.
  */
-type ChipTone =
-  | 'solid'
-  | 'outline'
-  | 'tint'
-  | 'neutral'
-  | 'primary'
-  | 'accent'
-  | 'warn'
-  | 'danger';
+type ChipTone = 'solid' | 'outline' | 'tint' | 'neutral' | 'primary' | 'accent' | 'warn' | 'danger';
 
 interface ChipProps {
   tone?: ChipTone;
@@ -24,18 +16,18 @@ interface ChipProps {
 
 const toneClasses: Record<ChipTone, string> = {
   /** Ênfase máxima — "FECHA 22H", "ATRASADO", "NOVO" no item. */
-  solid:   'bg-accent text-bg',
+  solid: 'bg-accent text-bg',
   /** Contexto — "MESA 07", "NOVO" no card da fila. */
   outline: 'border border-accent text-accent',
   /** Informação de apoio sobre fundo lavado — "~4 MIN", "OBS". */
-  tint:    'bg-accent-100 text-accent-800',
+  tint: 'bg-accent-100 text-accent-800',
   /** Fim de linha — "CANCELADO", "ESGOTADO". Sem vermelho: não é ação. */
   neutral: 'bg-neutral-900 text-bg',
 
   primary: 'bg-accent text-bg',
-  accent:  'bg-accent-100 text-accent-800',
-  warn:    'border border-accent text-accent',
-  danger:  'bg-neutral-900 text-bg',
+  accent: 'bg-accent-100 text-accent-800',
+  warn: 'border border-accent text-accent',
+  danger: 'bg-neutral-900 text-bg',
 };
 
 /** Tag 9–11px Archivo 800 uppercase, sem raio. */

@@ -91,7 +91,10 @@ async function chamar<T>(caminho: string, init: RequestInit): Promise<T> {
   if (!resposta.ok) {
     // O Asaas devolve { errors: [{ code, description }] }.
     const erros = (corpo as { errors?: Array<{ description?: string }> } | null)?.errors;
-    const descricao = erros?.map((e) => e.description).filter(Boolean).join('; ');
+    const descricao = erros
+      ?.map((e) => e.description)
+      .filter(Boolean)
+      .join('; ');
     throw new ErroAsaas(descricao || `Asaas respondeu ${resposta.status}`, resposta.status, corpo);
   }
 
@@ -173,7 +176,12 @@ export async function criarCheckout(dados: NovoCheckout): Promise<CheckoutCriado
       },
       // Só o que já temos. `cpfCnpj` fica de fora — ver o cabeçalho.
       ...(dados.nome || dados.email
-        ? { customerData: { ...(dados.nome ? { name: dados.nome } : {}), ...(dados.email ? { email: dados.email } : {}) } }
+        ? {
+            customerData: {
+              ...(dados.nome ? { name: dados.nome } : {}),
+              ...(dados.email ? { email: dados.email } : {}),
+            },
+          }
         : {}),
     }),
   });

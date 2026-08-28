@@ -24,7 +24,11 @@ const baseSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
   RATE_LIMIT_WINDOW: z.string().default('1 minute'),
   /** Tamanho maximo de body aceito, em bytes. */
-  BODY_LIMIT: z.coerce.number().int().positive().default(256 * 1024),
+  BODY_LIMIT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(256 * 1024),
   /**
    * Habilita GET /metrics e serve de senha pra ela. Vazio = rota desabilitada.
    * Gerar com: openssl rand -hex 32
@@ -183,8 +187,7 @@ const schema = baseSchema.superRefine((cfg, ctx) => {
   // Com so uma das duas, o `web-push` lanca no primeiro envio — dentro do
   // fluxo de criar pedido, que e o caminho quente. Falhar no boot e melhor
   // que descobrir isso no meio de um turno.
-  const meiaChave =
-    Boolean(cfg.VAPID_PUBLIC_KEY) !== Boolean(cfg.VAPID_PRIVATE_KEY);
+  const meiaChave = Boolean(cfg.VAPID_PUBLIC_KEY) !== Boolean(cfg.VAPID_PRIVATE_KEY);
   if (meiaChave) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

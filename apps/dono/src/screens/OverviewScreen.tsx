@@ -60,8 +60,8 @@ export function OverviewScreen() {
       <p className="mt-6 mb-10 font-sans text-body-lg text-inkMuted">
         {!unico && (
           <>
-            <strong className="text-ink font-medium">{contagem.ativas}</strong> de{' '}
-            {contagem.total} cozinhas abertas ·{' '}
+            <strong className="text-ink font-medium">{contagem.ativas}</strong> de {contagem.total}{' '}
+            cozinhas abertas ·{' '}
           </>
         )}
         <strong className="text-ink font-medium">{mesas.ocupadas}</strong> de {mesas.total} mesas
@@ -189,11 +189,7 @@ function Atencoes({ precisamLimpar, pausadas, diaDeFechamento, unico }: Atencoes
   }
 
   if (itens.length === 0) {
-    return (
-      <p className="mt-4 font-sans text-body-lg text-inkMuted">
-        Nada pedindo atenção agora.
-      </p>
-    );
+    return <p className="mt-4 font-sans text-body-lg text-inkMuted">Nada pedindo atenção agora.</p>;
   }
 
   return (

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { criarPrismaMock, type PrismaMock , cozinhaLogada } from '../test/prismaMock.js';
+import { criarPrismaMock, type PrismaMock, cozinhaLogada } from '../test/prismaMock.js';
 
 const prismaMock: PrismaMock = criarPrismaMock();
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
@@ -16,9 +16,7 @@ const { guardadas } = vi.hoisted(() => ({ guardadas: new Map<string, Buffer>() }
 vi.mock('../lib/armazenamento.js', async () => ({
   // Herda o modulo real pra so trocar o que toca disco. `urlPublica` e regra,
   // nao I/O: dublar ela deixaria o teste passar com a rota errada.
-  ...(await vi.importActual<typeof import('../lib/armazenamento.js')>(
-    '../lib/armazenamento.js',
-  )),
+  ...(await vi.importActual<typeof import('../lib/armazenamento.js')>('../lib/armazenamento.js')),
   prepararArmazenamento: vi.fn(),
   guardar: vi.fn(async (data: Buffer, ext: string) => {
     const chave = `${'ab'.repeat(16)}.${ext}`;
@@ -252,11 +250,7 @@ describe('DELETE /api/r/cardapio/:id/fotos/:fotoId', () => {
 
 describe('PATCH /api/r/cardapio/:id/fotos/:fotoId/capa', () => {
   it('reescreve a ordem inteira, nao so a escolhida', async () => {
-    prismaMock.menuItemPhoto.findMany.mockResolvedValue([
-      { id: 'f1' },
-      { id: 'f2' },
-      { id: 'f3' },
-    ]);
+    prismaMock.menuItemPhoto.findMany.mockResolvedValue([{ id: 'f1' }, { id: 'f2' }, { id: 'f3' }]);
     prismaMock.$transaction.mockResolvedValue([]);
 
     const r = await app.inject({

@@ -37,14 +37,8 @@ export function ConfirmSheet({
   return (
     <Sheet open={open} onClose={onClose} ariaLabel="Confirmação">
       <SheetBody>
-        <h2 className="font-display text-display-md text-ink text-pretty">
-          {title}
-        </h2>
-        {body && (
-          <p className="mt-3 text-body-sm text-neutral-700 text-pretty">
-            {body}
-          </p>
-        )}
+        <h2 className="font-display text-display-md text-ink text-pretty">{title}</h2>
+        {body && <p className="mt-3 text-body-sm text-neutral-700 text-pretty">{body}</p>}
       </SheetBody>
 
       <SheetFooter>

@@ -131,10 +131,7 @@ describe('validarProposta', () => {
 
   it('valida varias linhas validas de uma vez', () => {
     const erros = validarProposta(
-      [
-        linha({ orderItemId: 'i1', qtyProposta: 1 }),
-        linha({ orderItemId: 'i2', qtyProposta: 0 }),
-      ],
+      [linha({ orderItemId: 'i1', qtyProposta: 1 }), linha({ orderItemId: 'i2', qtyProposta: 0 })],
       [item({ id: 'i1', qty: 2 }), item({ id: 'i2', qty: 1 })],
     );
     expect(erros).toEqual([]);
@@ -196,23 +193,20 @@ describe('expiracao', () => {
 
 describe('deltaDaProposta', () => {
   it('reduzir de 2 pra 1 devolve o preco de uma unidade, negativo', () => {
-    expect(deltaDaProposta([linha({ qtyProposta: 1 })], [item({ qty: 2, unitPriceCents: 1800 })])).toBe(
-      -1800,
-    );
+    expect(
+      deltaDaProposta([linha({ qtyProposta: 1 })], [item({ qty: 2, unitPriceCents: 1800 })]),
+    ).toBe(-1800);
   });
 
   it('cancelar devolve o valor cheio da linha', () => {
-    expect(deltaDaProposta([linha({ qtyProposta: 0 })], [item({ qty: 3, unitPriceCents: 1800 })])).toBe(
-      -5400,
-    );
+    expect(
+      deltaDaProposta([linha({ qtyProposta: 0 })], [item({ qty: 3, unitPriceCents: 1800 })]),
+    ).toBe(-5400);
   });
 
   it('soma varias linhas', () => {
     const d = deltaDaProposta(
-      [
-        linha({ orderItemId: 'i1', qtyProposta: 1 }),
-        linha({ orderItemId: 'i2', qtyProposta: 0 }),
-      ],
+      [linha({ orderItemId: 'i1', qtyProposta: 1 }), linha({ orderItemId: 'i2', qtyProposta: 0 })],
       [
         item({ id: 'i1', qty: 2, unitPriceCents: 1800 }),
         item({ id: 'i2', qty: 1, unitPriceCents: 3200 }),

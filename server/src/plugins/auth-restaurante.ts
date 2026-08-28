@@ -52,9 +52,7 @@ export async function setupAuthRestaurante(fastify: FastifyInstance) {
       const vinculo = req.user.kitchenId;
       if (!vinculo) {
         req.log.warn({ sub: req.user.sub }, 'dono sem vinculo tentou rota de cozinha');
-        return reply
-          .code(403)
-          .send({ error: 'Este token nao da acesso ao app do restaurante.' });
+        return reply.code(403).send({ error: 'Este token nao da acesso ao app do restaurante.' });
       }
 
       // NUNCA confiar so no token: o vinculo pode ter sido removido depois de
@@ -66,9 +64,7 @@ export async function setupAuthRestaurante(fastify: FastifyInstance) {
 
       if (!dono || dono.kitchenId !== vinculo) {
         req.log.warn({ sub: req.user.sub }, 'vinculo dono-cozinha nao confere no banco');
-        return reply
-          .code(403)
-          .send({ error: 'Este token nao da acesso ao app do restaurante.' });
+        return reply.code(403).send({ error: 'Este token nao da acesso ao app do restaurante.' });
       }
 
       sub = dono.id;

@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
-import { criarPrismaMock, CONTA, usuarioDono, ESPACO, type PrismaMock } from '../test/prismaMock.js';
+import {
+  criarPrismaMock,
+  CONTA,
+  usuarioDono,
+  ESPACO,
+  type PrismaMock,
+} from '../test/prismaMock.js';
 
 const prismaMock: PrismaMock = criarPrismaMock();
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));

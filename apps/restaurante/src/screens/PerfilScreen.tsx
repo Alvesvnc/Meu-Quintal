@@ -31,7 +31,11 @@ export function PerfilScreen() {
   const salvar = useSalvarPerfil();
 
   if (q.isLoading) {
-    return <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">Carregando…</main>;
+    return (
+      <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">
+        Carregando…
+      </main>
+    );
   }
   if (q.isError || !q.data) {
     return (

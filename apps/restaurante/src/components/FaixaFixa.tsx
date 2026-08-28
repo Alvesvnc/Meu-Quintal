@@ -18,9 +18,7 @@ const ALTURA_DA_FAIXA = 2 + 12 + 52 + 12;
  * soma à própria altura: no aparelho com faixa de gesto, ignorar isso devolve o
  * mesmo bug alguns pixels adiante.
  */
-export const ESPACO_DA_FAIXA = `calc(var(--barra-inferior) + ${
-  ALTURA_DA_FAIXA + 24
-}px)`;
+export const ESPACO_DA_FAIXA = `calc(var(--barra-inferior) + ${ALTURA_DA_FAIXA + 24}px)`;
 
 /**
  * A faixa colada acima da barra de abas — onde mora a ação principal da tela.

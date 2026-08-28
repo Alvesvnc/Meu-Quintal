@@ -79,32 +79,28 @@ export async function conviteRoutes(fastify: FastifyInstance) {
   //
   // A tela de aceite mostra o que a pessoa esta aceitando ANTES de pedir senha.
   // Aceitar um acordo financeiro sem ler seria assinar em branco.
-  fastify.get<{ Params: { token: string } }>(
-    '/api/convite/:token',
-    limite,
-    async (req, reply) => {
-      const r = await buscar(req.params.token);
-      if (!r.ok) return reply.code(r.code).send({ error: r.msg });
+  fastify.get<{ Params: { token: string } }>('/api/convite/:token', limite, async (req, reply) => {
+    const r = await buscar(req.params.token);
+    if (!r.ok) return reply.code(r.code).send({ error: r.msg });
 
-      const c = r.convite;
-      const pct = c.commissionPct === null ? null : Number(c.commissionPct);
+    const c = r.convite;
+    const pct = c.commissionPct === null ? null : Number(c.commissionPct);
 
-      const response: ConvitePublicoResponse = {
-        email: c.email,
-        kitchenName: c.kitchenName!,
-        spaceName: c.space!.name,
-        accountName: c.account.name,
-        expiresAt: c.expiresAt.toISOString(),
-        acordo: {
-          chargeCommission: c.chargeCommission ?? false,
-          commissionPct: pct,
-          chargeRent: c.chargeRent ?? false,
-          rentCents: c.rentCents ?? 0,
-        },
-      };
-      return reply.send(response);
-    },
-  );
+    const response: ConvitePublicoResponse = {
+      email: c.email,
+      kitchenName: c.kitchenName!,
+      spaceName: c.space!.name,
+      accountName: c.account.name,
+      expiresAt: c.expiresAt.toISOString(),
+      acordo: {
+        chargeCommission: c.chargeCommission ?? false,
+        commissionPct: pct,
+        chargeRent: c.chargeRent ?? false,
+        rentCents: c.rentCents ?? 0,
+      },
+    };
+    return reply.send(response);
+  });
 
   // ─── POST /api/convite/:token/aceitar ───────────────────────────────────
   fastify.post<{ Params: { token: string } }>(
@@ -133,7 +129,8 @@ export async function conviteRoutes(fastify: FastifyInstance) {
       });
       if (jaExiste) {
         return reply.code(409).send({
-          error: 'Ja existe um acesso com esse email. Entre com sua senha, ou peca um convite em outro email.',
+          error:
+            'Ja existe um acesso com esse email. Entre com sua senha, ou peca um convite em outro email.',
         });
       }
 

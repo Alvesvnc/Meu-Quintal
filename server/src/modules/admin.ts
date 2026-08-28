@@ -339,7 +339,12 @@ export async function adminRoutes(fastify: FastifyInstance) {
       const [cozinhas, convitesAbertos] = await Promise.all([
         prisma.kitchen.count({ where: { spaceId: space.id } }),
         prisma.invite.count({
-          where: { spaceId: space.id, kind: 'cozinha', acceptedAt: null, expiresAt: { gt: new Date() } },
+          where: {
+            spaceId: space.id,
+            kind: 'cozinha',
+            acceptedAt: null,
+            expiresAt: { gt: new Date() },
+          },
         }),
       ]);
 
@@ -389,7 +394,10 @@ export async function adminRoutes(fastify: FastifyInstance) {
         }),
       );
       if (!envio.enviado && emailAtivo()) {
-        req.log.error({ inviteId: convite.id, erro: envio.erro }, 'falha ao enviar convite por email');
+        req.log.error(
+          { inviteId: convite.id, erro: envio.erro },
+          'falha ao enviar convite por email',
+        );
       }
 
       const response: ConviteResponse = {
@@ -773,7 +781,8 @@ export async function montarMe(userId: string, accountId: string): Promise<DonoM
       id: s.id,
       slug: s.slug,
       name: s.name,
-      tipo: s.tipo === 'restaurante_unico' ? ('restaurante-unico' as const) : ('food-court' as const),
+      tipo:
+        s.tipo === 'restaurante_unico' ? ('restaurante-unico' as const) : ('food-court' as const),
       defaultCommissionPct: paraNumero(s.defaultCommissionPct),
       closingDay: s.closingDay,
       tablesTotal: s._count.tables,

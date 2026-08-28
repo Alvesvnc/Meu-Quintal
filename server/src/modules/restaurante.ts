@@ -46,8 +46,14 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
         include: {
           kitchen: {
             select: {
-              id: true, slug: true, name: true, category: true,
-              photoUrl: true, slaMinutes: true, status: true, spaceId: true,
+              id: true,
+              slug: true,
+              name: true,
+              category: true,
+              photoUrl: true,
+              slaMinutes: true,
+              status: true,
+              spaceId: true,
             },
           },
         },
@@ -69,10 +75,12 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
       // conseguiria nem despausar.
 
       // Atualiza lastLoginAt em background (nao bloqueia resposta)
-      prisma.kitchenUser.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      }).catch((err) => fastify.log.warn({ err }, 'falha ao atualizar lastLoginAt'));
+      prisma.kitchenUser
+        .update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        })
+        .catch((err) => fastify.log.warn({ err }, 'falha ao atualizar lastLoginAt'));
 
       // `kind` distingue este token do JWT do app do dono, que usa o MESMO
       // segredo. Sem ele, um token de cozinha seria criptograficamente valido
@@ -110,161 +118,164 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
   );
 
   // ─── GET /api/r/auth/me ─────────────────────────────────────────────────
-  fastify.get(
-    '/api/r/auth/me',
-    { preHandler: fastify.authRestaurante },
-    async (req, reply) => {
-      const ctx = req.kitchen!;
-      const kitchen = await prisma.kitchen.findUnique({
-        where: { id: ctx.kitchenId },
-        select: {
-          id: true, slug: true, name: true, category: true,
-          photoUrl: true, photoKey: true, slaMinutes: true, status: true,
-        },
-      });
-      if (!kitchen) return reply.code(404).send({ error: 'Cozinha nao encontrada.' });
+  fastify.get('/api/r/auth/me', { preHandler: fastify.authRestaurante }, async (req, reply) => {
+    const ctx = req.kitchen!;
+    const kitchen = await prisma.kitchen.findUnique({
+      where: { id: ctx.kitchenId },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        category: true,
+        photoUrl: true,
+        photoKey: true,
+        slaMinutes: true,
+        status: true,
+      },
+    });
+    if (!kitchen) return reply.code(404).send({ error: 'Cozinha nao encontrada.' });
 
-      const response: KitchenMeResponse = {
-        userId: ctx.userId,
-        email: ctx.email,
-        role: ctx.role,
-        kitchen: {
-          id: kitchen.id,
-          slug: kitchen.slug,
-          name: kitchen.name,
-          category: kitchen.category,
-          // Aqui `photoUrl` e a foto que esta VALENDO, nao o campo antigo:
-          // quem le isto so quer mostrar a cozinha. Quem edita e a tela de
-          // perfil, que recebe as duas fontes separadas.
-          photoUrl: fotoDaCozinha(kitchen),
-          slaMinutes: kitchen.slaMinutes,
-          status: kitchen.status,
-        },
-      };
-      return reply.send(response);
-    },
-  );
+    const response: KitchenMeResponse = {
+      userId: ctx.userId,
+      email: ctx.email,
+      role: ctx.role,
+      kitchen: {
+        id: kitchen.id,
+        slug: kitchen.slug,
+        name: kitchen.name,
+        category: kitchen.category,
+        // Aqui `photoUrl` e a foto que esta VALENDO, nao o campo antigo:
+        // quem le isto so quer mostrar a cozinha. Quem edita e a tela de
+        // perfil, que recebe as duas fontes separadas.
+        photoUrl: fotoDaCozinha(kitchen),
+        slaMinutes: kitchen.slaMinutes,
+        status: kitchen.status,
+      },
+    };
+    return reply.send(response);
+  });
 
   // ─── GET /api/r/fila ─────────────────────────────────────────────────────
-  fastify.get(
-    '/api/r/fila',
-    { preHandler: fastify.authRestaurante },
-    async (req) => {
-      const ctx = req.kitchen!;
+  fastify.get('/api/r/fila', { preHandler: fastify.authRestaurante }, async (req) => {
+    const ctx = req.kitchen!;
 
-      // Pega orders que tem AO MENOS UM item dessa cozinha em status ativo
-      const orders = await prisma.order.findMany({
-        where: {
-          spaceId: ctx.spaceId,
-          items: {
-            some: {
-              kitchenId: ctx.kitchenId,
-              status: { in: ['novo', 'preparando', 'pronto'] },
-            },
+    // Pega orders que tem AO MENOS UM item dessa cozinha em status ativo
+    const orders = await prisma.order.findMany({
+      where: {
+        spaceId: ctx.spaceId,
+        items: {
+          some: {
+            kitchenId: ctx.kitchenId,
+            status: { in: ['novo', 'preparando', 'pronto'] },
           },
         },
-        include: {
-          table: { select: { numero: true } },
-          items: {
-            where: { kitchenId: ctx.kitchenId },
-            select: {
-              id: true, qty: true, note: true, unitPriceCents: true,
-              nameSnapshot: true, status: true, createdAt: true,
-              acceptedAt: true, readyAt: true, pickedAt: true,
-            },
-          },
-          // Proposta DESTA cozinha ainda aguardando resposta. O filtro por
-          // expiresAt evita mostrar como pendente algo que ja venceu e que o
-          // cron ainda nao varreu (ate 30s de janela).
-          changes: {
-            where: {
-              kitchenId: ctx.kitchenId,
-              status: 'pendente',
-              expiresAt: { gt: new Date() },
-            },
-            include: { items: true },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
+      },
+      include: {
+        table: { select: { numero: true } },
+        items: {
+          where: { kitchenId: ctx.kitchenId },
+          select: {
+            id: true,
+            qty: true,
+            note: true,
+            unitPriceCents: true,
+            nameSnapshot: true,
+            status: true,
+            createdAt: true,
+            acceptedAt: true,
+            readyAt: true,
+            pickedAt: true,
           },
         },
-        orderBy: { createdAt: 'asc' },
-      });
+        // Proposta DESTA cozinha ainda aguardando resposta. O filtro por
+        // expiresAt evita mostrar como pendente algo que ja venceu e que o
+        // cron ainda nao varreu (ate 30s de janela).
+        changes: {
+          where: {
+            kitchenId: ctx.kitchenId,
+            status: 'pendente',
+            expiresAt: { gt: new Date() },
+          },
+          include: { items: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
 
-      // SLA da cozinha pra calcular atraso
-      const k = await prisma.kitchen.findUnique({
-        where: { id: ctx.kitchenId },
-        select: { slaMinutes: true },
-      });
-      const slaMinutes = k?.slaMinutes ?? 15;
+    // SLA da cozinha pra calcular atraso
+    const k = await prisma.kitchen.findUnique({
+      where: { id: ctx.kitchenId },
+      select: { slaMinutes: true },
+    });
+    const slaMinutes = k?.slaMinutes ?? 15;
 
-      const now = Date.now();
+    const now = Date.now();
 
-      const response: FilaResponse = {
-        orders: orders.map((o): FilaOrder => {
-          const aggStatus = aggregateStatus(
-            o.items.map((i) => i.status as OrderItemStatus),
-          );
-          // Mesma regra do lado do cliente: item cancelado nao entra no total.
-          const totalCents = totalAtivoCents(
-            o.items.map((i) => ({
-              qty: i.qty,
-              unitPriceCents: i.unitPriceCents,
-              status: i.status as OrderItemStatus,
-            })),
-          );
-          const startedAt = (() => {
-            const accepted = o.items.find((i) => i.acceptedAt)?.acceptedAt;
-            return accepted?.getTime() ?? o.createdAt.getTime();
-          })();
-          const elapsedMin = Math.floor((now - startedAt) / 60_000);
-          const isLate = aggStatus !== 'novo' && elapsedMin > slaMinutes;
+    const response: FilaResponse = {
+      orders: orders.map((o): FilaOrder => {
+        const aggStatus = aggregateStatus(o.items.map((i) => i.status as OrderItemStatus));
+        // Mesma regra do lado do cliente: item cancelado nao entra no total.
+        const totalCents = totalAtivoCents(
+          o.items.map((i) => ({
+            qty: i.qty,
+            unitPriceCents: i.unitPriceCents,
+            status: i.status as OrderItemStatus,
+          })),
+        );
+        const startedAt = (() => {
+          const accepted = o.items.find((i) => i.acceptedAt)?.acceptedAt;
+          return accepted?.getTime() ?? o.createdAt.getTime();
+        })();
+        const elapsedMin = Math.floor((now - startedAt) / 60_000);
+        const isLate = aggStatus !== 'novo' && elapsedMin > slaMinutes;
 
-          return {
-            id: o.id,
-            shortId: o.shortId,
-            mesaNumero: o.table.numero,
-            nomeCliente: o.nomeCliente,
-            createdAt: o.createdAt.toISOString(),
-            acceptedAt: firstDateIso(o.items.map((i) => i.acceptedAt)),
-            readyAt: firstDateIso(o.items.map((i) => i.readyAt)),
-            pickedAt: firstDateIso(o.items.map((i) => i.pickedAt)),
-            status: aggStatus,
-            items: o.items.map((i) => ({
-              id: i.id,
-              name: i.nameSnapshot,
-              qty: i.qty,
-              note: i.note,
-              unitPriceCents: i.unitPriceCents,
-              // Sem o status, o item cancelado aparece igual a um ativo e a
-              // cozinha prepara comida que ninguem vai buscar.
-              status: i.status as OrderItemStatus,
-            })),
-            totalCents,
-            isLate,
-            paymentRequestedAt: o.paymentRequestedAt?.toISOString() ?? null,
-            alteracaoAguardando: (() => {
-              const pendente = o.changes[0];
-              if (!pendente) return null;
-              const porId = new Map(o.items.map((i) => [i.id, i]));
-              return {
-                id: pendente.id,
-                createdAt: pendente.createdAt.toISOString(),
-                expiresAt: pendente.expiresAt.toISOString(),
-                reason: pendente.reason,
-                linhas: pendente.items.map((l) => ({
-                  orderItemId: l.orderItemId,
-                  name: porId.get(l.orderItemId)?.nameSnapshot ?? 'item',
-                  qtyAnterior: l.qtyAnterior,
-                  qtyProposta: l.qtyProposta,
-                })),
-              };
-            })(),
-          };
-        }),
-      };
-      return response;
-    },
-  );
+        return {
+          id: o.id,
+          shortId: o.shortId,
+          mesaNumero: o.table.numero,
+          nomeCliente: o.nomeCliente,
+          createdAt: o.createdAt.toISOString(),
+          acceptedAt: firstDateIso(o.items.map((i) => i.acceptedAt)),
+          readyAt: firstDateIso(o.items.map((i) => i.readyAt)),
+          pickedAt: firstDateIso(o.items.map((i) => i.pickedAt)),
+          status: aggStatus,
+          items: o.items.map((i) => ({
+            id: i.id,
+            name: i.nameSnapshot,
+            qty: i.qty,
+            note: i.note,
+            unitPriceCents: i.unitPriceCents,
+            // Sem o status, o item cancelado aparece igual a um ativo e a
+            // cozinha prepara comida que ninguem vai buscar.
+            status: i.status as OrderItemStatus,
+          })),
+          totalCents,
+          isLate,
+          paymentRequestedAt: o.paymentRequestedAt?.toISOString() ?? null,
+          alteracaoAguardando: (() => {
+            const pendente = o.changes[0];
+            if (!pendente) return null;
+            const porId = new Map(o.items.map((i) => [i.id, i]));
+            return {
+              id: pendente.id,
+              createdAt: pendente.createdAt.toISOString(),
+              expiresAt: pendente.expiresAt.toISOString(),
+              reason: pendente.reason,
+              linhas: pendente.items.map((l) => ({
+                orderItemId: l.orderItemId,
+                name: porId.get(l.orderItemId)?.nameSnapshot ?? 'item',
+                qtyAnterior: l.qtyAnterior,
+                qtyProposta: l.qtyProposta,
+              })),
+            };
+          })(),
+        };
+      }),
+    };
+    return response;
+  });
 
   // ─── GET /api/r/metricas/cancelamentos ──────────────────────────────────
   // Por que a cozinha cancela. Antes disto o motivo era validado e descartado,
@@ -412,21 +423,24 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
   fastify.patch<{ Params: { id: string } }>(
     '/api/r/pedido/:id/aceitar',
     { preHandler: fastify.authRestaurante },
-    async (req, reply) => advanceKitchenItems(fastify, req.kitchen!, req.params.id, 'preparando', reply),
+    async (req, reply) =>
+      advanceKitchenItems(fastify, req.kitchen!, req.params.id, 'preparando', reply),
   );
 
   // ─── PATCH /api/r/pedido/:id/pronto ─ preparando -> pronto ───────────────
   fastify.patch<{ Params: { id: string } }>(
     '/api/r/pedido/:id/pronto',
     { preHandler: fastify.authRestaurante },
-    async (req, reply) => advanceKitchenItems(fastify, req.kitchen!, req.params.id, 'pronto', reply),
+    async (req, reply) =>
+      advanceKitchenItems(fastify, req.kitchen!, req.params.id, 'pronto', reply),
   );
 
   // ─── PATCH /api/r/pedido/:id/retirado ─ pronto -> retirado ───────────────
   fastify.patch<{ Params: { id: string } }>(
     '/api/r/pedido/:id/retirado',
     { preHandler: fastify.authRestaurante },
-    async (req, reply) => advanceKitchenItems(fastify, req.kitchen!, req.params.id, 'retirado', reply),
+    async (req, reply) =>
+      advanceKitchenItems(fastify, req.kitchen!, req.params.id, 'retirado', reply),
   );
 
   // ─── PATCH /api/r/pedido/:id/cancelar ─ qualquer ativo -> cancelado ─────
@@ -478,11 +492,16 @@ async function advanceKitchenItems(
   const now = new Date();
   const stamps: Record<string, Date | undefined> = (() => {
     switch (to) {
-      case 'preparando': return { acceptedAt: now };
-      case 'pronto':     return { readyAt: now };
-      case 'retirado':   return { pickedAt: now };
-      case 'cancelado':  return { canceledAt: now };
-      default:           return {};
+      case 'preparando':
+        return { acceptedAt: now };
+      case 'pronto':
+        return { readyAt: now };
+      case 'retirado':
+        return { pickedAt: now };
+      case 'cancelado':
+        return { canceledAt: now };
+      default:
+        return {};
     }
   })();
 

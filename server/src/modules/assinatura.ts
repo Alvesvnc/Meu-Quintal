@@ -119,8 +119,13 @@ export async function assinaturaRoutes(fastify: FastifyInstance) {
       if (err instanceof ErroAsaas) {
         // O erro do provedor vai pro log inteiro, mas pra tela vai só o
         // essencial: a resposta dele pode carregar detalhe de conta.
-        req.log.error({ err: err.message, status: err.status, corpo: err.corpo }, 'checkout recusado pelo Asaas');
-        return reply.code(502).send({ error: 'Nao consegui abrir o pagamento agora. Tente de novo.' });
+        req.log.error(
+          { err: err.message, status: err.status, corpo: err.corpo },
+          'checkout recusado pelo Asaas',
+        );
+        return reply
+          .code(502)
+          .send({ error: 'Nao consegui abrir o pagamento agora. Tente de novo.' });
       }
       throw err;
     }
@@ -144,7 +149,10 @@ export async function assinaturaRoutes(fastify: FastifyInstance) {
       },
     });
 
-    req.log.info({ conta: conta.id, checkout: checkout.id, preco }, 'checkout de assinatura aberto');
+    req.log.info(
+      { conta: conta.id, checkout: checkout.id, preco },
+      'checkout de assinatura aberto',
+    );
 
     const response: CheckoutResponse = {
       link: checkout.link,

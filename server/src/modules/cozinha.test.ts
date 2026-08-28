@@ -98,9 +98,7 @@ describe('GET /api/r/cardapio', () => {
       { id: 'cat-1', name: 'Os smash', sortOrder: 0, _count: { items: 2 } },
       { id: 'cat-2', name: 'Pra beber', sortOrder: 1, _count: { items: 0 } },
     ]);
-    const j = (
-      await app.inject({ method: 'GET', url: '/api/r/cardapio', headers: auth() })
-    ).json();
+    const j = (await app.inject({ method: 'GET', url: '/api/r/cardapio', headers: auth() })).json();
     expect(j.categorias).toEqual([
       { id: 'cat-1', name: 'Os smash', sortOrder: 0, itemCount: 2 },
       // Vazia vem junto: e onde a cozinha vai por o proximo item.
@@ -117,17 +115,13 @@ describe('GET /api/r/cardapio', () => {
 
   it('traz esgotado — a cozinha precisa ver pra reativar', async () => {
     prismaMock.menuItem.findMany.mockResolvedValue([{ ...ITEM, available: false }]);
-    const j = (
-      await app.inject({ method: 'GET', url: '/api/r/cardapio', headers: auth() })
-    ).json();
+    const j = (await app.inject({ method: 'GET', url: '/api/r/cardapio', headers: auth() })).json();
     expect(j.items[0].available).toBe(false);
   });
 
   it('traduz o badge de underscore pra hifen', async () => {
     prismaMock.menuItem.findMany.mockResolvedValue([{ ...ITEM, badge: 'sem_estoque' }]);
-    const j = (
-      await app.inject({ method: 'GET', url: '/api/r/cardapio', headers: auth() })
-    ).json();
+    const j = (await app.inject({ method: 'GET', url: '/api/r/cardapio', headers: auth() })).json();
     // O Prisma nao aceita hifen em identificador de enum; a API usa hifen.
     expect(j.items[0].badge).toBe('sem-estoque');
   });

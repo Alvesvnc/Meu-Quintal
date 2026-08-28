@@ -2,15 +2,21 @@
 
 /* Base do sistema Modernist. Importado por todos os apps antes do Tailwind. */
 
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   height: 100%;
   background: #f3f2f2;
   color: #201e1d;
-  font-family: "Archivo", system-ui, sans-serif;
+  font-family: 'Archivo', system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -18,8 +24,13 @@ html, body, #root {
   text-rendering: optimizeLegibility;
 }
 
-button { font: inherit; }
-img { display: block; max-width: 100%; }
+button {
+  font: inherit;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
 
 /*
   Título, label e botão são sempre Archivo 800. `font-display` continua sendo a
@@ -40,16 +51,22 @@ img { display: block; max-width: 100%; }
 }
 
 /* Foco sempre visível, sempre no acento — nunca o azul do navegador. */
-:focus { outline: none; }
+:focus {
+  outline: none;
+}
 :focus-visible {
   outline: 2px solid #ec3013;
   outline-offset: 2px;
 }
-::selection { background: rgba(236, 48, 19, 0.30); }
+::selection {
+  background: rgba(236, 48, 19, 0.3);
+}
 
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -58,6 +75,13 @@ img { display: block; max-width: 100%; }
 }
 
 /* Barra de rolagem no sistema: bloco, sem raio. */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #d7d3d3; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d7d3d3;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

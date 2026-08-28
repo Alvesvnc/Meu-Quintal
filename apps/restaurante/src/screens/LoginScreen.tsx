@@ -49,13 +49,17 @@ export function LoginScreen() {
           </span>
         </div>
         <h1 className="mt-2 font-display text-display-xl text-ink leading-tight text-pretty">
-          Bem-vinda à<br />sua cozinha.
+          Bem-vinda à<br />
+          sua cozinha.
         </h1>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="email" className="block font-mono text-label uppercase tracking-wider text-inkDim mb-2">
+          <label
+            htmlFor="email"
+            className="block font-mono text-label uppercase tracking-wider text-inkDim mb-2"
+          >
             Email
           </label>
           <input
@@ -74,7 +78,10 @@ export function LoginScreen() {
         </div>
 
         <div>
-          <label htmlFor="password" className="block font-mono text-label uppercase tracking-wider text-inkDim mb-2">
+          <label
+            htmlFor="password"
+            className="block font-mono text-label uppercase tracking-wider text-inkDim mb-2"
+          >
             Senha
           </label>
           <input
@@ -91,9 +98,7 @@ export function LoginScreen() {
           />
         </div>
 
-        {errMsg && (
-          <p className="font-mono text-mono-sm text-danger text-center">{errMsg}</p>
-        )}
+        {errMsg && <p className="font-mono text-mono-sm text-danger text-center">{errMsg}</p>}
 
         <Button
           type="submit"

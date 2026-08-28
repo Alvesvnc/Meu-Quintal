@@ -44,11 +44,13 @@ passou a vir do desenho — foto grande, título de 30px, nome de item em 600.
 ### Padrões de tela
 
 #### Header sticky minimal
+
 ```
 ┌─────────────────────────────────────────┐
 │  ← Mesa 12          ⌕ buscar  · 3 items │  ← chip carrinho conta itens
 └─────────────────────────────────────────┘
 ```
+
 **Revisado.** Hoje são dois cabeçalhos, e não um configurável:
 
 - `AppHeader` nas telas que são "casa" (cozinhas, carrinho, pedidos): marca
@@ -141,9 +143,11 @@ Esta é a tela-chave do produto. Override forte:
 - **NÃO** usar ilustração custom de "carrinho vazio". É ruído.
 
 ### Erros
+
 - Pagamento falhou: bottom sheet com title Fraunces "Não rolou.", body curto com motivo real (não "erro genérico"), 2 CTAs lado-a-lado: "Tentar de novo" (primary), "Chamar um humano" (secondary — toca campainha real no balcão do dono).
 
 ### O que evitar especificamente no cliente
+
 - ❌ Pedir cadastro/login/email — tela tem que ser usável sem isso. Email/telefone só no fim, pra recibo, opcional.
 - ❌ Animações de "adicionou ao carrinho" voando — feedback é bump no chip + haptic 10ms.
 - ❌ "Sugerido pra você", "quem comprou X também comprou Y" — primeira sessão, sem dados, fake.
@@ -152,11 +156,11 @@ Esta é a tela-chave do produto. Override forte:
 
 ## Telas do app cliente
 
-| # | Nome | Rota |
-|---|---|---|
-| 01 | Pós-QR · lista de cozinhas | `/m/:tableToken` |
-| 02 | Cardápio de uma cozinha | `/m/:tableToken/k/:kitchenSlug` |
-| 03 | Detalhe do item | `/m/:tableToken/k/:kitchenSlug/i/:itemId` (modal sheet, não tela cheia) |
-| 04 | Carrinho | `/m/:tableToken/carrinho` |
-| 05 | Acompanhamento | `/m/:tableToken/pedido/:orderId` |
-| 06 | Avaliação | `/m/:tableToken/pedido/:orderId/avaliar` (após "retirado") |
+| #   | Nome                       | Rota                                                                    |
+| --- | -------------------------- | ----------------------------------------------------------------------- |
+| 01  | Pós-QR · lista de cozinhas | `/m/:tableToken`                                                        |
+| 02  | Cardápio de uma cozinha    | `/m/:tableToken/k/:kitchenSlug`                                         |
+| 03  | Detalhe do item            | `/m/:tableToken/k/:kitchenSlug/i/:itemId` (modal sheet, não tela cheia) |
+| 04  | Carrinho                   | `/m/:tableToken/carrinho`                                               |
+| 05  | Acompanhamento             | `/m/:tableToken/pedido/:orderId`                                        |
+| 06  | Avaliação                  | `/m/:tableToken/pedido/:orderId/avaliar` (após "retirado")              |

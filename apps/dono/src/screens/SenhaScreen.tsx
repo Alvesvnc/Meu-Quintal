@@ -36,7 +36,12 @@ export function SenhaScreen() {
         <p className="mt-3 font-sans text-body text-inkMuted text-pretty">
           {mensagemDeErro(q.error, 'Ele pode ter expirado ou já ter sido usado.')}
         </p>
-        <Button variant="ghost" size="lg" className="mt-6" onClick={() => (location.href = '/login')}>
+        <Button
+          variant="ghost"
+          size="lg"
+          className="mt-6"
+          onClick={() => (location.href = '/login')}
+        >
           Voltar pro login
         </Button>
       </Moldura>
@@ -61,7 +66,10 @@ function Formulario({ token, dados }: { token: string; dados: PrimeiroAcessoResp
   const enviar = (e: React.FormEvent) => {
     e.preventDefault();
     if (!pode) return;
-    definir.mutate({ token, password: senha }, { onSuccess: () => navigate('/', { replace: true }) });
+    definir.mutate(
+      { token, password: senha },
+      { onSuccess: () => navigate('/', { replace: true }) },
+    );
   };
 
   const campo =
@@ -143,7 +151,11 @@ function Formulario({ token, dados }: { token: string; dados: PrimeiroAcessoResp
         {erro && <p className="font-mono text-mono-sm text-danger text-center">{erro}</p>}
 
         <Button type="submit" variant="primary" size="lg" fullWidth disabled={!pode}>
-          {definir.isPending ? 'Entrando…' : recuperando ? 'Salvar e entrar' : 'Criar senha e entrar'}
+          {definir.isPending
+            ? 'Entrando…'
+            : recuperando
+              ? 'Salvar e entrar'
+              : 'Criar senha e entrar'}
         </Button>
       </form>
 

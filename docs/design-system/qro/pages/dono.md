@@ -31,6 +31,7 @@ auth: JWT + role=owner
 #### Anti-pattern: bento de KPIs
 
 NÃO É:
+
 ```
 [REVENUE: R$ 12k ↑]  [ORDERS: 218 ↑]
 [AOV: R$ 56,30   ]  [USERS: 0  → ]
@@ -171,12 +172,12 @@ EU
 
 ## Telas do app dono
 
-| # | Nome | Rota |
-|---|---|---|
-| 01 | Visão geral ★ | `/admin` |
-| 02 | Restaurantes (lista + onboard) | `/admin/restaurantes` |
-| 03 | Onboarding novo restaurante | `/admin/restaurantes/novo` |
-| 04 | Financeiro | `/admin/financeiro` |
-| 05 | Mesas & QR | `/admin/mesas` |
-| 06 | Pedidos ao vivo (espectador) | `/admin/pedidos` |
-| 07 | Conta / equipe | `/admin/conta` |
+| #   | Nome                           | Rota                       |
+| --- | ------------------------------ | -------------------------- |
+| 01  | Visão geral ★                  | `/admin`                   |
+| 02  | Restaurantes (lista + onboard) | `/admin/restaurantes`      |
+| 03  | Onboarding novo restaurante    | `/admin/restaurantes/novo` |
+| 04  | Financeiro                     | `/admin/financeiro`        |
+| 05  | Mesas & QR                     | `/admin/mesas`             |
+| 06  | Pedidos ao vivo (espectador)   | `/admin/pedidos`           |
+| 07  | Conta / equipe                 | `/admin/conta`             |

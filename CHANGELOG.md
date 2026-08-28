@@ -9,11 +9,11 @@ segue [SemVer](https://semver.org/lang/pt-BR/).
 Este é um **produto**, não uma biblioteca publicada — ninguém depende da nossa
 API de código. Então o SemVer se aplica ao que os clientes enxergam:
 
-| Parte | Sobe quando |
-|---|---|
+| Parte   | Sobe quando                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------- |
 | `MAJOR` | Quebra de contrato da API HTTP/WebSocket, ou migração que exige intervenção manual no deploy |
-| `MINOR` | Funcionalidade nova compatível com o que já existe |
-| `PATCH` | Correção, ajuste de performance, mudança interna sem efeito visível |
+| `MINOR` | Funcionalidade nova compatível com o que já existe                                           |
+| `PATCH` | Correção, ajuste de performance, mudança interna sem efeito visível                          |
 
 A versão vive no `package.json` da raiz. Os workspaces ficam em `0.0.1` de
 propósito: são privados, nunca publicados, e versioná-los separadamente só
@@ -34,7 +34,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   drinks. Agora cada cozinha escreve, renomeia, reordena e apaga os títulos
   dela, em `/cardapio` do app do restaurante. Rotas novas: `POST`, `PATCH` e
   `DELETE /api/r/cardapio/categorias[/:id]` mais `PATCH
-  /api/r/cardapio/categorias/ordem`. Renomear NÃO move item de lugar (o item
+/api/r/cardapio/categorias/ordem`. Renomear NÃO move item de lugar (o item
   aponta para o id, não para o texto), e apagar uma seção com prato dentro exige
   dizer para onde os pratos vão. **Quebra de contrato**: `category` saiu de
   `GET /api/m/k/:slug` e `GET /api/r/cardapio`, substituído por `categoriaId`
@@ -68,6 +68,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   pública de propósito: `<img src>` não manda `Authorization`, então imagem com
   token simplesmente não aparece — o que protege é a chave de 128 bits, e o
   conteúdo é público por natureza.
+
 - **O app do restaurante deixou de ser meia casca.** As sete telas que liam de
   mock passaram a falar com o servidor: cardápio (criar, editar, esgotar,
   excluir), perfil público, histórico do dia, métricas de operação e conta. O
@@ -98,6 +99,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   O valor do mês fica **em cima do número de cada mesa**, no próprio desenho do
   salão: o ranking se lê olhando o layout, sem tabela. Média, giro e ticket
   ficam no painel lateral ao clicar.
+
 - **O app do dono deixou de ser casca.** Todas as telas passaram a ler do
   servidor: visão geral, restaurantes, convite de cozinha, financeiro, mesas e
   conta. Login próprio, com o token em chave separada da do app do restaurante —
@@ -259,8 +261,8 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   mesma anatomia que o app do cliente já usa na barra do carrinho.
 
 - **Remover um funcionário da cozinha não revogava o acesso dele.** O auth do
-  app do restaurante reconferia a *cozinha* a cada requisição, mas nunca a
-  *pessoa*: o token de quem foi desligado seguia valendo até expirar, por até
+  app do restaurante reconferia a _cozinha_ a cada requisição, mas nunca a
+  _pessoa_: o token de quem foi desligado seguia valendo até expirar, por até
   sete dias. Agora o usuário é relido junto — existe, ainda pertence àquela
   cozinha, e a versão do token bate.
 - **Login com hash inválido respondia 500 em vez de 401.** `argon2.verify`
@@ -280,6 +282,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   mudou de lugar: `status` agora governa o que o cliente vê e se ele consegue
   pedir (409, mesmo com a página aberta desde antes da pausa), e não o acesso ao
   app.
+
 - **O seletor de foto era falso.** Gerava um `blob:` que aparecia na tela,
   sumia ao recarregar e nunca saía do navegador — e o botão de salvar era um
   `alert('Mock: salvar perfil')`. O do item do cardápio virou upload de
@@ -353,8 +356,8 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   acesso: quem pediu está na frente do computador agora. Pedir de novo invalida
   o anterior.
 - **Trocar a senha derruba as sessões abertas.** O JWT é stateless e vale sete
-  dias, então sem isso quem trocasse a senha *justamente por desconfiar de
-  invasão* continuaria com o invasor dentro por mais uma semana. Os dois
+  dias, então sem isso quem trocasse a senha _justamente por desconfiar de
+  invasão_ continuaria com o invasor dentro por mais uma semana. Os dois
   usuários ganharam `tokenVersion`, o token carrega a versão, e os dois plugins
   de auth comparam com o banco.
 - **Senha nunca trafega.** Nem para o dono da conta, nem para a cozinha: os
@@ -367,6 +370,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   casa com nada, e a única entrada é o link. Definir a senha mata os outros
   links pendentes do mesmo usuário — se alguém pediu dois, o antigo não pode
   continuar valendo para trocar a senha recém-criada.
+
 - **E-mail de boas-vindas quando a conta é criada.** Mesmo caminho do convite,
   via Resend, desligado por padrão: sem chave o `bootstrap` imprime o link para
   você mandar à mão.
@@ -385,6 +389,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   sete dias e o quintal pode ter enchido nesse intervalo.
 
   A cozinha nasce **pausada**: o cliente não pode ver cozinha sem cardápio.
+
 - **Envio de convite por e-mail, via Resend.** Desligado por padrão — com
   `RESEND_API_KEY` vazio nada é enviado, nenhuma requisição de rede sai, e o
   convite continua devolvendo o link na tela. Falha de envio **não derruba a
@@ -410,6 +415,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
 
   `bootstrap` passou a exigir `PLANO`; `TIPO` deixou de existir, porque o tipo
   do espaço é consequência.
+
 - **O dono não converte o próprio espaço.** Existiu por algumas horas um botão
   que convertia praça ↔ restaurante único de graça. Foi retirado no mesmo dia:
   converter é mudar de plano, e mudar de plano é decisão comercial — não um
@@ -417,7 +423,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   ele permite, em vez de oferecer a troca.
 - **O dono não vê pedido — e isso virou decisão registrada, não acaso.** Não
   existe fila do espaço, sala de socket do dono nem campo em `/api/a/*` que
-  diga *o que* foi pedido; só contagem e valor agregado. A tela "Pedidos ao
+  diga _o que_ foi pedido; só contagem e valor agregado. A tela "Pedidos ao
   vivo" chegou a estar planejada e foi descartada: o que cada mesa pediu, de
   quem e quando é operação do restaurante. Há teste passando dados proibidos
   pelos mocks e procurando por eles no JSON de cada rota — um `...item`
@@ -451,7 +457,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   conferindo as chaves e procurando slug de cozinha no JSON inteiro.
 
   Consequência assumida: somando as mesas e subtraindo o total visível do
-  financeiro chega-se à *soma* das cozinhas ocultas — o que não identifica
+  financeiro chega-se à _soma_ das cozinhas ocultas — o que não identifica
   nenhuma quando há duas ou mais, e identifica a única quando há uma só.
 
   `KitchenCharge` passou a congelar `chargeCommission` junto com os outros
@@ -463,6 +469,7 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   Quem opera a própria cozinha continua vendo o próprio caixa (é o caso do
   restaurante único, onde a comissão nasce desligada), e operar uma casinha não
   abre a do vizinho.
+
 - Helmet, rate limit global e limite específico de 10/min no login.
 - Limite de body em 256 KB.
 - Error handler que não vaza stack nem detalhe de driver em 5xx.

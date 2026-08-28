@@ -62,8 +62,7 @@ export async function setupSecurity(fastify: FastifyInstance) {
     // Rede de seguranca: se um plugin marcar o status no reply e lancar algo
     // sem `statusCode`, respeitar o reply evita transformar um 4xx legitimo em
     // 500 — o cliente perderia a diferenca entre "diminua o ritmo" e "quebrou".
-    const status =
-      error.statusCode ?? (reply.statusCode >= 400 ? reply.statusCode : 500);
+    const status = error.statusCode ?? (reply.statusCode >= 400 ? reply.statusCode : 500);
 
     if (status !== 500) {
       if (status >= 500) request.log.warn({ err: error, url: request.url }, 'resposta 5xx');

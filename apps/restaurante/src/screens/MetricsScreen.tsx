@@ -52,9 +52,7 @@ export function MetricsScreen() {
         </div>
       </section>
 
-      {q.isLoading && (
-        <p className="mt-10 font-sans text-body text-inkMuted">Carregando…</p>
-      )}
+      {q.isLoading && <p className="mt-10 font-sans text-body text-inkMuted">Carregando…</p>}
       {q.isError && (
         <p className="mt-10 font-sans text-body text-danger">
           {mensagemDeErro(q.error, 'Nao consegui carregar as metricas.')}

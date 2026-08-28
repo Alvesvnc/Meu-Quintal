@@ -31,14 +31,12 @@ const baseClasses =
   'disabled:opacity-45 disabled:cursor-not-allowed';
 
 const variantClasses: Record<Variant, string> = {
-  primary:
-    'bg-accent text-bg border border-transparent hover:bg-accent-600 active:bg-accent-700',
+  primary: 'bg-accent text-bg border border-transparent hover:bg-accent-600 active:bg-accent-700',
   secondary:
     'bg-transparent text-ink border border-divider hover:bg-ink/[0.07] active:bg-ink/[0.14]',
   ghost:
     'bg-transparent text-accent-700 border border-transparent hover:bg-accent/10 active:bg-accent/20',
-  danger:
-    'bg-neutral-900 text-bg border border-transparent hover:bg-ink active:bg-neutral-800',
+  danger: 'bg-neutral-900 text-bg border border-transparent hover:bg-ink active:bg-neutral-800',
 };
 
 /** Alturas em pixel: os apps têm raízes de fonte diferentes, `h-11` não. */
@@ -51,7 +49,16 @@ const sizeClasses: Record<Size, string> = {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { variant = 'primary', size = 'md', loading, fullWidth, className = '', children, disabled, ...rest },
+    {
+      variant = 'primary',
+      size = 'md',
+      loading,
+      fullWidth,
+      className = '',
+      children,
+      disabled,
+      ...rest
+    },
     ref,
   ) => {
     return (

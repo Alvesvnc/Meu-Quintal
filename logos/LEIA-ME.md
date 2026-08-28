@@ -4,11 +4,11 @@ Regra geral: **wordmark = HTML** (texto de verdade, escala e herda tudo) · **í
 
 ## Arquivos
 
-| Arquivo | O que é | Onde usar |
-|---|---|---|
-| `qro-wordmark.html` | A marca principal em HTML/CSS (variantes claro/escuro dentro do arquivo) | Header do site, login, e-mails, qualquer lugar onde o nome aparece — **copie o snippet de dentro do arquivo** |
-| `qro-favicon.svg` | Olho de QR sobre campo vermelho | Favicon, avatar de redes/WhatsApp, ícone de app/atalho |
-| `qro-icone-claro.svg` | Olho de QR sem fundo (tinta + vermelho) | Ícone solto sobre fundo claro na UI: header da cozinha, loading, marca d'água |
+| Arquivo               | O que é                                                                  | Onde usar                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `qro-wordmark.html`   | A marca principal em HTML/CSS (variantes claro/escuro dentro do arquivo) | Header do site, login, e-mails, qualquer lugar onde o nome aparece — **copie o snippet de dentro do arquivo** |
+| `qro-favicon.svg`     | Olho de QR sobre campo vermelho                                          | Favicon, avatar de redes/WhatsApp, ícone de app/atalho                                                        |
+| `qro-icone-claro.svg` | Olho de QR sem fundo (tinta + vermelho)                                  | Ícone solto sobre fundo claro na UI: header da cozinha, loading, marca d'água                                 |
 
 ## Como colocar no site
 
@@ -40,12 +40,12 @@ O app do restaurante é instalável, e o manifest exige PNG — navegador nenhum
 aceita só SVG aqui. Os arquivos ficam em `apps/restaurante/public/logo/` e são
 **derivados de `qro-favicon.svg`**, não desenhos novos:
 
-| Arquivo | Tamanho | Papel |
-|---|---|---|
-| `qro-app-192.png` | 192×192 | Ícone padrão do manifest |
-| `qro-app-512.png` | 512×512 | Splash e listagens grandes |
-| `qro-app-maskable-512.png` | 512×512 | `purpose: maskable` — Android |
-| `qro-app-touch-180.png` | 180×180 | `apple-touch-icon`; o iPhone ignora o manifest |
+| Arquivo                    | Tamanho | Papel                                          |
+| -------------------------- | ------- | ---------------------------------------------- |
+| `qro-app-192.png`          | 192×192 | Ícone padrão do manifest                       |
+| `qro-app-512.png`          | 512×512 | Splash e listagens grandes                     |
+| `qro-app-maskable-512.png` | 512×512 | `purpose: maskable` — Android                  |
+| `qro-app-touch-180.png`    | 180×180 | `apple-touch-icon`; o iPhone ignora o manifest |
 
 A variante **maskable** é a mesma geometria escalada a 0,75 em torno do centro.
 Não é capricho: o Android recorta o ícone num círculo de 80% do lado, e no

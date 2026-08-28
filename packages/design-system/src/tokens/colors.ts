@@ -49,10 +49,10 @@ const DIVIDER = 'rgba(32, 30, 29, 0.40)';
 
 export const colors = {
   // ─── Sistema ────────────────────────────────────────────────────────────
-  bg:      '#f3f2f2',
+  bg: '#f3f2f2',
   surface: '#eae9e9',
-  ink:     '#201e1d',
-  accent:  '#ec3013',
+  ink: '#201e1d',
+  accent: '#ec3013',
   divider: DIVIDER,
 
   // ─── Apelidos da identidade anterior ────────────────────────────────────
@@ -61,22 +61,22 @@ export const colors = {
   // secundárias do restaurante ainda escrevem `text-primary` / `bg-surface`, e
   // apagar os nomes trocaria um redesign por uma quebra de compilação em
   // dezenas de arquivos que este pacote não precisa tocar.
-  primary:         '#ec3013',
-  primaryWash:     accentRamp[100],
-  primaryDeep:     accentRamp[700],
-  accentWash:      accentRamp[100],
-  surfaceDeep:     neutral[900],
+  primary: '#ec3013',
+  primaryWash: accentRamp[100],
+  primaryDeep: accentRamp[700],
+  accentWash: accentRamp[100],
+  surfaceDeep: neutral[900],
   surfaceDeepCard: neutral[800],
-  inkMuted:        neutral[700],
-  inkDim:          neutral[600],
-  inkInverse:      '#f3f2f2',
-  inkInverseDim:   neutral[400],
-  hairline:        DIVIDER,
-  hairlineSoft:    DIVIDER,
-  hairlineDark:    neutral[800],
-  warn:            accentRamp[700],
-  danger:          accentRamp[700],
-  success:         neutral[900],
+  inkMuted: neutral[700],
+  inkDim: neutral[600],
+  inkInverse: '#f3f2f2',
+  inkInverseDim: neutral[400],
+  hairline: DIVIDER,
+  hairlineSoft: DIVIDER,
+  hairlineDark: neutral[800],
+  warn: accentRamp[700],
+  danger: accentRamp[700],
+  success: neutral[900],
 } as const;
 
 export type ColorToken = keyof typeof colors;

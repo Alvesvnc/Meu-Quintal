@@ -46,8 +46,7 @@ async function carregar(dsn?: string) {
   mod.setupSentry();
 
   const opcoes = initSpy.mock.calls[0]?.[0] as
-    | { beforeSend?: (e: Record<string, unknown>) => unknown; sendDefaultPii?: boolean }
-    | undefined;
+    { beforeSend?: (e: Record<string, unknown>) => unknown; sendDefaultPii?: boolean } | undefined;
 
   return { mod, opcoes };
 }

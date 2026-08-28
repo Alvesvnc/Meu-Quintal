@@ -44,8 +44,7 @@ export function CategoriasSheet({ categorias, onClose }: Props) {
   const [tirandoId, setTirandoId] = useState<string | null>(null);
   const [destino, setDestino] = useState<string | null>(null);
 
-  const salvando =
-    criar.isPending || renomear.isPending || ordenar.isPending || excluir.isPending;
+  const salvando = criar.isPending || renomear.isPending || ordenar.isPending || excluir.isPending;
 
   const erro =
     criar.error || renomear.error || ordenar.error || excluir.error
@@ -173,8 +172,8 @@ export function CategoriasSheet({ categorias, onClose }: Props) {
 
       <SheetBody>
         <p className="font-sans text-body text-inkMuted">
-          São os nomes que dividem o cardápio pro cliente. Toque no <b>nome</b> pra
-          renomear — os pratos continuam onde estão.
+          São os nomes que dividem o cardápio pro cliente. Toque no <b>nome</b> pra renomear — os
+          pratos continuam onde estão.
         </p>
 
         <ul className="mt-5 divide-y divide-hairlineSoft border-y border-hairline">

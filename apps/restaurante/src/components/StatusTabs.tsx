@@ -47,26 +47,26 @@ export function StatusTabs({ tabs, activeId, onSelect }: StatusTabsProps) {
     // conta.
     <div className="sticky top-14 z-10 bg-bg border-b-rule border-divider">
       <div role="tablist" className="grid grid-cols-3 px-4 sm:px-6 lg:px-8">
-      {tabs.map((t, i) => {
-        const active = activeId === t.id;
-        return (
-          <button
-            key={t.id}
-            role="tab"
-            aria-selected={active}
-            onClick={() => onSelect(t.id)}
-            className={[
-              'flex flex-col gap-0.5 px-4 py-3 text-left cursor-pointer',
-              'transition-colors duration-base ease-out',
-              i > 0 ? 'border-l border-divider' : '',
-              active ? 'bg-accent text-bg' : 'text-neutral-700 hover:text-ink',
-            ].join(' ')}
-          >
-            <span className="font-display text-counter font-bold tabular">{t.count}</span>
-            <span className="font-display text-label font-bold uppercase">{t.label}</span>
-          </button>
-        );
-      })}
+        {tabs.map((t, i) => {
+          const active = activeId === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={active}
+              onClick={() => onSelect(t.id)}
+              className={[
+                'flex flex-col gap-0.5 px-4 py-3 text-left cursor-pointer',
+                'transition-colors duration-base ease-out',
+                i > 0 ? 'border-l border-divider' : '',
+                active ? 'bg-accent text-bg' : 'text-neutral-700 hover:text-ink',
+              ].join(' ')}
+            >
+              <span className="font-display text-counter font-bold tabular">{t.count}</span>
+              <span className="font-display text-label font-bold uppercase">{t.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

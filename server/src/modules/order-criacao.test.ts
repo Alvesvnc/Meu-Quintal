@@ -38,7 +38,13 @@ const CARDAPIO = [
     priceCents: 1800,
     available: true,
     kitchenId: 'k-lou',
-    kitchen: { id: 'k-lou', slug: 'lou-burger', name: 'Lou Burger', status: 'ativa', spaceId: 'space-1' },
+    kitchen: {
+      id: 'k-lou',
+      slug: 'lou-burger',
+      name: 'Lou Burger',
+      status: 'ativa',
+      spaceId: 'space-1',
+    },
   },
   {
     id: SMASH,
@@ -46,7 +52,13 @@ const CARDAPIO = [
     priceCents: 3200,
     available: true,
     kitchenId: 'k-lou',
-    kitchen: { id: 'k-lou', slug: 'lou-burger', name: 'Lou Burger', status: 'ativa', spaceId: 'space-1' },
+    kitchen: {
+      id: 'k-lou',
+      slug: 'lou-burger',
+      name: 'Lou Burger',
+      status: 'ativa',
+      spaceId: 'space-1',
+    },
   },
   {
     id: MOQUECA,
@@ -54,7 +66,13 @@ const CARDAPIO = [
     priceCents: 5800,
     available: true,
     kitchenId: 'k-cumbuca',
-    kitchen: { id: 'k-cumbuca', slug: 'cumbuca-caicara', name: 'Cumbuca', status: 'ativa', spaceId: 'space-1' },
+    kitchen: {
+      id: 'k-cumbuca',
+      slug: 'cumbuca-caicara',
+      name: 'Cumbuca',
+      status: 'ativa',
+      spaceId: 'space-1',
+    },
   },
 ];
 
@@ -389,8 +407,8 @@ describe('um pedido, uma cozinha', () => {
       headers: comMesa,
       payload: {
         items: [
-          { menuItemId: BATATA, qty: 1 },   // Lou Burger
-          { menuItemId: MOQUECA, qty: 1 },  // Cumbuca
+          { menuItemId: BATATA, qty: 1 }, // Lou Burger
+          { menuItemId: MOQUECA, qty: 1 }, // Cumbuca
         ],
       },
     });

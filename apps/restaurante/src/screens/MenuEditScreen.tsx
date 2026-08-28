@@ -33,7 +33,11 @@ export function MenuEditScreen() {
   const [editandoSecoes, setEditandoSecoes] = useState(false);
 
   if (q.isLoading) {
-    return <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">Carregando cardápio…</main>;
+    return (
+      <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">
+        Carregando cardápio…
+      </main>
+    );
   }
   if (q.isError || !q.data) {
     return (
@@ -214,12 +218,12 @@ function Linha({ item, salvando, onEsgotar, onPreco, onAbrir }: LinhaProps) {
           />
         )}
         <span className="min-w-0">
-        <p className="font-sans text-body-lg text-ink leading-tight">{item.name}</p>
-        {!item.available && (
-          <p className="mt-0.5 font-mono text-mono-sm uppercase tracking-wider text-danger">
-            esgotado
-          </p>
-        )}
+          <p className="font-sans text-body-lg text-ink leading-tight">{item.name}</p>
+          {!item.available && (
+            <p className="mt-0.5 font-mono text-mono-sm uppercase tracking-wider text-danger">
+              esgotado
+            </p>
+          )}
         </span>
       </button>
 

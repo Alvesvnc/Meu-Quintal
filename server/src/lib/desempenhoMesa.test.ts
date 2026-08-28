@@ -45,7 +45,10 @@ describe('o ranking em si', () => {
 
   it('empate desempata pelo numero da mesa', () => {
     const r = ranquearMesas(
-      [mesa({ numero: 7, pedidos: pedidos(1, 1000) }), mesa({ numero: 2, pedidos: pedidos(1, 1000) })],
+      [
+        mesa({ numero: 7, pedidos: pedidos(1, 1000) }),
+        mesa({ numero: 2, pedidos: pedidos(1, 1000) }),
+      ],
       INICIO,
     );
     // Sem desempate estavel a lista dancaria entre dois carregamentos iguais,
@@ -152,7 +155,10 @@ describe('a media e a comparacao', () => {
   });
 
   it('mesa criada EXATAMENTE no inicio do periodo conta como antiga', () => {
-    const r = ranquearMesas([mesa({ numero: 1, criadaEm: INICIO, pedidos: pedidos(1, 5_000) })], INICIO);
+    const r = ranquearMesas(
+      [mesa({ numero: 1, criadaEm: INICIO, pedidos: pedidos(1, 5_000) })],
+      INICIO,
+    );
     // Ela teve o periodo inteiro. Barrar aqui seria descartar mesa legitima
     // todo comeco de mes.
     expect(r.mesas[0].novaNoPeriodo).toBe(false);

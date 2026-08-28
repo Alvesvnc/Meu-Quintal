@@ -27,15 +27,12 @@ export function PropormAlteracaoSheet({ order, onClose }: Props) {
 
   // Item já cancelado ou retirado não entra: um foi entregue, o outro não
   // existe mais.
-  const alteraveis = order.items.filter(
-    (i) => i.status !== 'cancelado' && i.status !== 'retirado',
-  );
+  const alteraveis = order.items.filter((i) => i.status !== 'cancelado' && i.status !== 'retirado');
 
   /** orderItemId -> nova quantidade. Ausente = sem alteração. */
   const [novasQtds, setNovasQtds] = useState<Record<string, number>>({});
 
-  const definir = (id: string, qty: number) =>
-    setNovasQtds((prev) => ({ ...prev, [id]: qty }));
+  const definir = (id: string, qty: number) => setNovasQtds((prev) => ({ ...prev, [id]: qty }));
 
   const linhasAlteradas = alteraveis
     .filter((i) => novasQtds[i.id] !== undefined && novasQtds[i.id] < i.qty)
@@ -80,9 +77,7 @@ export function PropormAlteracaoSheet({ order, onClose }: Props) {
             return (
               <li key={item.id} className="border-b border-hairline pb-4">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-sans text-body-lg text-ink flex-1">
-                    {item.name}
-                  </span>
+                  <span className="font-sans text-body-lg text-ink flex-1">{item.name}</span>
                   <span className="font-mono text-mono-sm text-inkDim shrink-0">
                     pedido: {item.qty}×
                   </span>

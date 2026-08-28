@@ -73,8 +73,6 @@ function slugValido(s: string): boolean {
 /** Dias que o link de primeiro acesso vale. */
 const LINK_VALIDO_DIAS = 7;
 
-
-
 async function main() {
   const contaSlug = exigir('CONTA_SLUG');
   const contaNome = exigir('CONTA_NOME');

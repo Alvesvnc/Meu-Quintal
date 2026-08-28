@@ -38,8 +38,18 @@ export async function acessoRoutes(fastify: FastifyInstance) {
     const acesso = await prisma.accessToken.findUnique({
       where: { tokenHash: hashDeToken(token) },
       include: {
-        user: { select: { id: true, email: true, name: true, accountId: true, account: { select: { name: true, status: true } } } },
-        kitchenUser: { select: { id: true, email: true, name: true, kitchen: { select: { name: true } } } },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            accountId: true,
+            account: { select: { name: true, status: true } },
+          },
+        },
+        kitchenUser: {
+          select: { id: true, email: true, name: true, kitchen: { select: { name: true } } },
+        },
       },
     });
 
@@ -86,7 +96,10 @@ export async function acessoRoutes(fastify: FastifyInstance) {
         // Conta cancelada nao recebe link: seria devolver acesso a algo que
         // deixou de existir.
         if (user && user.account.status !== 'cancelada') {
-          const { token, expiraEm } = await criarLinkDeAcesso({ userId: user.id }, 'recuperar_senha');
+          const { token, expiraEm } = await criarLinkDeAcesso(
+            { userId: user.id },
+            'recuperar_senha',
+          );
           const envio = await enviar(
             emailDeRecuperacao({
               para: email,

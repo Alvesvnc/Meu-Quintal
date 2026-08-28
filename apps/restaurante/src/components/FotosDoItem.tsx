@@ -57,9 +57,7 @@ export function FotosDoItem({ itemId, fotos }: Props) {
   return (
     <div className="mt-5">
       <div className="flex items-baseline justify-between mb-2 gap-3">
-        <label className="font-mono text-label uppercase tracking-wider text-inkDim">
-          Fotos
-        </label>
+        <label className="font-mono text-label uppercase tracking-wider text-inkDim">Fotos</label>
         <span className="font-mono text-mono-sm text-inkDim">
           {fotos.length}/{MAX_FOTOS}
         </span>
@@ -128,9 +126,7 @@ export function FotosDoItem({ itemId, fotos }: Props) {
                        text-inkDim hover:border-primary hover:text-primary
                        disabled:opacity-50 transition-colors duration-base ease-out"
           >
-            <span className="font-display text-display-md">
-              {enviar.isPending ? '…' : '+'}
-            </span>
+            <span className="font-display text-display-md">{enviar.isPending ? '…' : '+'}</span>
             <span className="font-mono text-mono-sm uppercase tracking-wider">
               {enviar.isPending ? 'enviando' : 'foto'}
             </span>

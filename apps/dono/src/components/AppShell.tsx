@@ -18,7 +18,9 @@ export function AppShell({ children }: AppShellProps) {
     if (!drawerOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [drawerOpen]);
 
   return (
@@ -40,16 +42,16 @@ export function AppShell({ children }: AppShellProps) {
           className={[
             'fixed inset-y-0 left-0 top-14 z-30 w-60 transform transition-transform duration-base ease-out',
             'md:static md:translate-x-0 md:top-0 md:transition-none md:shrink-0',
-            drawerOpen ? 'translate-x-0 shadow-sheet md:shadow-none' : '-translate-x-full md:translate-x-0',
+            drawerOpen
+              ? 'translate-x-0 shadow-sheet md:shadow-none'
+              : '-translate-x-full md:translate-x-0',
           ].join(' ')}
         >
           <Sidebar onNavegar={() => setDrawerOpen(false)} />
         </div>
 
         <main className="flex-1 min-w-0">
-          <div className="max-w-[1200px] mx-auto px-4 py-6 md:px-8 md:py-10">
-            {children}
-          </div>
+          <div className="max-w-[1200px] mx-auto px-4 py-6 md:px-8 md:py-10">{children}</div>
         </main>
       </div>
     </div>

@@ -23,12 +23,7 @@ interface Props {
  */
 export function EditItemSheet({ item, categorias, onClose }: Props) {
   return (
-    <Formulario
-      key={item?.id ?? 'novo'}
-      item={item}
-      categorias={categorias}
-      onClose={onClose}
-    />
+    <Formulario key={item?.id ?? 'novo'} item={item} categorias={categorias} onClose={onClose} />
   );
 }
 
@@ -105,8 +100,8 @@ function Formulario({ item, categorias, onClose }: Props) {
         <Campo rotulo="Seção" dica="a sua, não a nossa">
           {categorias.length === 0 ? (
             <p className="font-sans text-body-sm text-inkMuted">
-              Crie uma seção antes — é ela que dá o título embaixo do qual este item
-              aparece pro cliente.
+              Crie uma seção antes — é ela que dá o título embaixo do qual este item aparece pro
+              cliente.
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
@@ -184,8 +179,8 @@ function Formulario({ item, categorias, onClose }: Props) {
               className={inputCls}
             />
             <p className="mt-2 font-sans text-body-sm text-inkMuted">
-              Apague este endereço e envie a foto acima — assim ela fica guardada aqui e não
-              depende de outro site continuar no ar.
+              Apague este endereço e envie a foto acima — assim ela fica guardada aqui e não depende
+              de outro site continuar no ar.
             </p>
           </Campo>
         )}
@@ -213,8 +208,8 @@ function Formulario({ item, categorias, onClose }: Props) {
             {confirmandoExclusao ? (
               <>
                 <p className="font-sans text-body text-inkMuted">
-                  Tirar <span className="text-ink">{item.name}</span> do cardápio? Ele some
-                  pro cliente. Os pedidos antigos continuam como estão.
+                  Tirar <span className="text-ink">{item.name}</span> do cardápio? Ele some pro
+                  cliente. Os pedidos antigos continuam como estão.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <Button

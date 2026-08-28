@@ -48,11 +48,7 @@ export function Sheet({ open, onClose, children, ariaLabel, topo }: SheetProps) 
         open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
       ].join(' ')}
     >
-      <div
-        onClick={onClose}
-        className="absolute inset-0 bg-neutral-900/50"
-        aria-hidden
-      />
+      <div onClick={onClose} className="absolute inset-0 bg-neutral-900/50" aria-hidden />
       <div
         ref={dialogRef}
         role="dialog"
@@ -95,9 +91,5 @@ export function SheetBody({ children }: { children: ReactNode }) {
 }
 
 export function SheetFooter({ children }: { children: ReactNode }) {
-  return (
-    <div className="px-4 pt-3 pb-5 border-t-rule border-divider bg-bg">
-      {children}
-    </div>
-  );
+  return <div className="px-4 pt-3 pb-5 border-t-rule border-divider bg-bg">{children}</div>;
 }

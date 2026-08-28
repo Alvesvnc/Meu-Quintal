@@ -183,10 +183,7 @@ export function expirou(expiresAt: Date, agora: Date = new Date()): boolean {
  * dizer "o total cai R$ 18,00" antes de ele decidir — decidir sem saber o
  * impacto no valor não é decidir.
  */
-export function deltaDaProposta(
-  linhas: LinhaProposta[],
-  itensDaCozinha: ItemDoPedido[],
-): number {
+export function deltaDaProposta(linhas: LinhaProposta[], itensDaCozinha: ItemDoPedido[]): number {
   const porId = new Map(itensDaCozinha.map((i) => [i.id, i]));
   return linhas.reduce((acc, linha) => {
     const item = porId.get(linha.orderItemId);

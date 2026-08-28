@@ -54,9 +54,7 @@ export function calcularCobranca(
   }
 
   const commissionPct = acordo.chargeCommission ? pctVigente : 0;
-  const commissionCents = acordo.chargeCommission
-    ? comissaoEmCentavos(grossCents, pctVigente)
-    : 0;
+  const commissionCents = acordo.chargeCommission ? comissaoEmCentavos(grossCents, pctVigente) : 0;
 
   // Aluguel desligado nao vira zero por acaso: e uma decisao do acordo. Um
   // rentCents residual no cadastro nao pode virar cobranca se chargeRent=false.
