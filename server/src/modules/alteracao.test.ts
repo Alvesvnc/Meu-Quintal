@@ -76,6 +76,51 @@ afterEach(async () => {
 
 // ─── Propor: quem pode ──────────────────────────────────────────────────────
 
+/**
+ * ATE QUANDO DA PRA PROPOR.
+ *
+ * A regra vive em validarProposta (lib/alteracao.ts). O que se prova AQUI e
+ * que a rota realmente a aplica — antes ela deixava passar item ja pronto, e
+ * nenhum teste, nem de lib nem de rota, dizia nada sobre isso.
+ */
+describe('POST /api/r/pedido/:id/alteracao — ate que status', () => {
+  const propor = () =>
+    app.inject({
+      method: 'POST',
+      url: '/api/r/pedido/o1/alteracao',
+      headers: authCozinha(),
+      payload: { motivo: 'sem-ingrediente', itens: [{ orderItemId: UUID_A, qtyProposta: 1 }] },
+    });
+
+  it('recusa quando o item ja esta PRONTO', async () => {
+    prismaMock.orderItem.findMany.mockResolvedValue([itemDoPedido({ status: 'pronto' })]);
+    prismaMock.orderChange.findFirst.mockResolvedValue(null);
+
+    const r = await propor();
+
+    expect(r.statusCode).toBe(400);
+    // A comida ja existe: nada e criado.
+    expect(prismaMock.orderChange.create).not.toHaveBeenCalled();
+  });
+
+  it('aceita enquanto o item esta preparando', async () => {
+    prismaMock.orderItem.findMany.mockResolvedValue([itemDoPedido({ status: 'preparando' })]);
+    prismaMock.orderChange.findFirst.mockResolvedValue(null);
+    prismaMock.orderChange.create.mockResolvedValue({
+      id: 'a1',
+      items: [{ orderItemId: UUID_A, qtyAnterior: 3, qtyProposta: 1 }],
+      kitchen: { slug: COZINHA.slug, name: COZINHA.name },
+      reason: null,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 300000),
+    });
+
+    const r = await propor();
+
+    expect(r.statusCode).toBe(201);
+  });
+});
+
 describe('POST /api/r/pedido/:id/alteracao — quem pode propor', () => {
   it('sem token devolve 401', async () => {
     const r = await app.inject({

@@ -11,7 +11,7 @@ import { mensagemDeErro } from '@mq/shared';
 export function Carregando({ o = 'os dados' }: { o?: string }) {
   return (
     <div className="py-16 text-center">
-      <p className="font-display italic text-display-md text-inkMuted">Carregando {o}…</p>
+      <p className="font-display text-display-md text-inkMuted">Carregando {o}…</p>
     </div>
   );
 }
@@ -40,7 +40,7 @@ export function ErroDaTela({ erro, aoTentar }: { erro: unknown; aoTentar?: () =>
 export function Vazio({ children }: { children: ReactNode }) {
   return (
     <div className="py-12 text-center">
-      <p className="font-display italic text-display-md text-inkMuted text-pretty">{children}</p>
+      <p className="font-display text-display-md text-inkMuted text-pretty">{children}</p>
     </div>
   );
 }

@@ -1,0 +1,28 @@
+{
+  // Projeto SÓ do service worker.
+  //
+  // Ele não roda no navegador: roda num worker, onde não existe `window` nem
+  // `document` e onde `self` é um `ServiceWorkerGlobalScope`. As libs `DOM` e
+  // `WebWorker` do TypeScript declaram os mesmos nomes com formas diferentes e
+  // não convivem no mesmo programa — daí o arquivo separado, em vez de um
+  // `/// <reference>` dentro do tsconfig principal.
+  //
+  // Quem exclui src/sw.ts do projeto principal é o `exclude` de tsconfig.json.
+  // Mexer num sem mexer no outro faz o SW ser checado com a lib errada (erro
+  // ruidoso) ou não ser checado por ninguém (silencioso, que é pior).
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["vite/client", "vite-plugin-pwa/info"]
+  },
+  "include": ["src/sw.ts"]
+}

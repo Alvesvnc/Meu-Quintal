@@ -9,6 +9,12 @@ auth: JWT + role=owner
 
 > Lê MASTER.md primeiro. Aqui só o que diverge ou especializa.
 
+> **Revisão 2026-08-27 — sistema Modernist.** O app do dono **não foi
+> redesenhado**: ele herdou a paleta, a tipografia e o raio zero pelos tokens
+> compartilhados, e as telas seguem com a composição antiga. Onde este documento
+> disser Fraunces, mono ou terracota, leia Archivo 800, `tabular` e `accent`. A
+> composição das telas ainda está por fazer — ver MASTER.md §8.
+
 ## Contexto de uso
 
 - **Onde:** mesa de escritório ou laptop no balcão. Calmo, foco analítico.
@@ -81,7 +87,7 @@ Hierarquia pela tipografia, não por cards isolados. Fraunces nos números grand
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  ⌂ Meu Quintal · meu-quintal.app/admin     Marina · Sair   │  56px top bar
+│  ⌂ QRO · qro.app/admin     Marina · Sair                   │  56px top bar
 ├──────┬──────────────────────────────────────────────────────┤
 │      │                                                       │
 │ Side │              Conteúdo                                 │

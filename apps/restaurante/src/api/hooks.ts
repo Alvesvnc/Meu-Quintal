@@ -13,6 +13,7 @@ import type {
   OrderStatusEvent,
   PaymentRequestedEvent,
   CardapioResponse,
+  CategoriaCardapio,
   ItemCardapio,
   FotoDoItem,
   CriarItemCardapioInput,
@@ -25,10 +26,13 @@ import type {
   AceitarConviteResponse,
   PrimeiroAcessoResponse,
   DefinirSenhaResponse,
+  ChavePushResponse,
+  InscricaoPushResponse,
 } from '@mq/shared';
 import { api, setToken } from './client';
 import { getSocket } from './socket';
 import { useAuth } from '../stores/auth';
+import { inscrever, desinscrever } from '../lib/push';
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
@@ -236,6 +240,51 @@ export function useCardapio() {
   });
 }
 
+/**
+ * As seções do cardápio — criar, renomear, reordenar, apagar.
+ *
+ * Todas devolvem a lista inteira e invalidam `['cardapio']`: a tela de itens e
+ * a de seções leem a MESMA consulta, e renomear uma seção muda o título que
+ * aparece no meio da lista de pratos.
+ */
+function useCategoriaMutation<TVars>(fn: (vars: TVars) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cardapio'] }),
+  });
+}
+
+export function useCriarCategoria() {
+  return useCategoriaMutation(async (name: string) =>
+    (await api.post<CategoriaCardapio>('/api/r/cardapio/categorias', { name })).data,
+  );
+}
+
+export function useRenomearCategoria() {
+  return useCategoriaMutation(
+    async ({ id, name }: { id: string; name: string }) =>
+      (await api.patch(`/api/r/cardapio/categorias/${id}`, { name })).data,
+  );
+}
+
+export function useOrdenarCategorias() {
+  return useCategoriaMutation(async (ids: string[]) =>
+    (await api.patch('/api/r/cardapio/categorias/ordem', { ids })).data,
+  );
+}
+
+/**
+ * Apagar uma seção. `destino` é pra onde vão os itens que estavam nela —
+ * obrigatório quando há item dentro, senão eles ficariam sem lugar no cardápio.
+ */
+export function useExcluirCategoria() {
+  return useCategoriaMutation(async ({ id, destino }: { id: string; destino?: string }) => {
+    const query = destino ? `?destino=${destino}` : '';
+    return (await api.delete(`/api/r/cardapio/categorias/${id}${query}`)).data;
+  });
+}
+
 export function useCriarItem() {
   const qc = useQueryClient();
   return useMutation({
@@ -289,9 +338,61 @@ export function useSalvarPerfil() {
       qc.invalidateQueries({ queryKey: ['perfil'] });
       // O cabeçalho lê o nome do cache de auth. Sem isto ele mostraria o nome
       // antigo até o próximo /me — que só acontece ao recarregar a página.
-      if (me) setMe({ ...me, kitchen: { ...me.kitchen, ...perfil } });
+      //
+      // Campo a campo, e não espalhando `perfil` inteiro: lá `photoUrl` é o
+      // endereço antigo, aqui é a foto que está valendo. Espalhar trocaria uma
+      // pela outra em silêncio.
+      if (me) {
+        setMe({
+          ...me,
+          kitchen: {
+            ...me.kitchen,
+            name: perfil.name,
+            category: perfil.category,
+            photoUrl: perfil.foto,
+            slaMinutes: perfil.slaMinutes,
+            status: perfil.status,
+          },
+        });
+      }
     },
   });
+}
+
+/**
+ * Sobe a foto de capa da cozinha. O servidor reencoda pra webp antes de
+ * guardar (ver server/src/lib/imagem.ts) — daqui vai o arquivo como veio do
+ * celular ou do computador.
+ */
+export function useEnviarFotoDaCozinha() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (arquivo: File) => {
+      const form = new FormData();
+      form.append('file', arquivo);
+      return (await api.post<PerfilCozinhaResponse>('/api/r/perfil/foto', form)).data;
+    },
+    onSuccess: () => invalidarPerfil(qc),
+  });
+}
+
+export function useExcluirFotoDaCozinha() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      (await api.delete<PerfilCozinhaResponse>('/api/r/perfil/foto')).data,
+    onSuccess: () => invalidarPerfil(qc),
+  });
+}
+
+/**
+ * A foto aparece em dois lugares que NAO sao esta tela: o cabecalho, que le do
+ * cache de auth, e o cardapio do cliente. Invalidar os dois evita a cozinha
+ * trocar a foto e continuar vendo a antiga no canto da tela.
+ */
+function invalidarPerfil(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ['perfil'] });
+  qc.invalidateQueries({ queryKey: ['me'] });
 }
 
 // ─── Histórico e métricas ────────────────────────────────────────────────────
@@ -419,3 +520,65 @@ export function useDefinirSenha() {
     },
   });
 }
+
+// ─── Push: o aviso com o app fechado ─────────────────────────────────────────
+
+/**
+ * A chave VAPID do servidor e quantos aparelhos desta cozinha já estão
+ * inscritos.
+ *
+ * É perguntado ANTES de a tela oferecer o botão. Sem isto o app pediria a
+ * permissão de notificação, a pessoa aceitaria, e só então descobriríamos que
+ * o servidor não tem push configurado — queimando uma permissão que o
+ * navegador não volta a perguntar depois de negada.
+ */
+export function usePush() {
+  return useQuery({
+    queryKey: ['push-chave'],
+    queryFn: async () => (await api.get<ChavePushResponse>('/api/r/push/chave')).data,
+    // Não muda durante um turno: a chave é de ambiente e o número de
+    // aparelhos só muda por ação de alguém, que já invalida abaixo.
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+/**
+ * Liga o aviso NESTE aparelho: permissão, inscrição no navegador, e só então
+ * o registro no servidor.
+ *
+ * A ordem não é arbitrária. Registrar no servidor primeiro deixaria uma linha
+ * no banco apontando pra uma inscrição que a pessoa acabou de recusar — e o
+ * servidor tentaria entregar pra ela em todo pedido até tomar 410.
+ */
+export function useLigarPush() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (chavePublica: string) => {
+      const inscricao = await inscrever(chavePublica);
+      return (await api.post<InscricaoPushResponse>('/api/r/push/inscrever', inscricao)).data;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['push-chave'] }),
+  });
+}
+
+/**
+ * Desliga NESTE aparelho, e só nele: o tablet do balcão continua avisando
+ * depois de alguém desligar no próprio celular.
+ */
+export function useDesligarPush() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const endpoint = await desinscrever();
+      // Sem inscrição no navegador não há o que apagar no servidor. Acontece
+      // quando a pessoa já revogou a permissão pelos ajustes do aparelho.
+      if (!endpoint) return null;
+      return (
+        await api.delete<InscricaoPushResponse>('/api/r/push/inscrever', { data: { endpoint } })
+      ).data;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['push-chave'] }),
+  });
+}
+

@@ -7,6 +7,7 @@ import {
   type AceitarConviteResponse,
 } from '@mq/shared';
 import { prisma } from '../lib/prisma.js';
+import { categoriasPadrao } from '../lib/categoriasPadrao.js';
 import { slugLivre } from '../lib/slug.js';
 import { podeAdicionarCozinha } from '../lib/planos.js';
 
@@ -186,6 +187,11 @@ export async function conviteRoutes(fastify: FastifyInstance) {
             commissionPct: c.commissionPct,
             chargeRent: c.chargeRent ?? false,
             rentCents: c.rentCents ?? 0,
+            // As secoes com que o cardapio comeca. Sem elas a primeira coisa
+            // que a cozinha encontraria no app seria um "crie uma secao antes
+            // de criar o primeiro item" — justo no momento em que ela ainda
+            // nao sabe usar nada. Ver lib/categoriasPadrao.ts.
+            menuCategorias: { create: categoriasPadrao() },
           },
         });
 

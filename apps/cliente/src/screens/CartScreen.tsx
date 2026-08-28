@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@mq/design-system';
+import { Banknote, ChevronRight } from 'lucide-react';
 import { mensagemDeErro } from '@mq/shared';
 import { useCreateOrder, useQuintal } from '../api/hooks';
 import {
@@ -11,13 +12,21 @@ import {
   type CartGroup,
 } from '../stores/cart';
 import { QtyStepper } from '../components/QtyStepper';
+import { Foto } from '../components/Foto';
 import { fmtBRL } from '../lib/format';
 
 /**
  * Tela 04 ★ — Carrinho multi-restaurante.
  *
- * Cada cozinha = um card independente com botão "Mandar pedido" próprio.
- * Quando há 2+ cozinhas, aparece atalho "Mandar todos os pedidos" no rodapé.
+ * Uma lista só, agrupada por cozinha, e UM botão no rodapé. Antes cada cozinha
+ * era um card com botão próprio e havia um "mandar todos" embaixo: com duas
+ * cozinhas a tela tinha três botões primários vermelhos disputando o mesmo
+ * gesto.
+ *
+ * O envio continua sendo um pedido POR COZINHA — isso é do servidor e não
+ * mudou. Mandar só uma delas virou ação secundária em texto, que é onde ela
+ * pertence: é a exceção, não o caminho.
+ *
  * Pagamento é direto em cada cozinha quando retirar (não pelo app).
  */
 export function CartScreen() {
@@ -25,6 +34,8 @@ export function CartScreen() {
   const lines = useCart((s) => s.lines);
   const setQty = useCart((s) => s.setQty);
   const clearKitchen = useCart((s) => s.clearKitchen);
+  const nome = useCart((s) => s.nome);
+  const setNome = useCart((s) => s.setNome);
   const addActiveOrder = useCart((s) => s.addActiveOrder);
   const itemCount = useCart(selectItemCount);
   const total = useCart(selectTotalCents);
@@ -33,11 +44,9 @@ export function CartScreen() {
   const { data: quintal } = useQuintal();
   const createOrder = useCreateOrder();
 
-  // Slugs sendo enviados agora (loading state por card)
+  // Slugs sendo enviados agora (loading state por cozinha)
   const [sendingSlugs, setSendingSlugs] = useState<Set<string>>(new Set());
   const [errorBySlug, setErrorBySlug] = useState<Record<string, string>>({});
-
-  const mesaNumero = quintal?.table.numero;
 
   const sendOne = async (g: CartGroup, onDone?: (id: string) => void) => {
     setSendingSlugs((prev) => new Set(prev).add(g.kitchenSlug));
@@ -78,9 +87,7 @@ export function CartScreen() {
 
   const sendAll = async () => {
     const ids: string[] = [];
-    await Promise.all(
-      groups.map((g) => sendOne(g, (id) => ids.push(id))),
-    );
+    await Promise.all(groups.map((g) => sendOne(g, (id) => ids.push(id))));
     // Se todos foram enviados, navega pra lista
     if (ids.length === groups.length) {
       navigate('/pedidos');
@@ -90,174 +97,183 @@ export function CartScreen() {
   // ─── Vazio ──────────────────────────────────────────────────────────────
   if (itemCount === 0) {
     return (
-      <main className="px-5 py-10">
-        <h1 className="font-display italic text-display-lg text-ink leading-tight text-pretty">
-          O carrinho está pronto.
+      <main className="px-4 py-8">
+        <h1 className="font-display text-display-lg text-ink text-pretty">
+          Carrinho vazio.
         </h1>
-        <p className="mt-3 font-sans text-body text-inkMuted">
-          Adicione itens de qualquer cozinha do quintal. Cada cozinha recebe seu
-          pedido separado — e cobra direto quando você retirar.
+        <p className="mt-3 text-body-sm text-neutral-700 text-pretty">
+          Junte itens de quantas cozinhas quiser. Cada uma recebe seu pedido separado — e cobra
+          direto quando você retirar.
         </p>
-        <div className="mt-7">
+        <div className="mt-6">
           <Button variant="primary" size="lg" fullWidth onClick={() => navigate('/')}>
-            Ver as cozinhas
+            <span>Ver as cozinhas</span>
+            <ChevronRight size={18} strokeWidth={2} aria-hidden className="ml-auto" />
           </Button>
         </div>
       </main>
     );
   }
 
-  const hasMultiple = groups.length > 1;
+  const enviando = sendingSlugs.size > 0;
+  const varias = groups.length > 1;
 
   return (
-    <>
-      <main className={hasMultiple ? 'pb-64 px-5' : 'pb-24 px-5'}>
-        <section className="pt-6 pb-4">
-          <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-            {mesaNumero ? `Mesa ${String(mesaNumero).padStart(2, '0')} · ` : ''}Seus carrinhos
-          </p>
-          <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight text-pretty">
-            {hasMultiple
-              ? <>{groups.length} cozinhas, <span className="text-primary">{groups.length} pedidos.</span></>
-              : <>Um pedido <span className="text-primary">pronto pra mandar.</span></>}
-          </h1>
-        </section>
+    <main className="pb-8">
+      <section className="px-4 py-4">
+        <h1 className="font-display text-display-md text-ink">Seu pedido.</h1>
+        <p className="mt-1 text-meta text-neutral-600 tabular">
+          {itemCount} {itemCount === 1 ? 'item' : 'itens'} ·{' '}
+          {groups.length} {groups.length === 1 ? 'cozinha' : 'cozinhas'}
+        </p>
+      </section>
 
-        <div className="space-y-5">
-          {groups.map((g) => {
-            const sla = quintal?.kitchens.find((k) => k.slug === g.kitchenSlug)?.slaMinutes;
-            const isSending = sendingSlugs.has(g.kitchenSlug);
-            const error = errorBySlug[g.kitchenSlug];
+      <div className="px-4 flex flex-col gap-6">
+        {groups.map((g) => {
+          const enviandoEsta = sendingSlugs.has(g.kitchenSlug);
+          const erro = errorBySlug[g.kitchenSlug];
 
-            return (
-              <article
-                key={g.kitchenSlug}
-                className="rounded-lg border border-hairline bg-surface overflow-hidden"
+          return (
+            <section key={g.kitchenSlug}>
+              <h2
+                className="font-display text-meta font-bold uppercase text-ink
+                           pb-1 mb-2 border-b-rule border-divider"
               >
-                {/* Header do card */}
-                <header className="px-5 pt-5 pb-3 flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="font-display text-display-md italic text-ink leading-tight truncate">
-                      {g.kitchenName}
-                    </h2>
-                    {sla && (
-                      <p className="mt-1 font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-                        ~{sla} min · pagamento na cozinha
-                      </p>
-                    )}
-                  </div>
+                {g.kitchenName}
+              </h2>
+
+              <ul>
+                {g.lines.map((line) => (
+                  <li
+                    key={line.menuItemId}
+                    className="flex items-center gap-3 py-3 border-b border-divider last:border-b-0"
+                  >
+                    <Foto src={line.foto} alt="" className="w-[52px] h-[52px] shrink-0" />
+
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <p className="text-body-sm font-medium text-ink truncate">{line.name}</p>
+                      <span className="text-meta text-neutral-600 tabular">
+                        {line.qty > 1 ? `${line.qty} × ` : ''}
+                        {fmtBRL(line.priceCents)}
+                      </span>
+                      {line.note && (
+                        <span className="text-meta text-neutral-600 truncate">“{line.note}”</span>
+                      )}
+                    </div>
+
+                    <QtyStepper
+                      value={line.qty}
+                      onChange={(n) => setQty(line.menuItemId, n)}
+                      size="sm"
+                      label={`Quantidade de ${line.name}`}
+                    />
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-2 flex items-center gap-6">
+                {varias && (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (g.lines.length === 1 || window.confirm(`Esvaziar o carrinho de ${g.kitchenName}?`)) {
-                        clearKitchen(g.kitchenSlug);
-                      }
-                    }}
-                    aria-label={`Esvaziar carrinho de ${g.kitchenName}`}
-                    className="shrink-0 -mt-1 -mr-2 w-10 h-10 rounded-md flex items-center justify-center
-                               font-mono text-mono text-inkDim cursor-pointer
-                               hover:bg-bg hover:text-danger
-                               transition-colors duration-base ease-out"
-                  >
-                    ×
-                  </button>
-                </header>
-
-                {/* Items */}
-                <ul className="divide-y divide-hairlineSoft px-5">
-                  {g.lines.map((line) => (
-                    <li key={line.menuItemId} className="py-3 flex items-start gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-sans text-body-lg text-ink leading-tight">
-                          {line.name}
-                        </p>
-                        {line.note && (
-                          <p className="mt-0.5 font-sans text-body-sm italic text-inkMuted">
-                            “{line.note}”
-                          </p>
-                        )}
-                        <p className="mt-1 font-mono text-mono-sm text-inkDim">
-                          {fmtBRL(line.priceCents)} · un
-                        </p>
-                      </div>
-                      <div className="shrink-0 flex flex-col items-end gap-2">
-                        <QtyStepper
-                          value={line.qty}
-                          onChange={(n) => setQty(line.menuItemId, n)}
-                          size="sm"
-                          label={`Quantidade de ${line.name}`}
-                        />
-                        <p className="font-mono text-body text-ink">
-                          {fmtBRL(line.priceCents * line.qty)}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Footer do card: subtotal + ação */}
-                <footer className="px-5 pt-3 pb-5 border-t border-hairlineSoft bg-bg/40">
-                  <div className="flex items-baseline justify-between mb-3">
-                    <span className="font-mono text-label uppercase tracking-wider text-inkDim">
-                      Subtotal
-                    </span>
-                    <span className="font-mono text-mono-lg text-ink">
-                      {fmtBRL(g.subtotalCents)}
-                    </span>
-                  </div>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    loading={isSending}
-                    disabled={isSending}
+                    disabled={enviando}
                     onClick={() => sendOne(g, () => navigate('/pedidos'))}
+                    className="font-display text-label font-bold uppercase text-neutral-600
+                               cursor-pointer hover:text-accent transition-colors duration-base ease-out
+                               disabled:opacity-45 disabled:cursor-not-allowed"
                   >
-                    <span className="flex-1 text-left">
-                      {isSending ? 'Enviando…' : `Mandar pra ${g.kitchenName}`}
-                    </span>
-                  </Button>
-                  {error && (
-                    <p className="mt-2 font-mono text-mono-sm text-danger">
-                      {error}
-                    </p>
-                  )}
-                </footer>
-              </article>
-            );
-          })}
+                    {enviandoEsta ? 'Enviando…' : `Mandar só pra ${g.kitchenName}`}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={enviando}
+                  onClick={() => clearKitchen(g.kitchenSlug)}
+                  aria-label={`Esvaziar carrinho de ${g.kitchenName}`}
+                  className="font-display text-label font-bold uppercase text-neutral-600
+                             cursor-pointer hover:text-accent transition-colors duration-base ease-out
+                             disabled:opacity-45 disabled:cursor-not-allowed"
+                >
+                  Esvaziar
+                </button>
+              </div>
+
+              {erro && <p className="mt-2 text-meta text-accent-700">{erro}</p>}
+            </section>
+          );
+        })}
+      </div>
+
+      <footer className="mt-6 px-4 pt-4 border-t-rule border-divider flex flex-col gap-2">
+        <div className="flex items-baseline justify-between">
+          <span className="font-display text-label font-bold uppercase text-neutral-600">
+            Total
+          </span>
+          <span className="font-display text-mono-lg text-ink tabular">{fmtBRL(total)}</span>
         </div>
 
-      </main>
+        <p className="flex items-center gap-1.5 text-meta text-neutral-600">
+          <Banknote size={14} strokeWidth={2} aria-hidden className="shrink-0" />
+          Cada cozinha cobra na retirada.
+        </p>
 
-      {/* Rodapé: "Mandar todos" só se 2+ cozinhas */}
-      {hasMultiple && (
-        <div className="fixed inset-x-0 bottom-16 z-30 pointer-events-none">
-          <div className="mx-auto max-w-[480px] px-5 py-3 bg-bg/95 backdrop-blur-[2px] border-t border-hairline pointer-events-auto">
-            <div className="flex items-baseline justify-between mb-1">
-              <span className="font-mono text-label uppercase tracking-wider text-inkDim">
-                Total ({groups.length} pedidos)
-              </span>
-              <span className="font-mono text-mono-lg text-primary">{fmtBRL(total)}</span>
-            </div>
-            <p className="mb-3 font-sans text-body-sm italic text-inkDim">
-              Cada cozinha recebe seu pedido separado.
-            </p>
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={sendingSlugs.size > 0}
-              disabled={sendingSlugs.size > 0}
-              onClick={sendAll}
-            >
-              <span className="flex-1 text-left">
-                {sendingSlugs.size > 0 ? 'Enviando todos…' : `Mandar todos (${groups.length})`}
-              </span>
-            </Button>
-          </div>
+        {/*
+          O NOME É PEDIDO AQUI, E NÃO NA ENTRADA.
+
+          Na porta seria mais uma tela entre a pessoa e o cardápio, e atrito
+          antes de ver o preço derruba quem ia comprar. Aqui ela já decidiu — e
+          o campo tem propósito visível: é o que faz a comida chegar na pessoa
+          certa numa mesa com várias.
+
+          OPCIONAL de verdade. Quem pular cai na conta da mesa, que é como
+          funcionava antes. Obrigatório, ele devolveria o atrito que existe pra
+          evitar.
+        */}
+        <div className="mt-1">
+          <label
+            htmlFor="nome-cliente"
+            className="block font-display text-label font-bold uppercase text-neutral-600 mb-1.5"
+          >
+            Seu nome <span className="normal-case font-normal">(opcional)</span>
+          </label>
+          <input
+            id="nome-cliente"
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            maxLength={40}
+            autoComplete="given-name"
+            placeholder="Pra cozinha saber de quem é"
+            className="w-full px-3 py-2.5 bg-bg border-rule border-divider
+                       text-body text-ink placeholder:text-neutral-500
+                       focus:outline-none focus:border-accent"
+          />
+          <p className="mt-1.5 text-meta text-neutral-600">
+            Separa a sua conta da de quem está na mesma mesa.
+          </p>
         </div>
-      )}
-    </>
+
+        <div className="mt-1">
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={enviando}
+            disabled={enviando}
+            onClick={sendAll}
+          >
+            <span>{enviando ? 'Enviando…' : 'Mandar pedido'}</span>
+            {!enviando && (
+              <ChevronRight size={18} strokeWidth={2} aria-hidden className="ml-auto" />
+            )}
+          </Button>
+        </div>
+
+        {quintal && (
+          <p className="mt-1 text-label-sm text-neutral-600 uppercase font-display font-bold">
+            {quintal.space.name}
+          </p>
+        )}
+      </footer>
+    </main>
   );
 }

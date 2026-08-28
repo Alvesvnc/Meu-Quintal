@@ -39,7 +39,12 @@ export function OverviewScreen() {
         <Divider label={`Hoje · ${dia}, ${hora}`} />
       </header>
 
-      <section className="grid grid-cols-2 gap-12 mb-4">
+      {/*
+        Empilha no celular. Lado a lado num aparelho estreito, cada numero fica
+        com uns 140px e um valor como R$ 1.234,56 em corpo de display nao cabe
+        — quebra a linha no meio ou vaza pra fora.
+      */}
+      <section className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-12 mb-4">
         <NumeroGrande rotulo="Faturamento hoje" valor={fmtBRL(hoje.grossCents)} />
         <NumeroGrande
           rotulo="Ticket médio"
@@ -197,7 +202,7 @@ function Atencoes({ precisamLimpar, pausadas, diaDeFechamento, unico }: Atencoes
         <li key={f.titulo}>
           <Link
             to={f.href}
-            className="block no-underline hover:bg-surface rounded-r-md -mx-2 px-2
+            className="block no-underline hover:bg-surface -mx-2 px-2
                        transition-colors duration-base ease-out"
           >
             <div className={`border-l-2 ${f.tom} pl-4 py-1`}>

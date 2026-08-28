@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Button, Sheet, SheetBody, SheetFooter, SheetHeader } from '@mq/design-system';
-import { mensagemDeErro, type CategoriaMenu, type ItemCardapio } from '@mq/shared';
+import { mensagemDeErro, type CategoriaCardapio, type ItemCardapio } from '@mq/shared';
 import { useCriarItem, useEditarItem, useExcluirItem } from '../api/hooks';
 import { Switch } from '../components/Switch';
 import { FotosDoItem } from '../components/FotosDoItem';
-import { CATEGORIA_LABEL, CATEGORIAS } from '../lib/formato';
 
 interface Props {
   /** `null` = criando um item novo. */
   item: ItemCardapio | null;
+  /** As seções da cozinha, na ordem dela. Escritas por ela — ver CategoriasSheet. */
+  categorias: CategoriaCardapio[];
   onClose: () => void;
 }
 
@@ -20,11 +21,18 @@ interface Props {
  * com o texto do anterior por um frame — e, num formulário de preço, mostrar o
  * valor errado mesmo que por um instante gera dúvida sobre o que foi salvo.
  */
-export function EditItemSheet({ item, onClose }: Props) {
-  return <Formulario key={item?.id ?? 'novo'} item={item} onClose={onClose} />;
+export function EditItemSheet({ item, categorias, onClose }: Props) {
+  return (
+    <Formulario
+      key={item?.id ?? 'novo'}
+      item={item}
+      categorias={categorias}
+      onClose={onClose}
+    />
+  );
 }
 
-function Formulario({ item, onClose }: Props) {
+function Formulario({ item, categorias, onClose }: Props) {
   const criar = useCriarItem();
   const editar = useEditarItem();
   const excluir = useExcluirItem();
@@ -32,7 +40,9 @@ function Formulario({ item, onClose }: Props) {
   const novo = item === null;
 
   const [name, setName] = useState(item?.name ?? '');
-  const [category, setCategory] = useState<CategoriaMenu>(item?.category ?? 'pratos');
+  // Item novo cai na PRIMEIRA seção — a que a cozinha pôs em cima é a que ela
+  // usa mais. Adivinhar por nome ("parece bebida") erraria em silêncio.
+  const [categoriaId, setCategoriaId] = useState(item?.categoriaId ?? categorias[0]?.id ?? '');
   const [description, setDescription] = useState(item?.description ?? '');
   const [photoUrl, setPhotoUrl] = useState(item?.photoUrl ?? '');
   const [precoStr, setPrecoStr] = useState(
@@ -46,7 +56,8 @@ function Formulario({ item, onClose }: Props) {
   const nomeValido = name.trim().length >= 2;
 
   const salvando = criar.isPending || editar.isPending || excluir.isPending;
-  const podeSalvar = nomeValido && precoValido && !salvando;
+  // Sem seção escolhida não há onde o item aparecer no cardápio.
+  const podeSalvar = nomeValido && precoValido && categoriaId !== '' && !salvando;
 
   const erro =
     criar.error || editar.error || excluir.error
@@ -56,7 +67,7 @@ function Formulario({ item, onClose }: Props) {
   const salvar = () => {
     if (!podeSalvar) return;
     const dados = {
-      category,
+      categoriaId,
       name: name.trim(),
       description: description.trim() || null,
       photoUrl: photoUrl.trim() || null,
@@ -70,10 +81,10 @@ function Formulario({ item, onClose }: Props) {
   return (
     <Sheet open onClose={onClose} ariaLabel={novo ? 'Novo item' : `Editar ${item.name}`}>
       <SheetHeader>
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkInverseDim">
+        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           {novo ? 'Cardápio · novo item' : 'Cardápio · editar'}
         </p>
-        <h2 className="mt-1 font-display italic text-display-md text-inkInverse leading-tight">
+        <h2 className="mt-1 font-display text-display-md text-ink leading-tight">
           {name.trim() || (novo ? 'Item novo' : item.name)}
         </h2>
       </SheetHeader>
@@ -91,30 +102,37 @@ function Formulario({ item, onClose }: Props) {
           />
         </Campo>
 
-        <Campo rotulo="Categoria">
-          <div className="grid grid-cols-2 gap-2">
-            {CATEGORIAS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={[
-                  'min-h-11 px-3 py-2 rounded-md text-left',
-                  'font-sans text-body-sm border transition-colors duration-base ease-out',
-                  category === c
-                    ? 'border-primary bg-primary text-inkInverse'
-                    : 'border-hairlineDark text-inkInverseDim',
-                ].join(' ')}
-              >
-                {CATEGORIA_LABEL[c]}
-              </button>
-            ))}
-          </div>
+        <Campo rotulo="Seção" dica="a sua, não a nossa">
+          {categorias.length === 0 ? (
+            <p className="font-sans text-body-sm text-inkMuted">
+              Crie uma seção antes — é ela que dá o título embaixo do qual este item
+              aparece pro cliente.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {categorias.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoriaId(c.id)}
+                  className={[
+                    'min-h-11 px-3 py-2 text-left truncate',
+                    'font-sans text-body-sm border transition-colors duration-base ease-out',
+                    categoriaId === c.id
+                      ? 'border-primary bg-primary text-bg'
+                      : 'border-hairline text-inkDim',
+                  ].join(' ')}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
         </Campo>
 
         <Campo rotulo="Preço">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-body-lg text-inkInverseDim">R$</span>
+            <span className="font-mono text-body-lg text-inkDim">R$</span>
             <input
               type="text"
               inputMode="decimal"
@@ -146,7 +164,7 @@ function Formulario({ item, onClose }: Props) {
             ligar. Criar rascunho no servidor pra segurar upload deixaria item
             fantasma toda vez que alguem desistisse no meio. */}
         {novo ? (
-          <p className="mt-5 font-sans text-body-sm text-inkInverseDim">
+          <p className="mt-5 font-sans text-body-sm text-inkMuted">
             Salve o item primeiro. Depois você adiciona as fotos.
           </p>
         ) : (
@@ -165,7 +183,7 @@ function Formulario({ item, onClose }: Props) {
               placeholder="https://…"
               className={inputCls}
             />
-            <p className="mt-2 font-sans text-body-sm text-inkInverseDim">
+            <p className="mt-2 font-sans text-body-sm text-inkMuted">
               Apague este endereço e envie a foto acima — assim ela fica guardada aqui e não
               depende de outro site continuar no ar.
             </p>
@@ -174,10 +192,10 @@ function Formulario({ item, onClose }: Props) {
 
         <div className="mt-5 flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="font-sans text-body-lg text-inkInverse">
+            <p className="font-sans text-body-lg text-ink">
               {available ? 'Disponível' : 'Esgotado'}
             </p>
-            <p className="mt-0.5 font-sans text-body-sm text-inkInverseDim">
+            <p className="mt-0.5 font-sans text-body-sm text-inkMuted">
               Esgotado continua no cardápio, marcado e sem poder ser pedido.
             </p>
           </div>
@@ -191,11 +209,11 @@ function Formulario({ item, onClose }: Props) {
         {erro && <p className="mt-4 font-mono text-mono-sm text-danger">{erro}</p>}
 
         {!novo && (
-          <div className="mt-8 pt-5 border-t border-hairlineDark">
+          <div className="mt-8 pt-5 border-t border-hairline">
             {confirmandoExclusao ? (
               <>
-                <p className="font-sans text-body text-inkInverseDim">
-                  Tirar <span className="text-inkInverse">{item.name}</span> do cardápio? Ele some
+                <p className="font-sans text-body text-inkMuted">
+                  Tirar <span className="text-ink">{item.name}</span> do cardápio? Ele some
                   pro cliente. Os pedidos antigos continuam como estão.
                 </p>
                 <div className="mt-3 flex gap-2">
@@ -216,7 +234,7 @@ function Formulario({ item, onClose }: Props) {
               <button
                 type="button"
                 onClick={() => setConfirmandoExclusao(true)}
-                className="font-mono text-mono-sm uppercase tracking-wider text-inkInverseDim
+                className="font-mono text-mono-sm uppercase tracking-wider text-inkDim
                            hover:text-danger cursor-pointer transition-colors duration-base ease-out"
               >
                 Tirar do cardápio
@@ -250,11 +268,11 @@ function Campo({
   return (
     <div className="mt-5 first:mt-0">
       <div className="flex items-baseline justify-between mb-2 gap-3">
-        <label className="font-mono text-label uppercase tracking-wider text-inkInverseDim">
+        <label className="font-mono text-label uppercase tracking-wider text-inkDim">
           {rotulo}
         </label>
         {dica && (
-          <span className="font-mono text-mono-sm text-inkInverseDim normal-case tracking-normal">
+          <span className="font-mono text-mono-sm text-inkDim normal-case tracking-normal">
             {dica}
           </span>
         )}
@@ -265,6 +283,6 @@ function Campo({
 }
 
 const inputCls =
-  'w-full rounded-md bg-surfaceDeep px-4 py-3 border border-hairlineDark ' +
-  'font-sans text-body text-inkInverse placeholder:text-inkInverseDim ' +
-  'focus:outline-none focus:border-primary';
+  'w-full bg-surface px-4 py-3 border border-hairline ' +
+  'font-sans text-body text-ink placeholder:text-inkDim ' +
+  'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash';

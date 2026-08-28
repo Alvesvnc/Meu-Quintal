@@ -22,7 +22,6 @@ docs
 *.md
 !README.md
 pendencias.txt
-Meu Quintal.html
 docker-compose*.yml
 
 # NAO excluir apps/*/public: e de la que sai o favicon.svg que o index.html

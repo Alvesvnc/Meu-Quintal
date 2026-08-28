@@ -18,8 +18,9 @@ interface Props {
  * interruptor em "configurações". Com o botão, qualquer assinante do plano mais
  * barato viraria praça sozinho e sairia convidando cozinhas.
  *
- * Enquanto não existe cobrança de assinatura no produto, quem troca o plano é
- * quem opera o Meu Quintal — daí o texto pedir contato em vez de oferecer ação.
+ * A cobrança da assinatura fica logo abaixo, em `AssinaturaDaConta` — aqui é o
+ * que o plano PERMITE, lá é o que ele CUSTA. Trocar de plano continua sendo
+ * conversa, não botão, pelo motivo acima.
  */
 export function PlanoDaConta({ plano, tipo, testeAte }: Props) {
   const restaurante = plano === 'restaurante';
@@ -30,7 +31,7 @@ export function PlanoDaConta({ plano, tipo, testeAte }: Props) {
       <Divider label="Seu plano" />
 
       <div className="mt-4">
-        <p className="font-display text-display-md italic text-ink leading-tight">
+        <p className="font-display text-display-md text-ink leading-tight">
           {restaurante ? 'Restaurante' : 'Praça de alimentação'}
         </p>
         <p className="mt-2 font-sans text-body text-inkMuted text-pretty">

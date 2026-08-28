@@ -23,7 +23,7 @@ export function ConviteScreen() {
   if (q.isLoading) {
     return (
       <main className="px-5 py-16 text-center">
-        <p className="font-display italic text-display-md text-inkMuted">Abrindo o convite…</p>
+        <p className="font-display text-display-md text-inkMuted">Abrindo o convite…</p>
       </main>
     );
   }
@@ -77,7 +77,7 @@ function Formulario({ token, convite }: { token: string; convite: ConvitePublico
   if (acordo.chargeRent) termos.push(`${fmtBRL(acordo.rentCents)} de aluguel por mês`);
 
   const campo =
-    'w-full px-4 py-3 bg-surface border border-hairline rounded-md ' +
+    'w-full px-4 py-3 bg-surface border border-hairline ' +
     'font-sans text-body-lg text-ink placeholder:text-inkDim ' +
     'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash';
   const rotulo = 'block font-mono text-label uppercase tracking-wider text-inkDim mb-2';
@@ -88,7 +88,7 @@ function Formulario({ token, convite }: { token: string; convite: ConvitePublico
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           Convite · {convite.spaceName}
         </p>
-        <h1 className="mt-2 font-display italic text-display-xl text-ink leading-tight text-pretty">
+        <h1 className="mt-2 font-display text-display-xl text-ink leading-tight text-pretty">
           Sua cozinha no {convite.spaceName}.
         </h1>
         <p className="mt-3 font-sans text-body text-inkMuted text-pretty">
@@ -128,7 +128,7 @@ function Formulario({ token, convite }: { token: string; convite: ConvitePublico
           <label className={rotulo}>Email</label>
           {/* Não editável: o email é do convite. Deixar mudar aqui permitiria a
               quem tem o link criar acesso para outro endereço. */}
-          <p className="px-4 py-3 bg-surface border border-hairline rounded-md font-mono text-body text-inkMuted">
+          <p className="px-4 py-3 bg-surface border border-hairline font-mono text-body text-inkMuted">
             {convite.email}
           </p>
         </div>

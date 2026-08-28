@@ -1,25 +1,32 @@
 import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { Chip } from '@mq/design-system';
 import type { MenuItem } from '@mq/shared';
 import { fmtBRL } from '../lib/format';
 import { useCart } from '../stores/cart';
 import { QtyStepper } from './QtyStepper';
 import { fotosDoItem } from '../lib/fotos';
+import { Foto } from './Foto';
 
 interface MenuItemRowProps {
   item: MenuItem;
   kitchen: { slug: string; name: string };
 }
 
-/** Row horizontal: foto 88x88, conteúdo+preço, botão + (44x44) ou stepper. */
+/**
+ * Linha compacta: miniatura 64px, nome, preço e ação.
+ *
+ * É o cardápio de uma cozinha SEM fotos — na grade, esse cardápio vira uma
+ * parede de blocos cinzas iguais, e a lista lê melhor. Ver `MenuScreen`, que
+ * escolhe entre as duas.
+ */
 export function MenuItemRow({ item, kitchen }: MenuItemRowProps) {
   const lines = useCart((s) => s.lines);
   const addLine = useCart((s) => s.addLine);
   const setQty = useCart((s) => s.setQty);
   const inCart = lines.find((l) => l.menuItemId === item.id);
   const unavailable = !item.available;
-  const fotos = fotosDoItem(item);
-  const capa = fotos[0];
+  const capa = fotosDoItem(item)[0];
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,81 +35,53 @@ export function MenuItemRow({ item, kitchen }: MenuItemRowProps) {
   };
 
   return (
-    <div className={`flex gap-4 py-4 ${unavailable ? 'opacity-55' : ''}`}>
+    <div
+      className={`flex items-center gap-3 py-3 border-b border-divider last:border-b-0 ${
+        unavailable ? 'opacity-45' : ''
+      }`}
+    >
       <Link
         to={`/k/${kitchen.slug}/i/${item.id}`}
-        className="flex-1 flex gap-4 no-underline text-inherit min-w-0"
+        className="flex flex-1 min-w-0 items-center gap-3 no-underline text-inherit"
       >
-        <div className="shrink-0 w-[88px] h-[88px] rounded-md overflow-hidden bg-surface relative">
-          {capa && (
-            <img
-              src={capa}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover"
-            />
-          )}
-          {/* Marca de "tem mais foto": dá motivo pra abrir o item, que é onde
-              o cliente decide. Sem ela, a lista parece ter tudo. */}
-          {fotos.length > 1 && (
-            <span
-              className="absolute bottom-1 right-1 px-1.5 rounded-sm bg-ink/70
-                         font-mono text-mono-sm text-white tabular-nums"
-              aria-label={`${fotos.length} fotos`}
-            >
-              {fotos.length}
-            </span>
-          )}
-        </div>
+        <Foto src={capa} alt="" className="w-16 h-16 shrink-0" />
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
-            <h3 className="font-sans text-body-lg font-medium text-ink leading-tight flex-1">
-              {item.name}
-            </h3>
-            {item.badge === 'novo' && <Chip tone="primary">novo</Chip>}
-            {item.badge === 'esgotando' && <Chip tone="warn">últimos</Chip>}
-            {item.badge === 'sem-estoque' && <Chip tone="danger">esgotado</Chip>}
+        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="text-body-sm font-medium text-ink truncate">{item.name}</p>
+            {item.badge === 'novo' && <Chip tone="solid">Novo</Chip>}
+            {item.badge === 'esgotando' && <Chip tone="outline">Últimos</Chip>}
+            {(item.badge === 'sem-estoque' || unavailable) && (
+              <Chip tone="neutral">Esgotado</Chip>
+            )}
           </div>
-          {item.description && (
-            <p
-              className="mt-1 font-sans text-body-sm text-inkMuted leading-snug"
-              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-            >
-              {item.description}
-            </p>
-          )}
-          <p className="mt-2 font-mono text-body text-ink">
+          <span className="font-display font-bold text-ink tabular">
             {fmtBRL(item.priceCents)}
-          </p>
+          </span>
         </div>
       </Link>
 
-      <div className="shrink-0 flex items-center">
-        {inCart ? (
-          <QtyStepper
-            value={inCart.qty}
-            onChange={(n) => setQty(item.id, n)}
-            size="sm"
-            label={`Quantidade de ${item.name}`}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={unavailable}
-            aria-label={`Adicionar ${item.name}`}
-            className="w-11 h-11 rounded-md border border-hairline bg-surface
-                       text-primary font-mono text-body-lg cursor-pointer
-                       transition-colors duration-base ease-out
-                       hover:bg-primaryWash hover:border-primary
-                       disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            +
-          </button>
-        )}
-      </div>
+      {inCart ? (
+        <QtyStepper
+          value={inCart.qty}
+          onChange={(n) => setQty(item.id, n)}
+          size="sm"
+          label={`Quantidade de ${item.name}`}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={unavailable}
+          aria-label={`Adicionar ${item.name}`}
+          className="w-11 h-11 shrink-0 inline-flex items-center justify-center cursor-pointer
+                     bg-accent text-bg transition-colors duration-base ease-out
+                     hover:bg-accent-600 active:bg-accent-700
+                     disabled:opacity-45 disabled:cursor-not-allowed"
+        >
+          <Plus size={18} strokeWidth={2} aria-hidden />
+        </button>
+      )}
     </div>
   );
 }

@@ -50,7 +50,7 @@ const baseSchema = z.object({
    * Remetente. Precisa ser de dominio verificado no Resend — sem isso ele
    * recusa o envio, e o erro so aparece no log.
    */
-  EMAIL_FROM: z.string().default('Meu Quintal <nao-responda@meuquintal.app>'),
+  EMAIL_FROM: z.string().default('QRO <nao-responda@qro.app>'),
 
   /**
    * Onde o app do RESTAURANTE esta publicado. Entra no link do convite.
@@ -95,6 +95,81 @@ const baseSchema = z.object({
     .default('true')
     .transform((v) => v !== 'false' && v !== '0'),
 
+  /**
+   * Dias de teste gratis que uma conta NOVA recebe. 0 = TESTE DESLIGADO.
+   *
+   * Com 0 a conta nasce com o teste ja vencido: a pessoa entra, ve tudo e nao
+   * altera nada ate assinar. Nao e o mesmo que `trialEndsAt` NULL no banco, que
+   * significa "esta conta nao paga por teste" (cortesia) e e decisao POR CONTA,
+   * nao configuracao global.
+   *
+   * Quem le isto e `lib/trial.ts`. Ver la o comentario sobre o painel.
+   */
+  TRIAL_DIAS: z.coerce.number().int().min(0).max(365).default(7),
+
+  // ─── Asaas: a mensalidade que o DONO paga pro QRO ────────────────────────
+  // Nao confundir com a cobranca que o dono faz das cozinhas dele, que nao
+  // passa por provedor nenhum. Ver packages/shared/src/types/assinatura.ts.
+
+  /**
+   * Chave da API. VAZIA = pagamento desligado: nenhuma requisicao sai, o
+   * webhook responde 503 e a tela do dono diz que ainda nao esta ligado.
+   * Mesma escolha do RESEND_API_KEY e do SENTRY_DSN.
+   */
+  ASAAS_API_KEY: z.string().optional(),
+
+  /**
+   * Qual base o cliente HTTP usa. PADRAO SANDBOX, de proposito: o default
+   * seguro e o que nao move dinheiro de verdade. Producao e escolha explicita.
+   */
+  ASAAS_AMBIENTE: z.enum(['sandbox', 'producao']).default('sandbox'),
+
+  /**
+   * Segredo que o Asaas devolve no header `asaas-access-token` de todo webhook.
+   * E o unico jeito de saber que o POST veio mesmo dele.
+   *
+   * NAO PODE SER A CHAVE DA API — o proprio Asaas alerta isso, e o refine
+   * abaixo recusa. Gerar com: openssl rand -hex 32
+   */
+  ASAAS_WEBHOOK_TOKEN: z.string().min(16).optional(),
+
+  /**
+   * Mensalidade de cada plano, EM CENTAVOS.
+   *
+   * Sem default de proposito. Um numero chutado aqui viraria uma assinatura
+   * cobrando o valor errado sem ninguem perceber — a rota de checkout recusa
+   * com mensagem dizendo qual var falta. Preco e decisao comercial, nao
+   * fallback de codigo.
+   */
+  PRECO_RESTAURANTE_CENTS: z.coerce.number().int().positive().optional(),
+  PRECO_PRACA_CENTS: z.coerce.number().int().positive().optional(),
+
+  // ─── Web Push: o aviso que chega com o app fechado ───────────────────────
+
+  /**
+   * Par VAPID: e o que identifica ESTE servidor pro servico de push do
+   * navegador (Google, Apple, Mozilla). Gerar UMA vez com:
+   *   pnpm --filter @mq/server exec web-push generate-vapid-keys
+   *
+   * VAZIO = push desligado, e nada quebra: a rota da chave responde que nao
+   * ha, o app nao oferece o botao e o aviso in-app (som + vibracao) segue
+   * igual. Mesma escolha do RESEND_API_KEY e do SENTRY_DSN.
+   *
+   * TROCAR A CHAVE INVALIDA TODA INSCRICAO EXISTENTE. Os aparelhos ja
+   * inscritos passam a receber 403 do servico de push e sao apagados na
+   * primeira tentativa (ver lib/push.ts) — ou seja, todo mundo precisa
+   * autorizar de novo, sem nenhum aviso na tela. Guarde a privada como
+   * segredo de verdade.
+   */
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+
+  /**
+   * Como o servico de push fala com voce se algo der errado. Precisa ser
+   * `mailto:` ou uma URL https — e exigencia do protocolo, nao nossa.
+   */
+  VAPID_SUBJECT: z.string().default('mailto:suporte@qro.app'),
+
   /** Confiar em X-Forwarded-For. Ligar SOMENTE atras de um proxy conhecido. */
   TRUST_PROXY: z
     .string()
@@ -103,6 +178,22 @@ const baseSchema = z.object({
 });
 
 const schema = baseSchema.superRefine((cfg, ctx) => {
+  // ── Vale em TODO ambiente: meia chave VAPID e pior que nenhuma ─────────
+  //
+  // Com so uma das duas, o `web-push` lanca no primeiro envio — dentro do
+  // fluxo de criar pedido, que e o caminho quente. Falhar no boot e melhor
+  // que descobrir isso no meio de um turno.
+  const meiaChave =
+    Boolean(cfg.VAPID_PUBLIC_KEY) !== Boolean(cfg.VAPID_PRIVATE_KEY);
+  if (meiaChave) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['VAPID_PUBLIC_KEY'],
+      message:
+        'VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY andam juntas: configure as duas ou nenhuma. Gerar: pnpm --filter @mq/server exec web-push generate-vapid-keys',
+    });
+  }
+
   if (cfg.NODE_ENV !== 'production') return;
 
   // ── Em producao os defaults de dev nao passam ─────────────────────────────
@@ -148,6 +239,43 @@ const schema = baseSchema.superRefine((cfg, ctx) => {
       path: ['CORS_ORIGINS'],
       message: `CORS_ORIGINS sem https em producao: ${inseguros.join(', ')}`,
     });
+  }
+
+  // ── Asaas ────────────────────────────────────────────────────────────────
+  // Estas so valem quando ha chave: sem ela o pagamento esta desligado e nao
+  // ha nada pra proteger.
+  if (cfg.ASAAS_API_KEY) {
+    if (!cfg.ASAAS_WEBHOOK_TOKEN) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ASAAS_WEBHOOK_TOKEN'],
+        message:
+          'Com ASAAS_API_KEY configurada, ASAAS_WEBHOOK_TOKEN e obrigatorio — sem ele qualquer um consegue ativar contas fingindo ser o Asaas. Gere: openssl rand -hex 32',
+      });
+    }
+
+    // O proprio Asaas alerta pra isso. Reusar a chave da API como token de
+    // webhook a exporia a qualquer um que ja recebe os nossos webhooks — e a
+    // chave da API move dinheiro.
+    if (cfg.ASAAS_WEBHOOK_TOKEN && cfg.ASAAS_WEBHOOK_TOKEN === cfg.ASAAS_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ASAAS_WEBHOOK_TOKEN'],
+        message: 'ASAAS_WEBHOOK_TOKEN nao pode ser igual a ASAAS_API_KEY. Gere um proprio.',
+      });
+    }
+
+    // PRODUCAO APONTANDO PRO SANDBOX E O ERRO CARO E SILENCIOSO: o checkout
+    // abre, o cliente "paga" com dinheiro de mentira, o webhook chega, a conta
+    // ativa — e nunca entrou um centavo. Nada nesse caminho parece quebrado.
+    if (cfg.ASAAS_AMBIENTE !== 'producao') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ASAAS_AMBIENTE'],
+        message:
+          'NODE_ENV=production com ASAAS_AMBIENTE=sandbox: os pagamentos seriam de mentira e ninguem perceberia. Use ASAAS_AMBIENTE=producao.',
+      });
+    }
   }
 });
 

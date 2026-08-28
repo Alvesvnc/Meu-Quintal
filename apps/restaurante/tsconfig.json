@@ -15,7 +15,10 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "vite-plugin-pwa/client"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts"],
+  // O service worker roda em WebWorker, nao no navegador, e tem projeto
+  // proprio: tsconfig.sw.json. Ver o comentario la.
+  "exclude": ["src/sw.ts"]
 }

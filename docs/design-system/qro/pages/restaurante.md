@@ -9,6 +9,13 @@ auth: JWT persistente, biometria opcional
 
 > Lê MASTER.md primeiro. Aqui só o que diverge ou especializa.
 
+> **Revisão 2026-08-27 — sistema Modernist.** O MASTER foi reescrito e o
+> desenho canônico das telas é o protótipo em
+> `../modernist/prototipo.dc.html`. As decisões abaixo que falam de Fraunces,
+> DM Sans, JetBrains Mono, terracota, verde-mata, cantos arredondados ou raiz de
+> fonte customizada **não valem mais** — ficam registradas por serem o motivo de
+> o app ter sido do jeito que era. O que continua valendo está marcado.
+
 ## Contexto de uso
 
 - **Onde:** balcão da cozinha. Ambiente quente, possivelmente com gordura, vapor.
@@ -24,26 +31,37 @@ auth: JWT persistente, biometria opcional
 
 ### Paleta cream (reversão da decisão dark)
 
-**Atualizado em 2026-05-26:** o app restaurante usa a **mesma paleta cream do cliente** (bg #EFECE5, ink #1F1A14, primary #C9532E, accent #3F7A4B).
+**Atualizado em 2026-08-27:** o app restaurante usa a **mesma paleta do
+cliente** — hoje `bg #f3f2f2`, `ink #201e1d`, `accent #ec3013`. A decisão
+original (2026-05-26) foi reverter o dark permanente e compartilhar a paleta do
+cliente; ela continua valendo, só que sobre outra paleta. Os hex antigos eram
+`#EFECE5 / #1F1A14 / #C9532E / #3F7A4B`.
 
 A intenção inicial era dark permanente pra reduzir fadiga em cozinha com luz forte. Na prática, validar visualmente mostrou que:
-- Continuidade visual entre cliente e restaurante reforça a marca Meu Quintal
-- O contraste cream + ink + terracota já é forte o suficiente pra leitura em ambiente iluminado
+- Continuidade visual entre cliente e restaurante reforça a marca QRO
+- O contraste do fundo claro com tinta quase preta e um vermelho saturado já é forte o suficiente pra leitura em ambiente iluminado
 - Manter dark exigia duplicar tokens (`inkInverse*`, `surfaceDeep*`, `hairlineDark`) e quebrava componentes do design-system
 
 Se no futuro a fadiga visual virar problema real reportado por usuários (cozinheiros usando 8h+ por dia), reabrir essa decisão.
 
 ### Tipografia maior + mais densa
 
-- Body base: **18px** (não 17 cliente, não 15 master) — distância maior do olho.
-- Nome de item de pedido: **20px** DM Sans 600 (não Fraunces — Fraunces italic mistura mal com leitura rápida em pressão).
-- Tempo / cronômetro: **mono 28px 500** primary se >X min limite, inkInverse caso contrário.
-- ID do pedido: mono 13px dim, sempre visível (referência verbal: "pedido #2421 sai").
-- **Sem Fraunces italic** em UI corrida desse app. Reservar pra header marca + tela vazia.
+**Revisado.** A raiz customizada de 18px saiu pelo mesmo motivo dos 17px do
+cliente: escalava todo o espaçamento rem junto e desalinhava a grade. A
+legibilidade na bancada passou a vir do desenho.
+
+- Raiz: **16px**. Corpo em `text-body` = 15px.
+- Nome de item de pedido: **16px peso 600** — e o que se lê de longe agora é o
+  tile da mesa, 54×54 preenchido com o número em 22px/800.
+- Placar de status: contagem em **26px/800** sobre o rótulo de 11px.
+- Countdown da proposta: **17px/800 `tabular`**, em `accent-700`.
+- ID do pedido: 12px `neutral-600`, sempre visível (referência verbal:
+  "pedido #2421 sai"). ✅ continua valendo.
+- **Sem itálico** — Archivo não tem face itálica nos pesos carregados.
 
 ### Touch maior
 
-- Botão padrão: **lg** (h=52) sempre. Botões de ação crítica em pedido: **xl** (h=64).
+- Botão padrão: **lg** (h=52) sempre. Ação crítica em pedido: **xl** (h=56).
 - Tap target mínimo: **56×56px** (não 48 do cliente) — luva, gordura, urgência.
 - Distância entre botões críticos: ≥ **16px** — evita "pronto" virar "cancelar" por toque sujo.
 
@@ -88,7 +106,7 @@ Pedidos em **colunas de status horizontais** (Kanban-style), arrastáveis com ta
 
 ### Estados especiais
 
-- Sem pedido nenhum: tela centralizada com Fraunces italic "Sem pedidos. Respira." + relógio mono grande mostrando hora atual.
+- Sem pedido nenhum: "Sem pedidos novos. Respira." em `display-lg`, alinhado à esquerda, + relógio grande com a hora atual. O tom do texto ficou; só a caixa mudou.
 - Conexão perdida: banner sticky topo `danger` + mono "Sem conexão · tentando…" + última atualização em mono.
 - Pedido cancelado pelo cliente: card desliza pra fora + toast `warn` "Mesa 09 cancelou · pedido #2417" — não-bloqueante.
 

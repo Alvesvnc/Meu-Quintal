@@ -11,31 +11,42 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
+/**
+ * Botão-bloco do sistema Modernist.
+ *
+ * Duas decisões que não são estética solta:
+ *
+ * - **Largura cheia alinha à esquerda.** O rótulo começa na mesma coluna do
+ *   texto da tela, e valor ou ícone vão pro fim com `ml-auto`. Centralizar
+ *   deixaria o botão largo com o texto flutuando longe das duas margens.
+ * - **`danger` não é outra cor.** Vermelho aqui significa "ação primária"; se
+ *   destrutivo também fosse vermelho, os dois deixariam de se distinguir. O
+ *   destrutivo é o bloco neutro escuro — grave, e claramente não é o caminho
+ *   principal.
+ */
 const baseClasses =
-  'inline-flex items-center justify-center gap-2 rounded-md font-sans font-medium ' +
+  'inline-flex items-center gap-2.5 cursor-pointer rounded-none ' +
+  'font-display text-body font-bold uppercase tracking-[0.06em] leading-none ' +
   'transition-colors duration-base ease-out outline-none ' +
-  'focus-visible:ring-[3px] focus-visible:ring-primaryWash focus-visible:ring-offset-0 ' +
-  'disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ' +
-  'active:scale-[0.98] motion-reduce:active:scale-100';
+  'disabled:opacity-45 disabled:cursor-not-allowed';
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    'bg-primary text-white hover:bg-primaryDeep focus-visible:border-primary border border-transparent',
+    'bg-accent text-bg border border-transparent hover:bg-accent-600 active:bg-accent-700',
   secondary:
-    'bg-surface text-ink border border-hairline hover:bg-primaryWash focus-visible:border-primary ' +
-    'dark:bg-surfaceDeepCard dark:text-inkInverse dark:border-hairlineDark dark:hover:bg-primaryWash',
+    'bg-transparent text-ink border border-divider hover:bg-ink/[0.07] active:bg-ink/[0.14]',
   ghost:
-    'bg-transparent text-ink hover:bg-primaryWash border border-transparent focus-visible:border-primary ' +
-    'dark:text-inkInverse dark:hover:bg-primaryWash',
+    'bg-transparent text-accent-700 border border-transparent hover:bg-accent/10 active:bg-accent/20',
   danger:
-    'bg-danger text-white hover:bg-[#9A2B16] focus-visible:border-danger border border-transparent',
+    'bg-neutral-900 text-bg border border-transparent hover:bg-ink active:bg-neutral-800',
 };
 
+/** Alturas em pixel: os apps têm raízes de fonte diferentes, `h-11` não. */
 const sizeClasses: Record<Size, string> = {
-  sm: 'h-9 px-3 text-body-sm',
-  md: 'h-11 px-4 text-body',
-  lg: 'h-[52px] px-5 text-body-lg',
-  xl: 'h-16 px-6 text-body-lg',
+  sm: 'h-10 px-3 text-label',
+  md: 'h-11 px-4 text-body-sm',
+  lg: 'h-[52px] px-4',
+  xl: 'h-14 px-4 text-body-lg',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -52,18 +63,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           baseClasses,
           variantClasses[variant],
           sizeClasses[size],
-          fullWidth ? 'w-full' : '',
+          fullWidth ? 'w-full justify-start text-left' : 'justify-center',
           className,
         ].join(' ')}
         {...rest}
       >
+        {/* Sem spinner novo: um quadrado que pulsa no mesmo ritmo do "ao vivo". */}
         {loading && (
           <span
             aria-hidden
-            className="font-mono text-mono-sm tracking-wider"
-          >
-            ●●●
-          </span>
+            className="w-2.5 h-2.5 shrink-0 bg-current animate-pulse motion-reduce:animate-none"
+          />
         )}
         {children}
       </button>

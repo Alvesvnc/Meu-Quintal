@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="ds/styles.css">
+  <script src="image-slot.js"></script>
+  <style>
+    body { background: var(--color-surface); }
+    a { color: var(--color-accent); }
+    a:hover { color: var(--color-accent-600); }
+    @keyframes mqPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+</helmet>
+
+<div style="padding:48px; display:flex; flex-direction:column; gap:40px; align-items:flex-start; font-family:var(--font-body); color:var(--color-text)">
+
+  <header style="display:flex; flex-direction:column; gap:var(--space-2); max-width:640px">
+    <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-accent)">Redesign · Sistema Modernist</p>
+    <h1 style="margin:0; font-size:44px; line-height:1.05; letter-spacing:-0.02em">QRO</h1>
+    <p style="margin:0; font-size:14px; color:var(--color-neutral-700)">Menos texto, mais foto, status por cor e progresso gráfico. Arraste as fotos reais dos pratos para os quadros pontilhados.</p>
+  </header>
+
+  <!-- ═══════════ APP CLIENTE ═══════════ -->
+  <section style="display:flex; flex-direction:column; gap:var(--space-4); width:100%">
+    <div style="display:flex; align-items:baseline; gap:var(--space-3); border-bottom:2px solid var(--color-divider); padding-bottom:var(--space-2); width:100%">
+      <h2 style="margin:0; font-size:20px">App Cliente</h2>
+      <span style="font-size:12px; color:var(--color-neutral-600)">mesa · 390px</span>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+
+      <!-- ── 01 · HOME / COZINHAS ── -->
+      <div data-screen-label="01 · Cozinhas" style="width:390px; flex:none; display:flex; flex-direction:column; gap:10px">
+        <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.08em; text-transform:uppercase"><span style="color:var(--color-accent)">01</span> · Cozinhas</p>
+        <div style="border:2px solid var(--color-divider); background:var(--color-bg); box-shadow:var(--shadow-md); display:flex; flex-direction:column; min-height:840px">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:var(--space-3) var(--space-4); border-bottom:2px solid var(--color-divider)">
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:16px">QRO</span>
+            <span class="tag tag-outline" style="font-weight:600">MESA 07</span>
+          </div>
+
+          <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-2)">
+            <p style="margin:0; display:flex; align-items:center; gap:8px; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600)">
+              <span style="width:10px; height:10px; background:var(--color-accent); animation:mqPulse 1.6s infinite"></span>
+              Agora · 19:36
+            </p>
+            <h3 style="margin:0; font-size:30px; line-height:1.05; letter-spacing:-0.02em">5 cozinhas abertas.</h3>
+          </div>
+
+          <div style="padding:0 var(--space-4) var(--space-6); display:grid; grid-template-columns:1fr 1fr; gap:var(--space-6) var(--space-3)">
+            <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+              <div class="grayscale" style="aspect-ratio:4/5; background:var(--color-neutral-200)"><image-slot id="mq-coz-parrilla" shape="rect" placeholder="foto · parrilla"></image-slot></div>
+              <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px; line-height:1.15"><span style="color:var(--color-accent)">01</span> Parrilla do Fundo</p>
+              <p style="margin:0; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-neutral-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>~25 min · R$ 28–74</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+              <div class="grayscale" style="aspect-ratio:4/5; background:var(--color-neutral-200)"><image-slot id="mq-coz-massa" shape="rect" placeholder="foto · massas"></image-slot></div>
+              <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px; line-height:1.15"><span style="color:var(--color-accent)">02</span> Massa Fina</p>
+              <p style="margin:0; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-neutral-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>~20 min · R$ 32–58</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+              <div class="grayscale" style="aspect-ratio:4/5; background:var(--color-neutral-200)"><image-slot id="mq-coz-horta" shape="rect" placeholder="foto · horta"></image-slot></div>
+              <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px; line-height:1.15"><span style="color:var(--color-accent)">03</span> Horta &amp; Brasa</p>
+              <p style="margin:0; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-neutral-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>~15 min · R$ 22–46</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+              <div class="grayscale" style="aspect-ratio:4/5; background:var(--color-neutral-200)"><image-slot id="mq-coz-doce" shape="rect" placeholder="foto · doces"></image-slot></div>
+              <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px; line-height:1.15"><span style="color:var(--color-accent)">04</span> Doce Quintal</p>
+              <p style="margin:0; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-neutral-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>~10 min · R$ 14–28</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+              <div class="grayscale" style="aspect-ratio:4/5; background:var(--color-neutral-200)"><image-slot id="mq-coz-bar" shape="rect" placeholder="foto · bar"></image-slot></div>
+              <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px; line-height:1.15"><span style="color:var(--color-accent)">05</span> Bar Central</p>
+              <p style="margin:0; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-neutral-600)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>~5 min · R$ 12–36</p>
+              <span style="align-self:flex-start; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:10px; letter-spacing:0.06em; padding:2px 8px">FECHA 22H</span>
+            </div>
+          </div>
+
+          <div style="margin-top:auto; display:grid; grid-template-columns:1fr 1fr; border-top:2px solid var(--color-divider)">
+            <div style="display:flex; flex-direction:column; gap:4px; padding:var(--space-3) var(--space-4); background:var(--color-accent); color:var(--color-bg)">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em">COZINHAS</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px; padding:var(--space-3) var(--space-4); border-left:1px solid var(--color-divider); color:var(--color-neutral-700)">
+              <span style="display:flex; align-items:flex-start; gap:6px">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M14 8H8"></path><path d="M16 12H8"></path><path d="M13 16H8"></path></svg>
+                <span style="background:var(--color-accent); color:var(--color-bg); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:10px; padding:1px 6px">2</span>
+              </span>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em">PEDIDOS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 02 · CARDÁPIO ── -->
+      <div data-screen-label="02 · Cardápio" style="width:390px; flex:none; display:flex; flex-direction:column; gap:10px">
+        <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.08em; text-transform:uppercase"><span style="color:var(--color-accent)">02</span> · Cardápio</p>
+        <div style="border:2px solid var(--color-divider); background:var(--color-bg); box-shadow:var(--shadow-md); display:flex; flex-direction:column; min-height:840px">
+          <div style="display:flex; align-items:center; gap:var(--space-2); padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--color-divider)">
+            <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; border:1px solid var(--color-divider)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span>
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">PARRILLA DO FUNDO</span>
+            <span class="tag tag-outline" style="margin-left:auto; font-weight:600">MESA 07</span>
+          </div>
+
+          <div class="grayscale" style="height:170px; background:var(--color-neutral-200); border-bottom:2px solid var(--color-divider)"><image-slot id="mq-menu-hero" shape="rect" placeholder="foto da cozinha · brasa"></image-slot></div>
+
+          <div style="display:flex; align-items:center; gap:var(--space-4); padding:var(--space-3) var(--space-4); border-bottom:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em; text-transform:uppercase">
+            <span style="display:flex; align-items:center; gap:6px; color:var(--color-accent-700)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>Brasa</span>
+            <span style="display:flex; align-items:center; gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>~25 min</span>
+            <span style="margin-left:auto; color:var(--color-neutral-600)">R$ 28–74</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); border-bottom:2px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.05em; text-transform:uppercase">
+            <span style="padding:10px 12px; background:var(--color-accent); color:var(--color-bg)">Entradas</span>
+            <span style="padding:10px 12px; border-left:1px solid var(--color-divider); color:var(--color-neutral-700)">Pratos</span>
+            <span style="padding:10px 12px; border-left:1px solid var(--color-divider); color:var(--color-neutral-700)">Doces</span>
+            <span style="padding:10px 12px; border-left:1px solid var(--color-divider); color:var(--color-neutral-700)">Bebidas</span>
+          </div>
+
+          <sc-if value="{{ emGrade }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-6)">
+              <div style="display:flex; flex-direction:column; gap:var(--space-3)">
+                <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-accent)">Entradas · 4</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-6) var(--space-3)">
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-provoleta" shape="rect" placeholder="provoleta"></image-slot></div>
+                    <span style="align-self:flex-start; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:9px; letter-spacing:0.08em; padding:2px 6px">NOVO</span>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Provoleta na brasa</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 28</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-empanada" shape="rect" placeholder="empanada"></image-slot></div>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Empanada de carne</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 16</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-pao" shape="rect" placeholder="pão de alho"></image-slot></div>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Pão de alho da casa</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 14</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-linguica" shape="rect" placeholder="linguiça"></image-slot></div>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Linguiça na chapa</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 22</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:var(--space-3)">
+                <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-accent)">Pratos · 4</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-6) var(--space-3)">
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-chori" shape="rect" placeholder="choripán"></image-slot></div>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Choripán completo</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 34</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-bife" shape="rect" placeholder="bife ancho"></image-slot></div>
+                    <span style="align-self:flex-start; border:1px solid var(--color-accent); color:var(--color-accent); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:9px; letter-spacing:0.08em; padding:1px 6px">ÚLTIMOS 3</span>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Bife ancho + fritas</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 74</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-galeto" shape="rect" placeholder="galeto"></image-slot></div>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Galeto do quintal</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 48</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:var(--space-2)">
+                    <div class="grayscale" style="aspect-ratio:1; background:var(--color-neutral-200)"><image-slot id="mq-it-costela" shape="rect" placeholder="costela"></image-slot></div>
+                    <p style="margin:0; font-size:14px; font-weight:600; line-height:1.2">Costela 12 horas</p>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto">
+                      <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">R$ 62</span>
+                      <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ emLista }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-4)">
+              <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-accent)">Entradas · 4</p>
+              <div style="display:flex; flex-direction:column">
+                <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--color-divider)">
+                  <div class="grayscale" style="width:64px; height:64px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-it-provoleta" shape="rect" placeholder="foto"></image-slot></div>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                    <p style="margin:0; font-size:14px; font-weight:600">Provoleta na brasa</p>
+                    <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px">R$ 28</span>
+                  </div>
+                  <span style="display:inline-flex; width:44px; height:44px; flex:none; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--color-divider)">
+                  <div class="grayscale" style="width:64px; height:64px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-it-empanada" shape="rect" placeholder="foto"></image-slot></div>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                    <p style="margin:0; font-size:14px; font-weight:600">Empanada de carne</p>
+                    <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px">R$ 16</span>
+                  </div>
+                  <span style="display:inline-flex; width:44px; height:44px; flex:none; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0">
+                  <div class="grayscale" style="width:64px; height:64px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-it-pao" shape="rect" placeholder="foto"></image-slot></div>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                    <p style="margin:0; font-size:14px; font-weight:600">Pão de alho da casa</p>
+                    <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px">R$ 14</span>
+                  </div>
+                  <span style="display:inline-flex; width:44px; height:44px; flex:none; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="margin-top:auto; border-top:2px solid var(--color-divider); padding:var(--space-3) var(--space-4); background:var(--color-surface)">
+            <div style="display:flex; align-items:center; gap:10px; background:var(--color-accent); color:var(--color-bg); padding:14px var(--space-4); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px; cursor:pointer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 11-1 9"></path><path d="m19 11-4-7"></path><path d="M2 11h20"></path><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"></path><path d="M4.5 15.5h15"></path><path d="m5 11 4-7"></path><path d="m9 11 1 9"></path></svg>
+              <span>VER CARRINHO · 3</span>
+              <span style="margin-left:auto; font-variant-numeric:tabular-nums">R$ 114</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 03 · DETALHE DO ITEM ── -->
+      <div data-screen-label="03 · Detalhe do item" style="width:390px; flex:none; display:flex; flex-direction:column; gap:10px">
+        <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.08em; text-transform:uppercase"><span style="color:var(--color-accent)">03</span> · Detalhe do item</p>
+        <div style="border:2px solid var(--color-divider); background:var(--color-bg); box-shadow:var(--shadow-md); display:flex; flex-direction:column; min-height:840px">
+          <div style="display:flex; align-items:center; gap:var(--space-2); padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--color-divider)">
+            <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; border:1px solid var(--color-divider)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span>
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.06em; color:var(--color-neutral-700)">PARRILLA DO FUNDO</span>
+          </div>
+
+          <div class="grayscale" style="aspect-ratio:4/3; background:var(--color-neutral-200)"><image-slot id="mq-det-bife" shape="rect" placeholder="foto grande · bife ancho"></image-slot></div>
+          <div style="display:flex; align-items:center; gap:6px; padding:var(--space-2) var(--space-4); border-bottom:2px solid var(--color-divider)">
+            <span style="width:10px; height:10px; background:var(--color-accent)"></span>
+            <span style="width:10px; height:10px; background:var(--color-neutral-300)"></span>
+            <span style="width:10px; height:10px; background:var(--color-neutral-300)"></span>
+            <span style="margin-left:auto; font-size:11px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">1 / 3</span>
+          </div>
+
+          <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); flex:1">
+            <span style="align-self:flex-start; border:1px solid var(--color-accent); color:var(--color-accent); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:10px; letter-spacing:0.08em; padding:2px 8px">ÚLTIMOS 3</span>
+            <h3 style="margin:0; font-size:24px; line-height:1.1; letter-spacing:-0.015em">Bife ancho + fritas</h3>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:var(--color-neutral-700)">300 g de ancho na brasa, fritas rústicas e chimichurri da casa.</p>
+            <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:26px">R$ 74</p>
+            <hr class="hr" style="margin:var(--space-2) 0; width:100%">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-3)">
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600)">Quantidade</span>
+              <div style="display:flex; align-items:center; gap:0">
+                <span style="display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center; border:1px solid var(--color-divider); cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg></span>
+                <span style="display:inline-flex; width:48px; height:44px; align-items:center; justify-content:center; border-top:1px solid var(--color-divider); border-bottom:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:17px; font-variant-numeric:tabular-nums">1</span>
+                <span style="display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+              </div>
+            </div>
+            <div class="field" style="margin-top:var(--space-2)">
+              <label style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase">Observações</label>
+              <input class="input" placeholder="ex: sem chimichurri">
+            </div>
+          </div>
+
+          <div style="padding:var(--space-3) var(--space-4); border-top:2px solid var(--color-divider)">
+            <div style="display:flex; align-items:center; gap:10px; background:var(--color-accent); color:var(--color-bg); padding:16px var(--space-4); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px; cursor:pointer">
+              <span>ADICIONAR</span>
+              <span style="margin-left:auto; font-variant-numeric:tabular-nums">R$ 74</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 04 · CARRINHO ── -->
+      <div data-screen-label="04 · Carrinho" style="width:390px; flex:none; display:flex; flex-direction:column; gap:10px">
+        <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.08em; text-transform:uppercase"><span style="color:var(--color-accent)">04</span> · Carrinho</p>
+        <div style="border:2px solid var(--color-divider); background:var(--color-bg); box-shadow:var(--shadow-md); display:flex; flex-direction:column; min-height:840px">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:var(--space-3) var(--space-4); border-bottom:2px solid var(--color-divider)">
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:16px">QRO</span>
+            <span class="tag tag-outline" style="font-weight:600">MESA 07</span>
+          </div>
+
+          <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:4px">
+            <h3 style="margin:0; font-size:26px; letter-spacing:-0.015em">Seu pedido.</h3>
+            <p style="margin:0; font-size:12px; color:var(--color-neutral-600)">3 itens · 2 cozinhas</p>
+          </div>
+
+          <div style="padding:0 var(--space-4); display:flex; flex-direction:column; gap:var(--space-4)">
+            <div>
+              <p style="margin:0 0 var(--space-2); padding-bottom:var(--space-1); border-bottom:2px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.06em; text-transform:uppercase">Parrilla do Fundo</p>
+              <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--color-divider)">
+                <div class="grayscale" style="width:52px; height:52px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-cart-chori" shape="rect" placeholder="foto"></image-slot></div>
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                  <p style="margin:0; font-size:14px; font-weight:600">Choripán completo</p>
+                  <span style="font-size:12px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">R$ 34</span>
+                </div>
+                <div style="display:flex; align-items:center">
+                  <span style="display:inline-flex; width:34px; height:34px; align-items:center; justify-content:center; border:1px solid var(--color-divider); cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg></span>
+                  <span style="display:inline-flex; width:36px; height:34px; align-items:center; justify-content:center; border-top:1px solid var(--color-divider); border-bottom:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px; font-variant-numeric:tabular-nums">1</span>
+                  <span style="display:inline-flex; width:34px; height:34px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0">
+                <div class="grayscale" style="width:52px; height:52px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-cart-provo" shape="rect" placeholder="foto"></image-slot></div>
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                  <p style="margin:0; font-size:14px; font-weight:600">Provoleta na brasa</p>
+                  <span style="font-size:12px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">2 × R$ 28</span>
+                </div>
+                <div style="display:flex; align-items:center">
+                  <span style="display:inline-flex; width:34px; height:34px; align-items:center; justify-content:center; border:1px solid var(--color-divider); cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg></span>
+                  <span style="display:inline-flex; width:36px; height:34px; align-items:center; justify-content:center; border-top:1px solid var(--color-divider); border-bottom:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px; font-variant-numeric:tabular-nums">2</span>
+                  <span style="display:inline-flex; width:34px; height:34px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p style="margin:0 0 var(--space-2); padding-bottom:var(--space-1); border-bottom:2px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.06em; text-transform:uppercase">Bar Central</p>
+              <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0">
+                <div class="grayscale" style="width:52px; height:52px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-cart-chope" shape="rect" placeholder="foto"></image-slot></div>
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                  <p style="margin:0; font-size:14px; font-weight:600">Chope pilsen 300 ml</p>
+                  <span style="font-size:12px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">2 × R$ 12</span>
+                </div>
+                <div style="display:flex; align-items:center">
+                  <span style="display:inline-flex; width:34px; height:34px; align-items:center; justify-content:center; border:1px solid var(--color-divider); cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg></span>
+                  <span style="display:inline-flex; width:36px; height:34px; align-items:center; justify-content:center; border-top:1px solid var(--color-divider); border-bottom:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px; font-variant-numeric:tabular-nums">2</span>
+                  <span style="display:inline-flex; width:34px; height:34px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:auto; display:flex; flex-direction:column">
+            <div style="padding:var(--space-4); border-top:2px solid var(--color-divider); display:flex; flex-direction:column; gap:var(--space-2)">
+              <div style="display:flex; align-items:baseline; justify-content:space-between">
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600)">Total</span>
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:28px; font-variant-numeric:tabular-nums">R$ 114</span>
+              </div>
+              <p style="margin:0; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-neutral-600)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+                Cada cozinha cobra na retirada.
+              </p>
+              <div style="display:flex; align-items:center; gap:10px; background:var(--color-accent); color:var(--color-bg); padding:16px var(--space-4); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px; cursor:pointer; margin-top:var(--space-1)">
+                <span>MANDAR PEDIDO</span>
+                <svg style="margin-left:auto" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 05 · MEUS PEDIDOS ── -->
+      <div data-screen-label="05 · Meus pedidos" style="width:390px; flex:none; display:flex; flex-direction:column; gap:10px">
+        <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.08em; text-transform:uppercase"><span style="color:var(--color-accent)">05</span> · Meus pedidos</p>
+        <div style="border:2px solid var(--color-divider); background:var(--color-bg); box-shadow:var(--shadow-md); display:flex; flex-direction:column; min-height:840px">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:var(--space-3) var(--space-4); border-bottom:2px solid var(--color-divider)">
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:16px">QRO</span>
+            <span class="tag tag-outline" style="font-weight:600">MESA 07</span>
+          </div>
+
+          <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-2)">
+            <p style="margin:0; display:flex; align-items:center; gap:8px; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600)">
+              <span style="width:10px; height:10px; background:var(--color-accent); animation:mqPulse 1.6s infinite"></span>
+              Ao vivo
+            </p>
+            <h3 style="margin:0; font-size:28px; line-height:1.05; letter-spacing:-0.02em">1 pedido pronto.</h3>
+          </div>
+
+          <div style="margin:0 var(--space-4) var(--space-4); background:var(--color-accent); color:var(--color-bg); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3)">
+            <div style="display:flex; align-items:center; justify-content:space-between">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path><path d="M4 2C2.8 3.7 2 5.7 2 8"></path><path d="M22 8c0-2.3-.8-4.3-2-6"></path></svg>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">19:52</span>
+            </div>
+            <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.85">Parrilla do Fundo · #A2F4</p>
+            <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:26px; line-height:1.05; letter-spacing:-0.015em">Retire no balcão.</p>
+            <div style="display:flex; align-items:center; gap:var(--space-2)">
+              <div class="grayscale" style="width:44px; height:44px; flex:none; background:var(--color-accent-200)"><image-slot id="mq-ped-a" shape="rect" placeholder="item"></image-slot></div>
+              <div class="grayscale" style="width:44px; height:44px; flex:none; background:var(--color-accent-200)"><image-slot id="mq-ped-b" shape="rect" placeholder="item"></image-slot></div>
+              <span style="margin-left:auto; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; font-variant-numeric:tabular-nums">2 ITENS · R$ 90</span>
+            </div>
+            <div style="display:flex; gap:3px">
+              <span style="flex:1; height:6px; background:var(--color-bg)"></span>
+              <span style="flex:1; height:6px; background:var(--color-bg)"></span>
+              <span style="flex:1; height:6px; background:var(--color-bg)"></span>
+              <span style="flex:1; height:6px; background:var(--color-accent-400)"></span>
+            </div>
+          </div>
+
+          <div style="margin:0 var(--space-4); border:2px solid var(--color-divider); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3)">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-2)">
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:14px">BAR CENTRAL · #A2F7</span>
+              <span style="display:inline-flex; align-items:center; gap:5px; background:var(--color-accent-100); color:var(--color-accent-800); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; padding:3px 8px; font-variant-numeric:tabular-nums"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"></line><line x1="12" x2="15" y1="14" y2="11"></line><circle cx="12" cy="14" r="8"></circle></svg>~4 MIN</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:var(--space-2)">
+              <div class="grayscale" style="width:44px; height:44px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-ped-c" shape="rect" placeholder="item"></image-slot></div>
+              <span style="margin-left:auto; font-size:12px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">2 ITENS · R$ 24</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:var(--space-1)">
+              <div style="display:flex; gap:3px">
+                <span style="flex:1; height:6px; background:var(--color-neutral-900)"></span>
+                <span style="flex:1; height:6px; background:var(--color-accent); animation:mqPulse 1.6s infinite"></span>
+                <span style="flex:1; height:6px; background:var(--color-neutral-300)"></span>
+                <span style="flex:1; height:6px; background:var(--color-neutral-300)"></span>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between">
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em; color:var(--color-accent-700)">PREPARANDO</span>
+                <span style="font-size:11px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">19:44</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:auto; display:flex; flex-direction:column">
+            <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3); border-top:2px solid var(--color-divider)">
+              <div style="display:flex; align-items:baseline; justify-content:space-between">
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600)">Total da mesa</span>
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:28px; font-variant-numeric:tabular-nums">R$ 114</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; border:1px solid var(--color-divider); padding:13px var(--space-4); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; cursor:pointer" style-hover="background:var(--color-neutral-200)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+                <span>FECHAR CONTA · PARRILLA</span>
+                <span style="margin-left:auto; font-variant-numeric:tabular-nums">R$ 90</span>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; border-top:2px solid var(--color-divider)">
+              <div style="display:flex; flex-direction:column; gap:4px; padding:var(--space-3) var(--space-4); color:var(--color-neutral-700)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em">COZINHAS</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:4px; padding:var(--space-3) var(--space-4); border-left:1px solid var(--color-divider); background:var(--color-accent); color:var(--color-bg)">
+                <span style="display:flex; align-items:flex-start; gap:6px">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M14 8H8"></path><path d="M16 12H8"></path><path d="M13 16H8"></path></svg>
+                  <span style="background:var(--color-bg); color:var(--color-accent); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:10px; padding:1px 6px">2</span>
+                </span>
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em">PEDIDOS</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 06 · ACOMPANHAR PEDIDO ── -->
+      <div data-screen-label="06 · Acompanhar pedido" style="width:390px; flex:none; display:flex; flex-direction:column; gap:10px">
+        <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.08em; text-transform:uppercase"><span style="color:var(--color-accent)">06</span> · Acompanhar pedido</p>
+        <div style="border:2px solid var(--color-divider); background:var(--color-bg); box-shadow:var(--shadow-md); display:flex; flex-direction:column; min-height:840px">
+          <div style="display:flex; align-items:center; gap:var(--space-2); padding:var(--space-2) var(--space-3); border-bottom:2px solid var(--color-divider)">
+            <span style="display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; border:1px solid var(--color-divider)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span>
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.06em; color:var(--color-neutral-700)">#A2F4 · MESA 07</span>
+          </div>
+
+          <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-2)">
+            <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-accent)">Parrilla do Fundo</p>
+            <div style="display:flex; align-items:baseline; gap:8px">
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:56px; line-height:1; letter-spacing:-0.02em; font-variant-numeric:tabular-nums">~8</span>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:18px">MIN</span>
+              <span style="margin-left:auto; font-size:12px; color:var(--color-neutral-600)">para ficar pronto</span>
+            </div>
+            <div style="height:10px; background:var(--color-neutral-200); margin-top:var(--space-1)">
+              <div style="width:62%; height:100%; background:var(--color-accent)"></div>
+            </div>
+          </div>
+
+          <div style="padding:0 var(--space-4); display:flex; flex-direction:column">
+            <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--color-divider)">
+              <span style="display:inline-flex; width:30px; height:30px; align-items:center; justify-content:center; background:var(--color-neutral-900); color:var(--color-bg)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              <span style="font-size:14px; font-weight:600">Recebido</span>
+              <span style="margin-left:auto; font-size:12px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">19:42</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--color-divider)">
+              <span style="display:inline-flex; width:30px; height:30px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); animation:mqPulse 1.6s infinite"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg></span>
+              <span style="font-size:14px; font-weight:600; color:var(--color-accent-700)">Preparando</span>
+              <span style="margin-left:auto; font-size:12px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums">19:44</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--color-divider)">
+              <span style="display:inline-flex; width:30px; height:30px; align-items:center; justify-content:center; border:1px solid var(--color-divider); color:var(--color-neutral-500)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span>
+              <span style="font-size:14px; color:var(--color-neutral-500)">Pronto</span>
+              <span style="margin-left:auto; font-size:12px; color:var(--color-neutral-400)">—</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0">
+              <span style="display:inline-flex; width:30px; height:30px; align-items:center; justify-content:center; border:1px solid var(--color-divider); color:var(--color-neutral-500)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 11-1 9"></path><path d="m19 11-4-7"></path><path d="M2 11h20"></path><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"></path><path d="M4.5 15.5h15"></path><path d="m5 11 4-7"></path><path d="m9 11 1 9"></path></svg></span>
+              <span style="font-size:14px; color:var(--color-neutral-500)">Retirado</span>
+              <span style="margin-left:auto; font-size:12px; color:var(--color-neutral-400)">—</span>
+            </div>
+          </div>
+
+          <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-2); border-top:2px solid var(--color-divider); margin-top:var(--space-2)">
+            <p style="margin:0 0 var(--space-1); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600)">Itens</p>
+            <div style="display:flex; align-items:center; gap:var(--space-3)">
+              <div class="grayscale" style="width:40px; height:40px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-tr-1" shape="rect" placeholder="foto"></image-slot></div>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">1×</span>
+              <span style="font-size:14px">Choripán completo</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:var(--space-3)">
+              <div class="grayscale" style="width:40px; height:40px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-tr-2" shape="rect" placeholder="foto"></image-slot></div>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">2×</span>
+              <span style="font-size:14px">Provoleta na brasa</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:var(--space-3); opacity:0.7">
+              <div class="grayscale" style="width:40px; height:40px; flex:none; background:var(--color-neutral-200)"><image-slot id="mq-tr-3" shape="rect" placeholder="foto"></image-slot></div>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">1×</span>
+              <span style="font-size:14px; text-decoration:line-through">Empanada de carne</span>
+              <span style="margin-left:auto; background:var(--color-neutral-900); color:var(--color-bg); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:9px; letter-spacing:0.08em; padding:2px 6px">CANCELADO</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--color-accent-100); padding:var(--space-2) var(--space-3); margin-top:var(--space-1)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 20h16a2 2 0 0 0 1.73-2Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+              <span style="font-size:12px; color:var(--color-accent-800)">Total ajustado: <s>R$ 106</s> → <strong>R$ 90</strong></span>
+            </div>
+          </div>
+
+          <div style="margin-top:auto; padding:var(--space-3) var(--space-4); border-top:1px solid var(--color-divider); display:flex; align-items:center; gap:8px">
+            <span style="width:8px; height:8px; background:var(--color-accent); animation:mqPulse 1.6s infinite"></span>
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600)">Atualizando ao vivo</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════ APP RESTAURANTE ═══════════ -->
+  <section style="display:flex; flex-direction:column; gap:var(--space-4); width:100%">
+    <div style="display:flex; align-items:baseline; gap:var(--space-3); border-bottom:2px solid var(--color-divider); padding-bottom:var(--space-2); width:100%">
+      <h2 style="margin:0; font-size:20px">App Restaurante</h2>
+      <span style="font-size:12px; color:var(--color-neutral-600)">fila da cozinha · 430px</span>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:40px; align-items:flex-start">
+      <!-- ── 07 · FILA ── -->
+      <div data-screen-label="07 · Fila da cozinha" style="width:430px; flex:none; display:flex; flex-direction:column; gap:10px">
+        <p style="margin:0; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:12px; letter-spacing:0.08em; text-transform:uppercase"><span style="color:var(--color-accent)">07</span> · Fila da cozinha</p>
+        <div style="border:2px solid var(--color-divider); background:var(--color-bg); box-shadow:var(--shadow-md); display:flex; flex-direction:column; min-height:840px">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:var(--space-3) var(--space-4); border-bottom:2px solid var(--color-divider)">
+            <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:16px">PARRILLA DO FUNDO</span>
+            <span style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em">
+              <span style="width:10px; height:10px; background:var(--color-accent); animation:mqPulse 1.6s infinite"></span>
+              ABERTA · 19:36
+            </span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); border-bottom:2px solid var(--color-divider)">
+            <div style="display:flex; flex-direction:column; gap:2px; padding:var(--space-3) var(--space-4); background:var(--color-accent); color:var(--color-bg)">
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:26px; line-height:1; font-variant-numeric:tabular-nums">2</span>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em">NOVOS</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:2px; padding:var(--space-3) var(--space-4); border-left:1px solid var(--color-divider); color:var(--color-neutral-700)">
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:26px; line-height:1; font-variant-numeric:tabular-nums">3</span>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em">PREPARANDO</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:2px; padding:var(--space-3) var(--space-4); border-left:1px solid var(--color-divider); color:var(--color-neutral-700)">
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:26px; line-height:1; font-variant-numeric:tabular-nums">1</span>
+              <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em">PRONTOS</span>
+            </div>
+          </div>
+
+          <div style="padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-4)">
+
+            <div style="border:2px solid var(--color-divider); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3)">
+              <div style="display:flex; align-items:center; gap:var(--space-3)">
+                <span style="display:inline-flex; width:54px; height:54px; align-items:center; justify-content:center; background:var(--color-neutral-900); color:var(--color-bg); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:22px; font-variant-numeric:tabular-nums">07</span>
+                <div style="display:flex; flex-direction:column; gap:2px">
+                  <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">MESA 07</span>
+                  <span style="display:flex; align-items:center; gap:5px; font-size:12px; color:var(--color-neutral-600); font-variant-numeric:tabular-nums"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>#A2F4 · há 4 min</span>
+                </div>
+                <span class="tag tag-outline" style="margin-left:auto; font-weight:600">NOVO</span>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:var(--space-2); border-top:1px solid var(--color-divider); border-bottom:1px solid var(--color-divider); padding:var(--space-3) 0">
+                <div style="display:flex; align-items:center; gap:var(--space-2)">
+                  <span style="display:inline-flex; min-width:30px; height:30px; align-items:center; justify-content:center; border:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">1×</span>
+                  <span style="font-size:16px; font-weight:600">Choripán completo</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; background:var(--color-accent-100); padding:var(--space-2) var(--space-3)">
+                  <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:10px; letter-spacing:0.06em; color:var(--color-accent-800)">OBS</span>
+                  <span style="font-size:13px; color:var(--color-accent-800)">sem chimichurri</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:var(--space-2)">
+                  <span style="display:inline-flex; min-width:30px; height:30px; align-items:center; justify-content:center; border:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">2×</span>
+                  <span style="font-size:16px; font-weight:600">Provoleta na brasa</span>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:10px; background:var(--color-accent); color:var(--color-bg); padding:16px var(--space-4); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px; cursor:pointer" style-hover="background:var(--color-accent-600)">
+                <span>ACEITAR PEDIDO</span>
+                <svg style="margin-left:auto" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+              </div>
+              <div style="display:flex; align-items:center; gap:var(--space-6)">
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em; color:var(--color-neutral-600); cursor:pointer" style-hover="color:var(--color-accent)">ALTERAR ITENS</span>
+                <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em; color:var(--color-neutral-600); cursor:pointer" style-hover="color:var(--color-accent)">CANCELAR</span>
+              </div>
+            </div>
+
+            <div style="border:2px solid var(--color-accent); padding:var(--space-4); display:flex; flex-direction:column; gap:var(--space-3)">
+              <div style="display:flex; align-items:center; gap:var(--space-3)">
+                <span style="display:inline-flex; width:54px; height:54px; align-items:center; justify-content:center; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:22px; font-variant-numeric:tabular-nums">12</span>
+                <div style="display:flex; flex-direction:column; gap:2px">
+                  <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px">MESA 12</span>
+                  <span style="display:flex; align-items:center; gap:5px; font-size:12px; color:var(--color-accent-700); font-variant-numeric:tabular-nums"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>#A2F1 · há 18 min</span>
+                </div>
+                <span style="margin-left:auto; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:10px; letter-spacing:0.08em; padding:3px 8px">ATRASADO</span>
+              </div>
+
+              <div style="background:var(--color-accent-100); border:1px solid var(--color-accent); padding:var(--space-3); display:flex; flex-direction:column; gap:var(--space-2)">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-2)">
+                  <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:11px; letter-spacing:0.06em; color:var(--color-accent-800)">AGUARDANDO O CLIENTE</span>
+                  <span style="font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:17px; color:var(--color-accent-700); font-variant-numeric:tabular-nums">3:12</span>
+                </div>
+                <p style="margin:0; font-size:13px; color:var(--color-accent-800)">Provoleta na brasa: <s>2×</s> → <strong>1×</strong></p>
+                <p style="margin:0; font-size:11px; color:var(--color-accent-800); opacity:0.8">Sem resposta até 0:00, o item sai do pedido.</p>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:var(--space-2); border-top:1px solid var(--color-divider); padding-top:var(--space-3)">
+                <div style="display:flex; align-items:center; gap:var(--space-2)">
+                  <span style="display:inline-flex; min-width:30px; height:30px; align-items:center; justify-content:center; border:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">1×</span>
+                  <span style="font-size:16px; font-weight:600">Bife ancho + fritas</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:var(--space-2)">
+                  <span style="display:inline-flex; min-width:30px; height:30px; align-items:center; justify-content:center; border:1px solid var(--color-divider); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:13px; font-variant-numeric:tabular-nums">2×</span>
+                  <span style="font-size:16px; font-weight:600">Provoleta na brasa</span>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:10px; background:var(--color-accent); color:var(--color-bg); padding:16px var(--space-4); font-family:var(--font-heading); font-weight:var(--font-heading-weight); font-size:15px; cursor:pointer" style-hover="background:var(--color-accent-600)">
+                <span>MARCAR PRONTO</span>
+                <svg style="margin-left:auto" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;fotosColoridas&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Imagens&quot;},
+  &quot;cardapioEmGrade&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Cardápio&quot;}
+}">
+class Component extends DCLogic {
+  renderVals() {
+    const emGrade = this.props.cardapioEmGrade ?? true;
+    return { emGrade, emLista: !emGrade };
+  }
+  componentDidMount() { this.sincronizarFotos(); }
+  componentDidUpdate() { this.sincronizarFotos(); }
+  sincronizarFotos() {
+    const cor = this.props.fotosColoridas ?? false;
+    let el = document.getElementById('mq-fotos-coloridas');
+    if (cor && !el) {
+      el = document.createElement('style');
+      el.id = 'mq-fotos-coloridas';
+      el.textContent = '.grayscale{filter:none}';
+      document.head.appendChild(el);
+    } else if (!cor && el) {
+      el.remove();
+    }
+  }
+}
+</script>
+</body>
+</html>

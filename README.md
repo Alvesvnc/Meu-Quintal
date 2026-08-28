@@ -1,6 +1,6 @@
 <div align="center">
 
-# Meu Quintal
+# QRO
 
 **Sistema de pedido em mesa por QR — de um restaurante só a um food-court inteiro.**
 
@@ -23,7 +23,7 @@
 
 ## Sobre
 
-**Meu Quintal** é um sistema de pedido em mesa por QR code. O cliente escaneia
+**QRO** é um sistema de pedido em mesa por QR code. O cliente escaneia
 o QR, monta o pedido, a cozinha recebe em tempo real e o dono acompanha o
 faturamento — sem app para instalar e sem cadastro.
 
@@ -42,7 +42,7 @@ A decisão é sempre pelo tipo do espaço, nunca por "só tem uma cozinha
 cadastrada" — uma praça que hoje tem uma cozinha só continua sendo uma praça.
 
 O sistema é composto por três aplicações independentes que compartilham um
-backend único: **Cliente** (web mobile, sem cadastro), **Restaurante** (mobile,
+backend único: **Cliente** (web mobile, sem cadastro), **Restaurante** (app instalável,
 fila ao vivo) e **Dono do espaço** (web responsivo, administração).
 
 ## Sumário
@@ -79,7 +79,7 @@ fila ao vivo) e **Dono do espaço** (web responsivo, administração).
 - Solicitação de cobrança ("fechar conta") por cozinha
 - Avaliação pós-consumo
 
-### Restaurante (web mobile)
+### Restaurante (app instalável — tablet, celular ou desktop)
 
 > **Na API.** Todas as telas leem do servidor; `src/mocks/` foi removido.
 
@@ -87,6 +87,9 @@ fila ao vivo) e **Dono do espaço** (web responsivo, administração).
 - Login com e-mail e senha (argon2 + JWT)
 - Cardápio: criar, editar, esgotar e excluir itens — excluir **arquiva**, para
   não levar o histórico de pedidos junto
+- **As seções do cardápio são escritas pela própria cozinha** — criar, renomear,
+  reordenar e apagar. Renomear não move prato de lugar; apagar uma seção com
+  pratos dentro exige dizer para onde eles vão
 - **Até seis fotos por prato**, enviadas do celular. A primeira é a capa. Toda
   foto é reencodada: some o EXIF (que carrega o GPS de onde foi tirada), cai
   para 1600px e vira webp
@@ -97,6 +100,14 @@ fila ao vivo) e **Dono do espaço** (web responsivo, administração).
 - Aceitar o convite do quintal: ler o acordo, criar a senha e já entrar
 - Histórico de pedidos fechados, por janela de 1, 7 ou 30 dias
 - Métricas: carro-chefe, ticket médio, horário de pico e por que ela cancela
+- **Instalável**: no tablet vira ícone na tela de início; no Windows ganha janela
+  própria, sem barra de endereço, com entrada na barra de tarefas e no Alt+Tab.
+  O shell fica em cache; a fila **nunca** — pedido cacheado seria prato feito duas vezes
+- **A tela não apaga enquanto a fila está aberta** (Wake Lock), e volta a segurar
+  sozinha depois de o aparelho ser desbloqueado
+- **Aviso com o app fechado** (Web Push): pedido novo e pedido de conta chegam na
+  tela bloqueada. Cada aparelho autoriza o seu, e o aviso **não** aparece quando
+  o app já está na frente — ali o sino já tocou
 
 A foto de capa da **cozinha** ainda é uma URL colada à mão — só o item do cardápio tem upload.
 
@@ -244,10 +255,9 @@ cd Meu-Quintal
 corepack enable
 pnpm install
 
-# Configurar variáveis de ambiente do Docker Postgres (raiz)
-cp .env.example .env
-
-# Configurar variáveis de ambiente do server
+# Configurar variáveis de ambiente
+# (o Postgres de desenvolvimento não precisa de nada: as credenciais são
+#  padrão no docker-compose.yml, e batem com a DATABASE_URL deste arquivo)
 cp server/.env.example server/.env
 
 # Subir o PostgreSQL via Docker
@@ -442,12 +452,12 @@ A interface atualiza automaticamente, sem necessidade de reload.
 ## Design system
 
 O sistema visual completo está documentado em
-[`docs/design-system/meu-quintal/MASTER.md`](docs/design-system/meu-quintal/MASTER.md),
+[`docs/design-system/qro/MASTER.md`](docs/design-system/qro/MASTER.md),
 com overrides específicos por persona:
 
-- [`pages/cliente.md`](docs/design-system/meu-quintal/pages/cliente.md)
-- [`pages/restaurante.md`](docs/design-system/meu-quintal/pages/restaurante.md)
-- [`pages/dono.md`](docs/design-system/meu-quintal/pages/dono.md)
+- [`pages/cliente.md`](docs/design-system/qro/pages/cliente.md)
+- [`pages/restaurante.md`](docs/design-system/qro/pages/restaurante.md)
+- [`pages/dono.md`](docs/design-system/qro/pages/dono.md)
 
 Princípios visuais centrais: **tátil, editorial, terra, honesto**. Tipografia
 conduz a hierarquia; cor é restrita (terracota + verde mata + cream); ausência
@@ -573,7 +583,7 @@ monorepo, não de dentro de `server/` — o `pnpm-lock.yaml` mora lá e sem ele 
 há instalação reproduzível.
 
 ```bash
-docker build -f server/Dockerfile -t meu-quintal-server .
+docker build -f server/Dockerfile -t qro-server .
 ```
 
 ### Como a imagem é montada
@@ -606,7 +616,7 @@ docker build -f server/Dockerfile -t meu-quintal-server .
 Os três apps viram imagem nginx a partir do mesmo Dockerfile parametrizado:
 
 ```bash
-docker build -f apps/Dockerfile   --build-arg APP=cliente   --build-arg VITE_API_URL=https://api.meuquintal.com.br   -t meu-quintal-cliente .
+docker build -f apps/Dockerfile   --build-arg APP=cliente   --build-arg VITE_API_URL=https://api.qro.com.br   -t qro-cliente .
 ```
 
 > **`VITE_API_URL` é build-time, não runtime.** O Vite substitui
@@ -655,7 +665,7 @@ O serviço `migrate` roda `prisma migrate deploy` e sai; o `server` só sobe dep
 que ele termina com sucesso — assim nunca se serve tráfego com schema
 desatualizado.
 
-> Os dois compose têm nome de projeto próprio (`meu-quintal-prod` no de
+> Os dois compose têm nome de projeto próprio (`qro-prod` no de
 > produção). Sem isso o compose herda o nome do diretório e o `postgres` de
 > produção substitui o container de desenvolvimento na mesma máquina.
 
@@ -1008,7 +1018,10 @@ imagem com ela.
 - [ ] **Deploy em produção** — imagens prontas, provedor de banco não escolhido
       e nenhum backup restaurado ainda
 - [ ] Alertas lendo o `/metrics`
-- [ ] PWA do app restaurante (manifest, service worker)
+- [x] PWA do app restaurante — instalável no tablet e no desktop, com o
+      shell em cache e a API sempre na rede
+- [x] Web push do restaurante — aviso de tela apagada, com a inscrição do
+      aparelho morrendo junto com a sessão na troca de senha
 - [ ] App nativo do restaurante via Capacitor (Google Play)
 
 O que falta em detalhe, com o porquê de cada decisão, está em
@@ -1053,7 +1066,7 @@ O que falta em detalhe, com o porquê de cada decisão, está em
 │   ├── runbook-banco.md     # provedor, restore, dados sensíveis
 │   ├── observabilidade.md   # logs, request id, métricas, alertas
 │   └── design-system/       # Documentação do sistema visual (.md)
-│       └── meu-quintal/
+│       └── qro/
 │           ├── MASTER.md
 │           └── pages/       # Overrides por persona
 ├── .vscode/                 # formatOnSave, TS do workspace, extensões
@@ -1061,7 +1074,7 @@ O que falta em detalhe, com o porquê de cada decisão, está em
 ├── LICENSE                  # proprietária — não é código aberto
 ├── pendencias.txt           # o que falta, com contexto (ler antes de retomar)
 ├── docker-compose.yml       # PostgreSQL para desenvolvimento
-├── docker-compose.prod.yml  # stack de produção (name: meu-quintal-prod)
+├── docker-compose.prod.yml  # stack de produção (name: qro-prod)
 ├── .dockerignore
 ├── .env.prod.example
 ├── eslint.config.mjs        # flat config, um bloco por contexto

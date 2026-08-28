@@ -13,6 +13,17 @@ export interface CartLine {
   kitchenName: string;
   qty: number;
   note?: string;
+  /**
+   * Capa do item, no caminho RELATIVO que a API devolveu — nao a URL pronta.
+   *
+   * O carrinho e persistido em localStorage e pode sobreviver a uma troca de
+   * `VITE_API_URL`; guardar o endereco absoluto congelaria o host antigo em
+   * cada linha. Quem desenha resolve com `urlDaFoto`.
+   *
+   * Opcional porque carrinho salvo antes desta versao nao tem o campo — ali a
+   * miniatura vira o bloco neutro, e nada quebra.
+   */
+  foto?: string;
 }
 
 export interface ActiveOrder {
@@ -25,6 +36,19 @@ export interface ActiveOrder {
 interface CartState {
   lines: CartLine[];
   activeOrders: ActiveOrder[];
+
+  /**
+   * Como a pessoa quer ser chamada. `''` = não quis se identificar.
+   *
+   * Fica no carrinho, e não numa tela, porque é usado em DOIS momentos
+   * distantes: ao enviar o pedido e ao fechar a conta. Guardado (o store é
+   * persistido), a pessoa digita uma vez por visita em vez de a cada pedido.
+   *
+   * O nome é do APARELHO, não da mesa: é justamente isso que separa duas
+   * pessoas sentadas juntas, cada uma no próprio celular.
+   */
+  nome: string;
+  setNome: (nome: string) => void;
 
   addLine: (
     item: MenuItem,
@@ -45,6 +69,9 @@ export const useCart = create<CartState>()(
     (set) => ({
       lines: [],
       activeOrders: [],
+      nome: '',
+
+      setNome: (nome) => set({ nome: nome.slice(0, 40) }),
 
       addLine: (item, kitchen, qty = 1, note) =>
         set((s) => {
@@ -65,6 +92,7 @@ export const useCart = create<CartState>()(
                 kitchenName: kitchen.name,
                 qty,
                 note,
+                foto: item.fotos[0]?.url ?? item.photoUrl ?? undefined,
               },
             ],
           };

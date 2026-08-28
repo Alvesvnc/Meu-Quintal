@@ -16,7 +16,7 @@ import { vi } from 'vitest';
 type Fn = ReturnType<typeof vi.fn>;
 
 export interface PrismaMock {
-  account: { findUnique: Fn; findUniqueOrThrow: Fn; update: Fn };
+  account: { findUnique: Fn; findUniqueOrThrow: Fn; update: Fn; updateMany: Fn };
   accountUser: { findUnique: Fn; findUniqueOrThrow: Fn; update: Fn; updateMany: Fn };
   space: { findFirst: Fn; findUnique: Fn; update: Fn };
   table: { findUnique: Fn; findMany: Fn; updateMany: Fn; groupBy: Fn };
@@ -37,18 +37,32 @@ export interface PrismaMock {
     create: Fn;
     update: Fn;
     updateMany: Fn;
+    count: Fn;
     findUniqueOrThrow: Fn;
     /** Existe pro teste PROVAR que a exclusao de item nao apaga de verdade. */
     delete: Fn;
   };
+  /** As secoes do cardapio, escritas pela propria cozinha. */
+  menuCategoria: {
+    findMany: Fn;
+    findFirst: Fn;
+    create: Fn;
+    updateMany: Fn;
+    deleteMany: Fn;
+    count: Fn;
+  };
   order: { findMany: Fn; findUnique: Fn; findFirst: Fn; updateMany: Fn; create: Fn };
   orderItem: { findMany: Fn; updateMany: Fn; update: Fn };
   orderChange: { findFirst: Fn; findUnique: Fn; create: Fn; update: Fn };
+  orderChangeItem: { findMany: Fn };
   menuItemPhoto: { count: Fn; create: Fn; findFirst: Fn; findMany: Fn; update: Fn; delete: Fn };
   invite: { create: Fn; count: Fn; findUnique: Fn; updateMany: Fn };
   billingCycle: { findUnique: Fn; upsert: Fn };
   kitchenCharge: { findFirst: Fn; update: Fn; deleteMany: Fn; createMany: Fn };
   accessToken: { findUnique: Fn; create: Fn; updateMany: Fn };
+  assinatura: { findUnique: Fn; findFirst: Fn; upsert: Fn; update: Fn };
+  eventoDeCobranca: { create: Fn };
+  pushSubscription: { findMany: Fn; count: Fn; upsert: Fn; deleteMany: Fn };
   $queryRaw: Fn;
   $transaction: Fn;
   $disconnect: Fn;
@@ -60,6 +74,7 @@ export function criarPrismaMock(): PrismaMock {
       findUnique: vi.fn(),
       findUniqueOrThrow: vi.fn().mockResolvedValue({ plan: 'praca' }),
       update: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     accountUser: {
       findUnique: vi.fn(),
@@ -98,8 +113,21 @@ export function criarPrismaMock(): PrismaMock {
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      count: vi.fn().mockResolvedValue(0),
       findUniqueOrThrow: vi.fn(),
       delete: vi.fn(),
+    },
+    menuCategoria: {
+      findMany: vi.fn().mockResolvedValue([]),
+      // `null` = a secao nao e da cozinha logada. Recusar por padrao poe o
+      // teste do caminho feliz na obrigacao de dizer que ela existe — e assim
+      // o teste do ISOLAMENTO e o que nao precisa configurar nada.
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      // Duas: o suficiente pra que apagar uma nao esbarre na regra da ultima.
+      count: vi.fn().mockResolvedValue(2),
     },
     order: {
       findMany: vi.fn().mockResolvedValue([]),
@@ -122,6 +150,10 @@ export function criarPrismaMock(): PrismaMock {
       create: vi.fn(),
       update: vi.fn(),
     },
+    // Vazio por padrao = nenhuma reducao aceita no periodo. E o estado da
+    // cozinha que nunca precisou mexer num pedido, entao o teste que nao fala
+    // de alteracao nao precisa configurar nada.
+    orderChangeItem: { findMany: vi.fn().mockResolvedValue([]) },
     menuItemPhoto: {
       count: vi.fn().mockResolvedValue(0),
       create: vi.fn(),
@@ -147,6 +179,32 @@ export function criarPrismaMock(): PrismaMock {
       findUnique: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    // `null` por padrao = conta que nunca assinou. E o estado de quem esta em
+    // trial ou foi cadastrado na mao, entao o teste que nao fala de cobranca
+    // nao precisa configurar nada.
+    assinatura: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn(),
+      update: vi.fn(),
+    },
+    eventoDeCobranca: { create: vi.fn() },
+    /**
+     * Nenhum aparelho inscrito, que e o estado de qualquer cozinha que ainda
+     * nao ligou o aviso — a maioria. Com a lista vazia, `avisarCozinha` sai
+     * antes de tocar em rede, entao teste de pedido nao precisa saber que push
+     * existe.
+     *
+     * O `deleteMany` NAO e decorativo: ele roda dentro da transacao de troca de
+     * senha (apagar push de quem foi expulso). Sem ele aqui, os quatro testes
+     * de definir senha respondem 500.
+     */
+    pushSubscription: {
+      findMany: vi.fn().mockResolvedValue([]),
+      count: vi.fn().mockResolvedValue(0),
+      upsert: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
     // `update` do lastLoginAt roda solto (sem await); sem isso vira
@@ -203,4 +261,16 @@ export function usuarioDono(role: 'owner' | 'admin' | 'staff' = 'owner') {
  */
 export function cozinhaLogada(m: PrismaMock, kitchenId: string, userId: string) {
   m.kitchenUser.findUnique.mockResolvedValue({ id: userId, kitchenId, tokenVersion: 0 });
+}
+
+/**
+ * Deixa a checagem de dono da SECAO passar.
+ *
+ * Toda rota que recebe um `categoriaId` (criar item, mover item, apagar secao)
+ * confere antes se a secao e da cozinha logada — o id vem do corpo do pedido, e
+ * sem a conferencia bastaria conhecer um pra pendurar prato no cardapio da
+ * vizinha. Por padrao o mock RECUSA; quem testa o caminho feliz chama isto.
+ */
+export function secaoDaCozinha(m: PrismaMock, categoriaId = 'cat-1') {
+  m.menuCategoria.findFirst.mockResolvedValue({ id: categoriaId });
 }

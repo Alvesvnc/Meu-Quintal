@@ -9,6 +9,13 @@ auth: nenhuma — token de mesa efêmero
 
 > Lê MASTER.md primeiro. Aqui só o que diverge ou especializa.
 
+> **Revisão 2026-08-27 — sistema Modernist.** O MASTER foi reescrito e o
+> desenho canônico das telas é o protótipo em
+> `../modernist/prototipo.dc.html`. As decisões abaixo que falam de Fraunces,
+> DM Sans, JetBrains Mono, terracota, verde-mata, cantos arredondados ou raiz de
+> fonte customizada **não valem mais** — ficam registradas por serem o motivo de
+> o app ter sido do jeito que era. O que continua valendo está marcado.
+
 ## Contexto de uso
 
 - **Onde:** sentado(a) numa mesa do quintal, esperando comer.
@@ -23,10 +30,16 @@ auth: nenhuma — token de mesa efêmero
 
 ### Tipografia mobile-first
 
-- Body padrão: **17px** (não 15px do MASTER) — celular distante 30cm do olho cansado.
-- Botão CTA: **lg** (h=52) sempre.
-- Nome de cozinha em **Fraunces 22px regular** (não italic — mais legível em scroll rápido).
-- Preço em **mono 17px 500**, ink. Total final em **mono 28px 500**, primary.
+**Revisado.** O app rodava com `html { font-size: 17px }` pra compensar a
+distância olho-tela. Isso escalava junto TODAS as classes de espaço do Tailwind,
+que são rem: `p-4` saía 17px, `h-16` saía 68, e cada régua do desenho errava por
+um pixel que ia acumulando. A raiz voltou pros 16px do navegador e a leitura
+passou a vir do desenho — foto grande, título de 30px, nome de item em 600.
+
+- Raiz: **16px** (padrão do navegador). Corpo em `text-body` = 15px.
+- Botão CTA: **lg** (h=52) sempre. ✅ continua valendo.
+- Nome de cozinha: **Archivo 800 16px**, com o índice em `accent`.
+- Preço: **Archivo 800** com `tabular`. Total final em `display-md` (26px).
 
 ### Padrões de tela
 
@@ -36,9 +49,14 @@ auth: nenhuma — token de mesa efêmero
 │  ← Mesa 12          ⌕ buscar  · 3 items │  ← chip carrinho conta itens
 └─────────────────────────────────────────┘
 ```
-- 56px altura, bg=bg, hairline-bottom, sem shadow.
-- Voltar é texto "← Mesa 12" (sempre mostra contexto), não só seta.
-- Carrinho é chip mono com número, não badge sobre ícone.
+**Revisado.** Hoje são dois cabeçalhos, e não um configurável:
+
+- `AppHeader` nas telas que são "casa" (cozinhas, carrinho, pedidos): marca
+  `QRO` à esquerda, tag de mesa à direita, régua de 2px embaixo. 56px.
+- `TelaHeader` nas telas de dentro (cardápio, item, acompanhar): botão voltar de
+  40×40 com moldura + contexto (nome da cozinha, `#A2F4 · MESA 07`).
+- O carrinho saiu do cabeçalho: tem célula na barra de baixo e faixa fixa no
+  cardápio. Três lugares pra mesma coisa disputavam atenção com o título.
 
 #### Lista de cozinhas (Tela 01) — grade 2 colunas
 
@@ -56,18 +74,22 @@ Hamb. de      Moqueca,
 pasto, bata…  peixe do…
 ```
 
-- Grid `grid-cols-2 gap-x-3 gap-y-7`, padding lateral 20px.
-- Foto 4:5 com `rounded-lg`, hover `opacity-92` (não scale — sem layout shift).
-- `01.` em mono primary 13px, baseline alinhada ao nome.
-- Nome em **Fraunces 20px regular** (não italic — italic em card pequeno fica letrado).
-- Meta `~12 min · R$ 18–46` em **mono 13px dim**, uma linha.
-- Tagline truncada em 2 linhas (`-webkit-line-clamp: 2`) — body-sm muted.
-- `closingNote` (ex: "fecha 22h") em mono uppercase warn.
-- Sem chips de categoria coloridos. Sem rating estrelas (não temos rating ainda).
+A grade continua sendo a decisão. ✅ O que mudou dentro dela:
+
+- Grid `grid-cols-2 gap-x-3 gap-y-6`, padding lateral 16px.
+- Foto 4:5 **em P&B**, sem raio, com o espaço reservado mesmo sem foto.
+- `01` em `accent`, na mesma linha do nome (sem ponto).
+- Nome em **Archivo 800 16px**.
+- Meta `~25 min · R$ 28–74` em 12px `neutral-600`, com ícone de relógio.
+- **A tagline saiu.** Em duas colunas ela virava duas linhas de cinza por card, e
+  o olho passava por seis blocos de texto antes da quinta cozinha. A foto vende.
+- `closingNote` vira tag **sólida** `accent` (não havia mais amarelo de aviso).
+- Abaixo de 3 cozinhas a tela cai na variante em lista: com duas, a grade
+  desperdiça meia tela numa célula vazia.
 
 #### Cardápio de uma cozinha (Tela 02)
 
-- Tabs horizontais sticky (entradas / pratos / sobremesas / bebidas) — **scroll-snap**, sem swipe trick.
+- Tabs sticky com as seções que a própria cozinha escreveu (não há mais lista fixa): grade de células iguais que quebra linha, sem rolagem horizontal.
 - Item de cardápio = row horizontal: foto 88×88 esquerda, conteúdo+preço direita.
 - Adicionar = botão `+` 44×44 à direita do preço (não no card todo — evita add acidental ao tentar abrir detalhe).
 - Tap no row inteiro (exceto +) abre detalhe.

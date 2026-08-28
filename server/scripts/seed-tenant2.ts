@@ -21,7 +21,10 @@ async function main() {
     data: {
       slug: 'quintal-ubatuba',
       name: 'Quintal Ubatuba',
-      plan: 'basico',
+      // 'basico' ate 2026-08-25, quando o plano passou a ser o FORMATO do espaco
+      // (restaurante | praca). O script ficou quebrado desde entao — o Prisma
+      // recusava o valor antes de criar coisa alguma.
+      plan: 'praca',
       status: 'ativa',
       users: {
         create: [
@@ -68,9 +71,9 @@ async function main() {
       status: 'ativa',
       chargeCommission: true,
       chargeRent: false,
-      menuItems: {
-        create: [{ category: 'pratos', name: 'Smash Uba', priceCents: 3500, sortOrder: 1 }],
-      },
+      // O item entra depois: ele aponta pro ID da secao, e um create aninhado
+      // nao le o id de um irmao criado no mesmo comando.
+      menuCategorias: { create: [{ name: 'Os smash', sortOrder: 0 }] },
       users: {
         create: {
           email: 'lou@ubatuba.com',
@@ -79,6 +82,19 @@ async function main() {
           role: 'owner',
         },
       },
+    },
+  });
+
+  const secao = await prisma.menuCategoria.findFirstOrThrow({
+    where: { kitchenId: cozinha.id },
+  });
+  await prisma.menuItem.create({
+    data: {
+      kitchenId: cozinha.id,
+      categoriaId: secao.id,
+      name: 'Smash Uba',
+      priceCents: 3500,
+      sortOrder: 1,
     },
   });
 

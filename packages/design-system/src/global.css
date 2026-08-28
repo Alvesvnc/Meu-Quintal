@@ -1,6 +1,6 @@
 @import './fonts.css';
 
-/* Reset mínimo + defaults Quintal. Aplicado em apps via import global. */
+/* Base do sistema Modernist. Importado por todos os apps antes do Tailwind. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -8,9 +8,9 @@ html, body, #root {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #EFECE5;
-  color: #1F1A14;
-  font-family: "DM Sans", system-ui, sans-serif;
+  background: #f3f2f2;
+  color: #201e1d;
+  font-family: "Archivo", system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -19,14 +19,33 @@ html, body, #root {
 }
 
 button { font: inherit; }
+img { display: block; max-width: 100%; }
 
-/* Fraunces sempre com ligatures + stylistic set 01 (a alternativo) */
+/*
+  Título, label e botão são sempre Archivo 800. `font-display` continua sendo a
+  classe que as telas escrevem, então o peso mora nela — e não espalhado em
+  `font-bold` a cada uso.
+*/
 .font-display {
-  font-feature-settings: 'liga' 1, 'ss01' 1;
+  font-weight: 800;
+  letter-spacing: -0.015em;
 }
-.font-display.italic {
-  font-feature-settings: 'liga' 1, 'ss01' 1, 'ss02' 1;
+
+/*
+  `font-mono` sobreviveu ao redesign como "isto é um número", não como outra
+  família. O que aqueles trechos pediam era coluna de dígito alinhada.
+*/
+.font-mono {
+  font-variant-numeric: tabular-nums;
 }
+
+/* Foco sempre visível, sempre no acento — nunca o azul do navegador. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid #ec3013;
+  outline-offset: 2px;
+}
+::selection { background: rgba(236, 48, 19, 0.30); }
 
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
@@ -38,7 +57,7 @@ button { font: inherit; }
   }
 }
 
-/* Scrollbar discreta cream */
+/* Barra de rolagem no sistema: bloco, sem raio. */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #D9D2C3; border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: #d7d3d3; }
 ::-webkit-scrollbar-track { background: transparent; }

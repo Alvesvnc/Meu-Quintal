@@ -3,7 +3,7 @@
 # Imagem de producao do @mq/server.
 #
 # Build a partir da RAIZ do monorepo, nao de dentro de server/:
-#   docker build -f server/Dockerfile -t meu-quintal-server .
+#   docker build -f server/Dockerfile -t qro-server .
 #
 # O contexto precisa ser a raiz porque o pnpm-lock.yaml e o pnpm-workspace.yaml
 # vivem la, e sem eles nao da pra instalar de forma reproduzivel.

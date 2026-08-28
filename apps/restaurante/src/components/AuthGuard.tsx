@@ -1,9 +1,11 @@
 import { useEffect, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { mensagemDeErro, requestIdDoErro, statusDoErro } from '@mq/shared';
 import { getToken, clearToken } from '../api/client';
 import { disconnectSocket } from '../api/socket';
 import { useMe } from '../api/hooks';
 import { useAuth } from '../stores/auth';
+import { ScreenError } from './ScreenError';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -44,14 +46,45 @@ export function AuthGuard({ children }: AuthGuardProps) {
   if (meQuery.isLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="font-display italic text-display-md text-inkMuted">Carregando…</p>
+        <p className="font-display text-display-md text-inkMuted">Carregando…</p>
       </main>
     );
   }
 
   if (meQuery.isError) {
-    // Token invalido — interceptor ja limpou + disparou evento
-    return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+    // ─── NEM TODO ERRO NO /me E CREDENCIAL RUIM ───────────────────────────
+    //
+    // Antes daqui, QUALQUER falha mandava pra /login. Com o servidor doente
+    // (500, banco fora, rede caida) o token continua no localStorage — e o
+    // LoginScreen, que redireciona quem ja tem token, devolvia a pessoa pra
+    // ca na hora. Ida e volta sem fim: o /me era refeito a cada montagem, o
+    // Chrome cortava a navegacao ("Throttling navigation to prevent the
+    // browser from hanging") e a tela ficava branca, sem nunca dizer o que
+    // houve.
+    //
+    // Quem decide deslogar e o status: 401/403 sao resposta sobre a
+    // credencial, e o interceptor ja limpou o token. O resto e problema do
+    // servidor, e a pessoa continua logada — so nao da pra carregar agora.
+    const status = statusDoErro(meQuery.error);
+
+    if (status === 401 || status === 403) {
+      return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+    }
+
+    // O requestId aparece em 5xx e transforma "deu erro" numa busca de uma
+    // linha no log do servidor — ver docs/observabilidade.md.
+    const requestId = requestIdDoErro(meQuery.error);
+
+    return (
+      <ScreenError
+        title="Nao consegui abrir sua cozinha."
+        body={
+          mensagemDeErro(meQuery.error, 'O servidor nao respondeu.') +
+          (requestId ? ` (codigo ${requestId})` : '')
+        }
+        onRetry={() => meQuery.refetch()}
+      />
+    );
   }
 
   return <>{children}</>;

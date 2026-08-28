@@ -8,6 +8,7 @@ async function main() {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.menuItem.deleteMany();
+  await prisma.menuCategoria.deleteMany();
   await prisma.kitchenUser.deleteMany();
   await prisma.kitchen.deleteMany();
   await prisma.table.deleteMany();
@@ -29,7 +30,7 @@ async function main() {
       status: 'ativa',
       users: {
         create: {
-          email: 'marina@meuquintal.app',
+          email: 'marina@qro.app',
           passwordHash,
           name: 'Marina',
           role: 'owner',
@@ -92,6 +93,44 @@ async function main() {
     });
   }
 
+  interface ItemDoSeed {
+    name: string;
+    description?: string;
+    priceCents: number;
+    photoUrl?: string;
+    sortOrder?: number;
+    available?: boolean;
+    badge?: 'novo' | 'esgotando' | 'sem_estoque';
+  }
+
+  /**
+   * Cria as secoes do cardapio e os itens de cada uma.
+   *
+   * Duas escritas, e nao um `create` aninhado na cozinha: o item aponta pro ID
+   * da secao, e um create aninhado nao le o id de um irmao criado no mesmo
+   * comando. A ordem das secoes e a ordem em que elas aparecem aqui — que e
+   * como a cozinha ordena no app.
+   *
+   * Os nomes variam de cozinha pra cozinha DE PROPOSITO: desde 2026-08-27 os
+   * topicos sao escritos por quem cozinha, e um banco de dev em que todo mundo
+   * usa "Entradas/Pratos/Sobremesas/Bebidas" esconderia justamente isso.
+   */
+  async function cardapio(
+    kitchenId: string,
+    secoes: Array<{ nome: string; itens: ItemDoSeed[] }>,
+  ) {
+    for (const [i, secao] of secoes.entries()) {
+      const categoria = await prisma.menuCategoria.create({
+        data: { kitchenId, name: secao.nome, sortOrder: i },
+      });
+      if (secao.itens.length > 0) {
+        await prisma.menuItem.createMany({
+          data: secao.itens.map((item) => ({ ...item, kitchenId, categoriaId: categoria.id })),
+        });
+      }
+    }
+  }
+
   // Lou Burger
   const louBurger = await prisma.kitchen.create({
     data: {
@@ -106,22 +145,41 @@ async function main() {
       // Acordo: comissao padrao do quintal (15%), sem aluguel
       chargeCommission: true,
       chargeRent: false,
-      menuItems: {
-        create: [
-          { category: 'entradas',   name: 'Batata-doce frita',     description: 'Cubos rústicos, sal de ervas, maionese de páprica defumada.',          priceCents: 1800, photoUrl: PHOTOS.batata,   sortOrder: 1 },
-          { category: 'entradas',   name: 'Onion rings',           description: 'Cebola roxa em anéis grossos, empanado leve, molho ranch da casa.',     priceCents: 2200, photoUrl: PHOTOS.batata,   sortOrder: 2 },
-          { category: 'pratos',     name: 'Smash Lou',             description: 'Dois smashes de 90g, queijo prato derretido, picles, molho da casa.',   priceCents: 3200, photoUrl: PHOTOS.burger,   sortOrder: 1, badge: 'novo' },
-          { category: 'pratos',     name: 'Smash duplo bacon',     description: 'Dois smashes 90g, bacon caramelizado, cheddar inglês, cebola crispy.',  priceCents: 3800, photoUrl: PHOTOS.burger,   sortOrder: 2 },
-          { category: 'pratos',     name: 'Smash vegetariano',     description: 'Burger de grão-de-bico e beterraba, queijo coalho, rúcula.',            priceCents: 2900, photoUrl: PHOTOS.smashVeg, sortOrder: 3 },
-          { category: 'pratos',     name: 'Smash triplo',          description: 'Três smashes 90g, cheddar duplo, sem firula.',                          priceCents: 4600, photoUrl: PHOTOS.burger,   sortOrder: 4, available: false, badge: 'sem_estoque' },
-          { category: 'sobremesas', name: 'Brownie quente',        description: 'Brownie meio amargo recém-saído do forno, sorvete de baunilha.',       priceCents: 2400, photoUrl: PHOTOS.brownie,  sortOrder: 1 },
-          { category: 'bebidas',    name: 'Refrigerante lata',     description: 'Coca, Guaraná, Sprite, Coca zero.',                                     priceCents:  700, photoUrl: PHOTOS.refri,    sortOrder: 1 },
-          { category: 'bebidas',    name: 'Água com gás',          description: '500ml, limão opcional.',                                                priceCents:  600, photoUrl: PHOTOS.agua,     sortOrder: 2 },
-          { category: 'bebidas',    name: 'Chopp artesanal',       description: 'Pilsen da microcervejaria parceira, 350ml.',                            priceCents: 1400, photoUrl: PHOTOS.cerveja,  sortOrder: 3, badge: 'esgotando' },
-        ],
-      },
     },
   });
+
+  await cardapio(louBurger.id, [
+    {
+      nome: 'Pra começar',
+      itens: [
+        { name: 'Batata-doce frita', description: 'Cubos rústicos, sal de ervas, maionese de páprica defumada.', priceCents: 1800, photoUrl: PHOTOS.batata, sortOrder: 1 },
+        { name: 'Onion rings',       description: 'Cebola roxa em anéis grossos, empanado leve, molho ranch da casa.', priceCents: 2200, photoUrl: PHOTOS.batata, sortOrder: 2 },
+      ],
+    },
+    {
+      nome: 'Os smash',
+      itens: [
+        { name: 'Smash Lou',         description: 'Dois smashes de 90g, queijo prato derretido, picles, molho da casa.', priceCents: 3200, photoUrl: PHOTOS.burger, sortOrder: 1, badge: 'novo' },
+        { name: 'Smash duplo bacon', description: 'Dois smashes 90g, bacon caramelizado, cheddar inglês, cebola crispy.', priceCents: 3800, photoUrl: PHOTOS.burger, sortOrder: 2 },
+        { name: 'Smash vegetariano', description: 'Burger de grão-de-bico e beterraba, queijo coalho, rúcula.', priceCents: 2900, photoUrl: PHOTOS.smashVeg, sortOrder: 3 },
+        { name: 'Smash triplo',      description: 'Três smashes 90g, cheddar duplo, sem firula.', priceCents: 4600, photoUrl: PHOTOS.burger, sortOrder: 4, available: false, badge: 'sem_estoque' },
+      ],
+    },
+    {
+      nome: 'Doce',
+      itens: [
+        { name: 'Brownie quente', description: 'Brownie meio amargo recém-saído do forno, sorvete de baunilha.', priceCents: 2400, photoUrl: PHOTOS.brownie, sortOrder: 1 },
+      ],
+    },
+    {
+      nome: 'Bebidas',
+      itens: [
+        { name: 'Refrigerante lata', description: 'Coca, Guaraná, Sprite, Coca zero.', priceCents: 700, photoUrl: PHOTOS.refri, sortOrder: 1 },
+        { name: 'Água com gás',      description: '500ml, limão opcional.', priceCents: 600, photoUrl: PHOTOS.agua, sortOrder: 2 },
+        { name: 'Chopp artesanal',   description: 'Pilsen da microcervejaria parceira, 350ml.', priceCents: 1400, photoUrl: PHOTOS.cerveja, sortOrder: 3, badge: 'esgotando' },
+      ],
+    },
+  ]);
 
   await createOwner(louBurger.id, 'marcos@louburger.com', 'Marcos');
 
@@ -141,15 +199,24 @@ async function main() {
       commissionPct: 12,
       chargeRent: true,
       rentCents: 80_000,
-      menuItems: {
-        create: [
-          { category: 'pratos', name: 'Moqueca de peixe', description: 'Peixe branco do dia, leite de coco, dendê, arroz de coco e farofa.', priceCents: 5800, photoUrl: PHOTOS.moqueca, sortOrder: 1 },
-          { category: 'pratos', name: 'Moqueca grande',   description: 'Pra duas pessoas. Acompanha pirão.',                                  priceCents: 8800, photoUrl: PHOTOS.moqueca, sortOrder: 2 },
-          { category: 'bebidas', name: 'Suco de maracujá',description: 'Polpa fresca, sem açúcar.',                                            priceCents: 1200, photoUrl: PHOTOS.refri,   sortOrder: 1 },
-        ],
-      },
     },
   });
+
+  await cardapio(cumbuca.id, [
+    {
+      nome: 'Do mar',
+      itens: [
+        { name: 'Moqueca de peixe', description: 'Peixe branco do dia, leite de coco, dendê, arroz de coco e farofa.', priceCents: 5800, photoUrl: PHOTOS.moqueca, sortOrder: 1 },
+        { name: 'Moqueca grande',   description: 'Pra duas pessoas. Acompanha pirão.', priceCents: 8800, photoUrl: PHOTOS.moqueca, sortOrder: 2 },
+      ],
+    },
+    {
+      nome: 'Sucos',
+      itens: [
+        { name: 'Suco de maracujá', description: 'Polpa fresca, sem açúcar.', priceCents: 1200, photoUrl: PHOTOS.refri, sortOrder: 1 },
+      ],
+    },
+  ]);
 
   await createOwner(cumbuca.id, 'ana@cumbuca.com', 'Ana');
 
@@ -168,15 +235,24 @@ async function main() {
       chargeCommission: false,
       chargeRent: true,
       rentCents: 60_000,
-      menuItems: {
-        create: [
-          { category: 'pratos',  name: 'Pastel de carne',      description: 'Massa fininha, carne moída temperada.',  priceCents: 1200, photoUrl: PHOTOS.pastel, sortOrder: 1 },
-          { category: 'pratos',  name: 'Pastel de queijo',     description: 'Queijo coalho derretido, recheio fartos.', priceCents: 1200, photoUrl: PHOTOS.pastel, sortOrder: 2 },
-          { category: 'bebidas', name: 'Caldo de cana 300ml',  description: 'Da hora, com limão opcional.',             priceCents:  900, photoUrl: PHOTOS.refri,  sortOrder: 1 },
-        ],
-      },
     },
   });
+
+  await cardapio(pasteloka.id, [
+    {
+      nome: 'Pastéis',
+      itens: [
+        { name: 'Pastel de carne',  description: 'Massa fininha, carne moída temperada.', priceCents: 1200, photoUrl: PHOTOS.pastel, sortOrder: 1 },
+        { name: 'Pastel de queijo', description: 'Queijo coalho derretido, recheio fartos.', priceCents: 1200, photoUrl: PHOTOS.pastel, sortOrder: 2 },
+      ],
+    },
+    {
+      nome: 'Pra beber',
+      itens: [
+        { name: 'Caldo de cana 300ml', description: 'Da hora, com limão opcional.', priceCents: 900, photoUrl: PHOTOS.refri, sortOrder: 1 },
+      ],
+    },
+  ]);
 
   await createOwner(pasteloka.id, 'seujose@pasteloka.com', 'Seu José');
 
@@ -195,14 +271,19 @@ async function main() {
       chargeCommission: true,
       chargeRent: true,
       rentCents: 50_000,
-      menuItems: {
-        create: [
-          { category: 'pratos', name: 'Tigela do Zé',     description: 'Quinoa, grão-de-bico, vegetais assados, molho de missô.',  priceCents: 3200, photoUrl: PHOTOS.salada, sortOrder: 1 },
-          { category: 'pratos', name: 'Bowl de grãos',    description: 'Arroz vermelho, feijão azuki, ovo, abobrinha.',             priceCents: 2800, photoUrl: PHOTOS.salada, sortOrder: 2 },
-        ],
-      },
     },
   });
+
+  // Uma secao so: o cardapio pequeno tambem tem que ficar bem.
+  await cardapio(horta.id, [
+    {
+      nome: 'Tigelas',
+      itens: [
+        { name: 'Tigela do Zé',  description: 'Quinoa, grão-de-bico, vegetais assados, molho de missô.', priceCents: 3200, photoUrl: PHOTOS.salada, sortOrder: 1 },
+        { name: 'Bowl de grãos', description: 'Arroz vermelho, feijão azuki, ovo, abobrinha.', priceCents: 2800, photoUrl: PHOTOS.salada, sortOrder: 2 },
+      ],
+    },
+  ]);
 
   await createOwner(horta.id, 'ze@hortadoze.com', 'Zé');
 
@@ -221,20 +302,29 @@ async function main() {
       chargeCommission: true,
       commissionPct: 18,
       chargeRent: false,
-      menuItems: {
-        create: [
-          { category: 'sobremesas', name: 'Brigadeiro de colher', description: 'Pote 200g, com granulado belga.', priceCents: 1800, photoUrl: PHOTOS.doce, sortOrder: 1 },
-          { category: 'sobremesas', name: 'Pudim de leite',       description: 'Tradicional, calda escura.',       priceCents: 1600, photoUrl: PHOTOS.doce, sortOrder: 2 },
-          { category: 'bebidas',    name: 'Café coado',           description: 'Especial do dia, 200ml.',           priceCents:  800, photoUrl: PHOTOS.refri, sortOrder: 1 },
-        ],
-      },
     },
   });
+
+  await cardapio(dolce.id, [
+    {
+      nome: 'Doces',
+      itens: [
+        { name: 'Brigadeiro de colher', description: 'Pote 200g, com granulado belga.', priceCents: 1800, photoUrl: PHOTOS.doce, sortOrder: 1 },
+        { name: 'Pudim de leite',       description: 'Tradicional, calda escura.', priceCents: 1600, photoUrl: PHOTOS.doce, sortOrder: 2 },
+      ],
+    },
+    {
+      nome: 'Café',
+      itens: [
+        { name: 'Café coado', description: 'Especial do dia, 200ml.', priceCents: 800, photoUrl: PHOTOS.refri, sortOrder: 1 },
+      ],
+    },
+  ]);
 
   await createOwner(dolce.id, 'marina@dolcemarina.com', 'Marina');
 
   // Taverna do Pico (pausada — exemplo de cozinha que ainda nao publicou)
-  await prisma.kitchen.create({
+  const taverna = await prisma.kitchen.create({
     data: {
       slug: 'taverna-do-pico',
       name: 'Taverna do Pico',
@@ -248,6 +338,13 @@ async function main() {
       chargeRent: false,
     },
   });
+
+  // Secoes escritas, nenhum item ainda: e o estado de quem acabou de entrar e
+  // ja organizou o cardapio de cabeca. O app do cliente pula secao vazia.
+  await cardapio(taverna.id, [
+    { nome: 'Drinks', itens: [] },
+    { nome: 'Petiscos', itens: [] },
+  ]);
 
   console.log(`
 ✓ Seed completo

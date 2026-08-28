@@ -22,7 +22,7 @@ export function SenhaScreen() {
   if (q.isLoading) {
     return (
       <Moldura>
-        <p className="font-display italic text-display-md text-inkMuted">Abrindo o link…</p>
+        <p className="font-display text-display-md text-inkMuted">Abrindo o link…</p>
       </Moldura>
     );
   }
@@ -30,7 +30,7 @@ export function SenhaScreen() {
   if (q.isError || !q.data) {
     return (
       <Moldura>
-        <h1 className="font-display italic text-display-lg text-ink leading-tight text-pretty">
+        <h1 className="font-display text-display-lg text-ink leading-tight text-pretty">
           Não consegui abrir este link.
         </h1>
         <p className="mt-3 font-sans text-body text-inkMuted text-pretty">
@@ -69,7 +69,7 @@ function Formulario({ token, dados }: { token: string; dados: PrimeiroAcessoResp
   };
 
   const campo =
-    'w-full px-4 py-3 bg-surface border border-hairline rounded-md ' +
+    'w-full px-4 py-3 bg-surface border border-hairline ' +
     'font-sans text-body-lg text-ink placeholder:text-inkDim ' +
     'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash';
   const rotulo = 'block font-mono text-label uppercase tracking-wider text-inkDim mb-2';
@@ -77,9 +77,9 @@ function Formulario({ token, dados }: { token: string; dados: PrimeiroAcessoResp
   return (
     <Moldura>
       <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-        Meu Quintal · {recuperando ? 'nova senha' : 'primeiro acesso'}
+        QRO · {recuperando ? 'nova senha' : 'primeiro acesso'}
       </p>
-      <h1 className="mt-2 font-display italic text-display-xl text-ink leading-tight text-pretty">
+      <h1 className="mt-2 font-display text-display-xl text-ink leading-tight text-pretty">
         {recuperando
           ? 'Escolha uma senha nova.'
           : dados.name
@@ -104,7 +104,7 @@ function Formulario({ token, dados }: { token: string; dados: PrimeiroAcessoResp
           <label className={rotulo}>Seu login</label>
           {/* Não editável: o e-mail é o do link. Poder trocá-lo aqui deixaria
               quem tem o link mudar o dono da conta. */}
-          <p className="px-4 py-3 bg-surface border border-hairline rounded-md font-mono text-body text-inkMuted">
+          <p className="px-4 py-3 bg-surface border border-hairline font-mono text-body text-inkMuted">
             {dados.email}
           </p>
         </div>

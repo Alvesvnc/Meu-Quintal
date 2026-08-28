@@ -38,7 +38,7 @@ const HASH = crypto.createHash('sha256').update(TOKEN).digest('hex');
 
 const DONO = {
   id: 'user-1',
-  email: 'marina@meuquintal.app',
+  email: 'marina@qro.app',
   name: 'Marina',
   accountId: CONTA.id,
   account: { name: CONTA.name, status: 'ativa' },
@@ -78,7 +78,10 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await app.close();
+  // `app?` e nao `app`: se o beforeEach falhar, `app` fica undefined e o
+  // `await app.close()` estoura com "Cannot read properties of undefined" —
+  // escondendo o erro DE VERDADE atras do erro da limpeza.
+  await app?.close();
 });
 
 // ─── Pedir ──────────────────────────────────────────────────────────────────
@@ -397,5 +400,26 @@ describe('link de recuperacao de uma COZINHA', () => {
     expect(data.tokenVersion).toEqual({ increment: 1 });
     // Nao pode ter tocado no dono.
     expect(prismaMock.accountUser.update).not.toHaveBeenCalled();
+  });
+
+  it('apaga tambem as inscricoes de PUSH do operador', async () => {
+    await app.inject({
+      method: 'POST',
+      url: `/api/acesso/${TOKEN}/senha`,
+      payload: { password: 'senha-nova-forte-1' },
+    });
+
+    /*
+      SEM ISTO, DERRUBAR A SESSAO NAO DERRUBA O AVISO.
+
+      `tokenVersion` invalida JWT, e e o que expulsa quem estava dentro. Mas
+      push nao usa JWT: a inscricao vive no servico do navegador e nao expira
+      sozinha nunca. O aparelho de quem saiu da equipe continuaria recebendo
+      "mesa 4, 3 itens" pra sempre — que e exatamente o que trocar a senha
+      existe pra impedir.
+    */
+    expect(prismaMock.pushSubscription.deleteMany).toHaveBeenCalledWith({
+      where: { userId: OPERADOR.id },
+    });
   });
 });

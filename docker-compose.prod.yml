@@ -15,14 +15,14 @@
 # Nome de projeto proprio. Sem isto o compose herda o nome do diretorio — o
 # MESMO do docker-compose.yml de desenvolvimento — e o servico `postgres` daqui
 # substitui o container de dev, que some da maquina de quem rodou.
-name: meu-quintal-prod
+name: qro-prod
 
 services:
   # ATENCAO: sem backup. Nao usar em producao — ver docs/runbook-banco.md.
   postgres:
     profiles: ['with-db']
     image: postgres:16-alpine
-    container_name: meu-quintal-db-prod
+    container_name: qro-db-prod
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER}
@@ -44,8 +44,8 @@ services:
     build:
       context: .
       dockerfile: server/Dockerfile
-    image: meu-quintal-server:${TAG:-latest}
-    container_name: meu-quintal-migrate
+    image: qro-server:${TAG:-latest}
+    container_name: qro-migrate
     restart: 'no'
     environment:
       DATABASE_URL: ${DATABASE_URL:?defina DATABASE_URL}
@@ -59,8 +59,8 @@ services:
     build:
       context: .
       dockerfile: server/Dockerfile
-    image: meu-quintal-server:${TAG:-latest}
-    container_name: meu-quintal-server
+    image: qro-server:${TAG:-latest}
+    container_name: qro-server
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -79,6 +79,16 @@ services:
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-producao}
       SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
+      # Vazio = web push desligado; o aviso in-app (som + vibracao) segue
+      # igual. Gerar o par UMA vez: pnpm --filter @mq/server exec web-push generate-vapid-keys
+      #
+      # ATENCAO: este bloco `environment` e uma LISTA EXPLICITA — variavel que
+      # nao esta aqui NAO chega no container, mesmo estando no .env. Por isso
+      # as tres linhas abaixo existem: sem elas o push ficaria silenciosamente
+      # desligado em producao e nada apontaria pro motivo.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:suporte@qro.app}
       UPLOADS_DIR: /app/uploads
     volumes:
       # AS FOTOS DO CARDAPIO. Sem este volume elas vivem na camada do
@@ -124,8 +134,8 @@ services:
       args:
         APP: cliente
         VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL com a URL publica da API}
-    image: meu-quintal-cliente:${TAG:-latest}
-    container_name: meu-quintal-cliente
+    image: qro-cliente:${TAG:-latest}
+    container_name: qro-cliente
     restart: unless-stopped
     ports:
       - '${CLIENTE_PORT:-127.0.0.1:8081}:8080'
@@ -145,8 +155,8 @@ services:
       args:
         APP: restaurante
         VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL com a URL publica da API}
-    image: meu-quintal-restaurante:${TAG:-latest}
-    container_name: meu-quintal-restaurante
+    image: qro-restaurante:${TAG:-latest}
+    container_name: qro-restaurante
     restart: unless-stopped
     ports:
       - '${RESTAURANTE_PORT:-127.0.0.1:8082}:8080'
@@ -162,8 +172,8 @@ services:
       args:
         APP: dono
         VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL com a URL publica da API}
-    image: meu-quintal-dono:${TAG:-latest}
-    container_name: meu-quintal-dono
+    image: qro-dono:${TAG:-latest}
+    container_name: qro-dono
     restart: unless-stopped
     ports:
       - '${DONO_PORT:-127.0.0.1:8083}:8080'

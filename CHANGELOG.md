@@ -28,6 +28,28 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
 
 ### Adicionado
 
+- **As seções do cardápio passaram a ser da cozinha.** Eram um enum de quatro
+  valores — entradas, pratos, sobremesas, bebidas — iguais para todo mundo: uma
+  padaria tinha que chamar pão de "prato" e uma drinkeria não tinha onde pôr os
+  drinks. Agora cada cozinha escreve, renomeia, reordena e apaga os títulos
+  dela, em `/cardapio` do app do restaurante. Rotas novas: `POST`, `PATCH` e
+  `DELETE /api/r/cardapio/categorias[/:id]` mais `PATCH
+  /api/r/cardapio/categorias/ordem`. Renomear NÃO move item de lugar (o item
+  aponta para o id, não para o texto), e apagar uma seção com prato dentro exige
+  dizer para onde os pratos vão. **Quebra de contrato**: `category` saiu de
+  `GET /api/m/k/:slug` e `GET /api/r/cardapio`, substituído por `categoriaId`
+  mais uma lista `categorias` na resposta. Toda cozinha que já existia foi
+  migrada com as mesmas quatro seções de antes, na mesma ordem, e nenhum
+  cardápio mudou de aparência.
+
+- **Miniatura dos itens nas telas de pedido.** `GET /api/m/pedidos` passou a
+  devolver `itens[]` (id, nome, quantidade e capa) e `GET /api/m/pedido/:id`
+  ganhou `foto` em cada linha. É o que permite a lista de pedidos trocar "2
+  itens" em texto por uma fileira de fotos — sem isso, desenhar a tela exigiria
+  uma consulta por item só pra achar a imagem. Item cancelado não entra: a
+  fileira mostra o que VAI CHEGAR. Campos aditivos; nada no contrato mudou de
+  forma.
+
 - **Foto de verdade no cardápio — e mais de uma por prato.** A cozinha envia
   até seis fotos por item; a primeira é a capa, que é a única que aparece na
   lista. No app do cliente elas viram uma galeria com rolagem por gesto, que é
@@ -138,6 +160,78 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
 
 ### Alterado
 
+- **O sistema agora se chama QRO.** O nome diz o que ele é: o QR da mesa. "Meu
+  Quintal" não sumiu — desceu de marca do produto para nome do espaço-exemplo,
+  o food-court fictício do seed. Quem assina o QRO é o dono de um quintal.
+
+  Trocou a marca visível nos três apps (header do cliente, login do dono e do
+  restaurante, top bar do admin), os `<title>`, o favicon e os domínios, que
+  passaram para `qro.com.br` e `qro.app`. O wordmark é **HTML, não imagem**:
+  "QR" em Archivo 800 mais um quadrado vazado no lugar do "O". Como ele escala
+  pelo `font-size` e herda a cor, virou componente do design system (`Logo`,
+  `LogoIcone`) em vez de arquivo numa pasta de assets — o único SVG é o favicon,
+  que precisa ser arquivo mesmo. O quadrado do wordmark JÁ É o ícone: marca e
+  ícone lado a lado é erro de uso.
+
+  As imagens e containers docker passaram de `meu-quintal-*` para `qro-*` e o
+  compose de produção virou `qro-prod` — **o deploy exige rebuild das imagens**,
+  senão o compose sobe procurando tag que não existe. A documentação de desenho
+  mudou de `docs/design-system/meu-quintal/` para `docs/design-system/qro/`.
+
+  O scope dos pacotes (`@mq/*`) ficou como estava: é identificador interno, não
+  aparece para o usuário, e renomeá-lo tocaria todos os imports sem ganho algum.
+
+- **Redesign completo do front: o sistema Modernist.** A identidade anterior
+  (Fraunces itálico + DM Sans + JetBrains Mono, paleta terracota e creme, verde
+  pra "pronto", cantos arredondados) foi substituída por uma família só —
+  **Archivo** —, vermelho `#ec3013` sobre fundo claro, **raio zero em tudo** e
+  grade modular com réguas de 2px. O handoff canônico e o protótipo das sete
+  telas moram em `docs/design-system/qro/modernist/`; o MASTER foi
+  reescrito.
+
+  **A foto continua colorida, e esse é o único ponto em que divergimos do
+  handoff de propósito.** Ele mandava todo `<img>` de conteúdo em P&B pra que só
+  o vermelho carregasse cor. Com fotos reais na tela, prato em cinza some — e a
+  tela existe justamente pra dar vontade. A interface segue monocromática com um
+  acento só; a cor entra apenas pela fotografia.
+
+  **O que o redesign resolve não é gosto, é leitura.** O app era textual demais
+  pra onde é usado: de pé, com fome, num salão barulhento. A tela de pedidos era
+  o caso extremo — cada pedido virava três linhas de rótulo e uma timeline de
+  quatro palavras, e "o seu está pronto, pode buscar" chegava por último, em
+  cinza. Agora estado é **bloco**: pedido pronto é um pôster vermelho sólido com
+  uma frase de 26px; em andamento é uma barra segmentada de quatro células onde
+  a proporção se lê antes de qualquer palavra; "2 itens" virou uma fileira de
+  miniaturas. Na fila da cozinha, o número da mesa virou um tile preenchido de
+  54×54 — é a única informação que precisa ser legível a um metro, de pé, com as
+  mãos ocupadas.
+
+  **Estado deixou de depender de matiz.** Não existe mais verde de sucesso nem
+  amarelo de atraso: feito é tinta escura, agora é vermelho pulsando, futuro é
+  neutro claro. Quem não distingue vermelho de verde lia dois status idênticos.
+
+  Os nomes de token antigos (`primary`, `inkMuted`, `hairline`, `warn`…)
+  continuam existindo apontando pros tons novos — apagá-los trocaria um redesign
+  por uma quebra de compilação em dezenas de arquivos do app do dono, que não
+  faz parte deste redesign e herdou a paleta pelos tokens.
+
+- **A raiz de fonte customizada saiu dos apps.** Cliente rodava com
+  `html { font-size: 17px }` e restaurante com 18px, pra compensar distância
+  olho-tela. Isso escalava junto TODAS as classes de espaço do Tailwind, que são
+  rem: `p-4` saía 17px, `h-16` saía 68 — e o `TABS_HEIGHT` em pixel que o layout
+  reservava discordava da barra que ele reservava espaço pra. Os dois voltaram
+  pros 16px do navegador, e a legibilidade passou a vir do desenho.
+
+- **A tela de carrinho tem um botão primário, não três.** Cada cozinha era um
+  card com "Mandar pra X" próprio, mais um "Mandar todos" no rodapé: com duas
+  cozinhas, três botões vermelhos disputavam o mesmo gesto. Agora é uma lista só,
+  agrupada por cozinha, com um `MANDAR PEDIDO` no rodapé. O envio continua sendo
+  **um pedido por cozinha** — isso é do servidor e não mudou; mandar só uma
+  virou ação secundária em texto, que é onde a exceção pertence.
+
+- Ícones passaram a vir do **Lucide** (`lucide-react`), substituindo os glifos de
+  texto `✓ ◐ ○ ×` que dependiam da fonte do sistema pra ter o mesmo tamanho.
+
 - Gerenciador de pacotes: npm → **pnpm**, com versão travada em `packageManager`.
 - Build do server: `tsc` → **esbuild**, que inlina `@mq/shared`.
 - Base das imagens: `bookworm-slim` → **Alpine** (server: 512 → 406 MB; o SDK
@@ -157,6 +251,12 @@ nova com a data, e crie a tag `vX.Y.Z` — o CI publica a imagem com essa tag.
   `grossParcial` e `cozinhasOcultas`; `MesaResumo` ganhou `grossParcial`.
 
 ### Corrigido
+
+- **O "+ Item" do editor de cardápio parava em cima da lista.** Era um botão
+  solto flutuando no canto inferior direito e pousava sobre o preço da última
+  linha visível — numa tela de editar preço, ler 14,00 pela metade é pior que
+  ocupar a faixa. Virou faixa fixa opaca de largura cheia acima das abas, a
+  mesma anatomia que o app do cliente já usa na barra do carrinho.
 
 - **Remover um funcionário da cozinha não revogava o acesso dele.** O auth do
   app do restaurante reconferia a *cozinha* a cada requisição, mas nunca a

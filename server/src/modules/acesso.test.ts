@@ -30,7 +30,7 @@ function acesso(over: Record<string, unknown> = {}) {
     usedAt: null,
     user: {
       id: 'user-1',
-      email: 'marina@meuquintal.app',
+      email: 'marina@qro.app',
       name: 'Marina',
       accountId: CONTA.id,
       account: { name: CONTA.name, status: 'ativa' },
@@ -50,7 +50,7 @@ beforeEach(async () => {
   // montarMe, chamado depois de definir a senha
   prismaMock.accountUser.findUniqueOrThrow.mockResolvedValue({
     ...usuarioDono('owner'),
-    email: 'marina@meuquintal.app',
+    email: 'marina@qro.app',
     name: 'Marina',
     kitchenId: null,
     account: { ...CONTA, trialEndsAt: null, spaces: [{ ...ESPACO, _count: { tables: 4 } }] },
@@ -74,7 +74,7 @@ describe('GET /api/acesso/:token', () => {
     // Chegar numa tela de "crie sua senha" sem saber de que conta se trata e o
     // formato de todo golpe de phishing.
     expect(j.accountName).toBe(CONTA.name);
-    expect(j.email).toBe('marina@meuquintal.app');
+    expect(j.email).toBe('marina@qro.app');
   });
 
   it('busca pelo HASH, nunca pelo token em texto', async () => {

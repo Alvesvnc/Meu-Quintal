@@ -57,6 +57,37 @@ describe('validarProposta', () => {
     expect(erros[0]).toMatchObject({ tipo: 'item-inativo', status: 'cancelado' });
   });
 
+  /**
+   * ESTE CASO PASSAVA. A regra antiga recusava `cancelado` e `retirado` e
+   * liberava o resto — `pronto` nao estava na lista, entao a cozinha conseguia
+   * propor reduzir de 2 pra 1 um prato ja empratado no balcao. Comida feita, e
+   * a proposta ainda podia cancela-la.
+   *
+   * Nenhum teste cobria `pronto`, o que e justamente como o furo sobreviveu.
+   */
+  it('recusa item ja PRONTO — a comida existe, reduzir vira desperdicio', () => {
+    const erros = validarProposta([linha()], [item({ status: 'pronto' })]);
+    expect(erros[0]).toMatchObject({ tipo: 'item-pronto' });
+  });
+
+  it('aceita ate `preparando`, e so ate la', () => {
+    // A lista e do que PODE. Status novo que apareca um dia nasce bloqueado,
+    // em vez de nascer permitido como aconteceu com `pronto`.
+    expect(validarProposta([linha()], [item({ status: 'novo' })])).toEqual([]);
+    expect(validarProposta([linha()], [item({ status: 'preparando' })])).toEqual([]);
+  });
+
+  /**
+   * `pronto` e `retirado` sao situacoes diferentes e a mensagem na tela nao
+   * pode trata-las igual: uma e comida esperando ser buscada, a outra ja foi
+   * entregue. Se os dois virarem o mesmo erro, o texto mente pra um deles.
+   */
+  it('distingue pronto de retirado', () => {
+    const pronto = validarProposta([linha()], [item({ status: 'pronto' })]);
+    const retirado = validarProposta([linha()], [item({ status: 'retirado' })]);
+    expect(pronto[0].tipo).not.toBe(retirado[0].tipo);
+  });
+
   it('recusa AUMENTO de quantidade', () => {
     // Aumentar seria a cozinha vendendo o que o cliente nao pediu.
     const erros = validarProposta([linha({ qtyProposta: 5 })], [item({ qty: 2 })]);

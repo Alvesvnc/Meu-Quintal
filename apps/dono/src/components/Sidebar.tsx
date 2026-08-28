@@ -70,7 +70,7 @@ export function Sidebar({ onNavegar }: SidebarProps = {}) {
                     end={item.to === '/'}
                     onClick={onNavegar}
                     className={({ isActive }) => [
-                      'block px-3 py-2 rounded-md font-sans text-body cursor-pointer',
+                      'block px-3 py-2 font-sans text-body cursor-pointer',
                       'transition-colors duration-base ease-out',
                       'border-l-2',
                       isActive

@@ -3,5 +3,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Restaurante mobile: body maior (18px) — distância olho-tela ~60-100cm na bancada */
-html, body { font-size: 18px; }
+/*
+  Raiz em 16px, como no cliente — ver a nota lá.
+  A legibilidade na bancada (distância olho-tela de 60–100 cm) passou a vir do
+  desenho e não de inflar a raiz: nome de item em 16px/600, tile da mesa em
+  22px/800 e contagem do placar em 26px.
+*/
+
+/*
+  A ALTURA DA BARRA DE BAIXO, NUM LUGAR SO.
+
+  Varias coisas dependem dela: a faixa do "+ ITEM" se apoia em cima, e o fim de
+  cada tela reserva espaco pra nada ficar escondido atras. Com a barra sumindo
+  no mouse, cada um desses lugares precisaria repetir a mesma media query — e
+  bastaria um esquecer pra sobrar um buraco de 64px no rodape, ou pior, pra um
+  botao ficar coberto.
+
+  Como variavel, a media query existe UMA vez e todo o resto se ajusta sozinho.
+*/
+:root {
+  --barra-inferior: calc(env(safe-area-inset-bottom, 0px) + 64px);
+}
+
+/* Quem aponta com mouse nao tem barra embaixo: a navegacao esta no topo. */
+@media (pointer: fine) {
+  :root {
+    --barra-inferior: 0px;
+  }
+}

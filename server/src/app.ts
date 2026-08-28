@@ -19,6 +19,7 @@ import { kitchenRoutes } from './modules/kitchen.js';
 import { orderRoutes } from './modules/order.js';
 import { restauranteRoutes } from './modules/restaurante.js';
 import { cozinhaRoutes } from './modules/cozinha.js';
+import { pushRoutes } from './modules/push.js';
 import multipart from '@fastify/multipart';
 import { BYTES_MAXIMOS } from './lib/imagem.js';
 import { prepararArmazenamento } from './lib/armazenamento.js';
@@ -27,6 +28,8 @@ import { conviteRoutes } from './modules/convite.js';
 import { acessoRoutes } from './modules/acesso.js';
 import { adminRoutes } from './modules/admin.js';
 import { alteracaoRoutes } from './modules/alteracao.js';
+import { assinaturaRoutes } from './modules/assinatura.js';
+import { webhookAsaasRoutes } from './modules/webhook-asaas.js';
 
 export interface OpcoesApp {
   /**
@@ -164,6 +167,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   await app.register(orderRoutes);
   await app.register(restauranteRoutes);
   await app.register(cozinhaRoutes);
+  await app.register(pushRoutes);
   await app.register(fotosRoutes);
   await app.register(conviteRoutes);
   await app.register(acessoRoutes);
@@ -172,6 +176,11 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   await prepararArmazenamento();
   await app.register(adminRoutes);
   await app.register(alteracaoRoutes);
+  await app.register(assinaturaRoutes);
+  // Rota publica, autenticada por header proprio. Ver o cabecalho do modulo:
+  // ela responde 200 pra quase tudo de proposito, pra nao travar a fila do
+  // provedor — 15 falhas seguidas param a cobranca inteira.
+  await app.register(webhookAsaasRoutes);
 
   // Probes: /health (liveness) e /ready (readiness)
   setupProbes(app);
@@ -181,7 +190,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   // ─── Indice da API ────────────────────────────────────────────────────────
   app.get('/', async () => ({
-    name: 'Meu Quintal · server',
+    name: 'QRO · server',
     // Injetada no build (esbuild `define`), a partir do package.json da raiz.
     // Chumbar aqui garante que a versao exibida em producao esteja errada.
     version: VERSAO,
@@ -221,7 +230,15 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
         cobranca: 'PATCH /api/a/cobrancas/:id',
         mesas: 'GET /api/a/mesas',
         mesaStatus: 'PATCH /api/a/mesas/:numero',
+        assinatura: 'GET /api/a/assinatura',
+        assinar: 'POST /api/a/assinatura/checkout',
+        cancelarAssinatura: 'DELETE /api/a/assinatura',
         auth: 'Authorization: Bearer {JWT de dono}',
+      },
+      webhooks: {
+        asaas: env.ASAAS_WEBHOOK_TOKEN
+          ? 'POST /api/webhooks/asaas (header asaas-access-token)'
+          : 'desabilitado (ASAAS_WEBHOOK_TOKEN vazio)',
       },
       metrics: env.METRICS_TOKEN ? 'GET /metrics (Bearer METRICS_TOKEN)' : 'desabilitada',
       socket: {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@mq/design-system';
+import { Button, Logo } from '@mq/design-system';
 import { mensagemDeErro } from '@mq/shared';
 import { useLogin } from '../api/hooks';
 import { getToken } from '../api/client';
@@ -33,7 +33,7 @@ export function LoginScreen() {
   const errMsg = login.error ? mensagemDeErro(login.error, 'Nao foi possivel entrar.') : null;
 
   const campo =
-    'w-full px-4 py-3 bg-surface border border-hairline rounded-md ' +
+    'w-full px-4 py-3 bg-surface border border-hairline ' +
     'font-sans text-body-lg text-ink placeholder:text-inkDim ' +
     'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash';
   const rotulo = 'block font-mono text-label uppercase tracking-wider text-inkDim mb-2';
@@ -41,10 +41,13 @@ export function LoginScreen() {
   return (
     <main className="min-h-screen flex flex-col justify-center px-7 py-10 max-w-[440px] mx-auto">
       <header className="mb-8">
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Meu Quintal · administração
-        </p>
-        <h1 className="mt-2 font-display italic text-display-xl text-ink leading-tight text-pretty">
+        <div className="flex items-center gap-3">
+          <Logo size={20} />
+          <span className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
+            administração
+          </span>
+        </div>
+        <h1 className="mt-2 font-display text-display-xl text-ink leading-tight text-pretty">
           Seu quintal,
           <br />
           por dentro.
@@ -108,13 +111,13 @@ export function LoginScreen() {
             <button
               type="button"
               onClick={() => {
-                setEmail('marina@meuquintal.app');
+                setEmail('marina@qro.app');
                 setPassword('quintal2026');
               }}
               className="font-mono text-mono text-ink hover:text-primary cursor-pointer
                          transition-colors duration-base ease-out"
             >
-              marina@meuquintal.app
+              marina@qro.app
             </button>
           </p>
         </div>

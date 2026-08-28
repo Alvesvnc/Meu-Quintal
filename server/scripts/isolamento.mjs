@@ -36,7 +36,7 @@ const patch = (caminho, token, body) =>
     body: JSON.stringify(body),
   });
 
-const marina = await login('/api/a/auth/login', 'marina@meuquintal.app', 'quintal2026');
+const marina = await login('/api/a/auth/login', 'marina@qro.app', 'quintal2026');
 const roberto = await login('/api/a/auth/login', 'roberto@quintalubatuba.com', 'quintal2026');
 const garcom = await login('/api/a/auth/login', 'garcom@quintalubatuba.com', 'quintal2026');
 const cozinha = await login('/api/r/auth/login', 'marcos@louburger.com', 'quintal2026');

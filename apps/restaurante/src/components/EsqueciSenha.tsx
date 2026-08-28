@@ -56,7 +56,7 @@ export function EsqueciSenha({ emailInicial }: { emailInicial: string }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="responsavel@cozinha.com"
-        className="w-full px-4 py-3 bg-surface border border-hairline rounded-md
+        className="w-full px-4 py-3 bg-surface border border-hairline
                    font-sans text-body text-ink placeholder:text-inkDim
                    focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash"
       />

@@ -44,7 +44,7 @@ export function AuthGuard({ children }: Props) {
   if (meQuery.isLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="font-display italic text-display-md text-inkMuted">Carregando…</p>
+        <p className="font-display text-display-md text-inkMuted">Carregando…</p>
       </main>
     );
   }

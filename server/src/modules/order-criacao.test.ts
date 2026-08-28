@@ -104,9 +104,9 @@ describe('total do pedido', () => {
     expect(dadosDoCreate().totalCents).toBe(1800 * 3);
   });
 
-  it('soma linhas de cozinhas diferentes', async () => {
+  it('soma varias linhas da MESMA cozinha', async () => {
     // O mock devolve exatamente os itens pedidos, como o `WHERE id IN` faria
-    prismaMock.menuItem.findMany.mockResolvedValue(CARDAPIO);
+    prismaMock.menuItem.findMany.mockResolvedValue([CARDAPIO[0], CARDAPIO[1]]);
     prismaMock.order.create.mockResolvedValue(pedidoCriado());
 
     await app.inject({
@@ -117,12 +117,11 @@ describe('total do pedido', () => {
         items: [
           { menuItemId: BATATA, qty: 2 },
           { menuItemId: SMASH, qty: 1 },
-          { menuItemId: MOQUECA, qty: 1 },
         ],
       },
     });
 
-    expect(dadosDoCreate().totalCents).toBe(1800 * 2 + 3200 + 5800);
+    expect(dadosDoCreate().totalCents).toBe(1800 * 2 + 3200);
   });
 
   it('total em centavos, sem ponto flutuante no meio', async () => {
@@ -357,6 +356,89 @@ describe('mesmo prato em duas linhas', () => {
 });
 
 // ─── Cozinha pausada ────────────────────────────────────────────────────────
+
+/**
+ * UM PEDIDO, UMA COZINHA.
+ *
+ * Este arquivo AFIRMAVA o contrario: havia um caso chamado "soma linhas de
+ * cozinhas diferentes" que montava um pedido misto e conferia o total. Ele
+ * passava, e era justamente a bomba — o resto do sistema nao aguenta pedido
+ * misto:
+ *
+ *   GET /api/m/pedidos rotula o pedido inteiro com `items[0].kitchen`, entao
+ *   o cliente veria a cozinha errada;
+ *
+ *   `Order.totalCents` e um numero so e fechar conta e por cozinha, entao o
+ *   valor exibido nao bateria com o que se paga em cada balcao.
+ *
+ * O app nunca criou pedido assim (o carrinho manda um POST por cozinha), mas o
+ * contrato aceitava. Quem chamasse a API direto derrubava a suposicao sem erro
+ * nenhum — so telas mentindo.
+ */
+describe('um pedido, uma cozinha', () => {
+  it('recusa pedido com itens de cozinhas diferentes', async () => {
+    // Exatamente os dois pedidos, como o `WHERE id IN` faria. Devolver o
+    // cardapio inteiro faria a rota recusar por "item nao existe" ANTES de
+    // chegar na regra de cozinha — e o teste passaria pelo motivo errado.
+    prismaMock.menuItem.findMany.mockResolvedValue([CARDAPIO[0], CARDAPIO[2]]);
+    prismaMock.order.create.mockResolvedValue(pedidoCriado());
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/m/pedido',
+      headers: comMesa,
+      payload: {
+        items: [
+          { menuItemId: BATATA, qty: 1 },   // Lou Burger
+          { menuItemId: MOQUECA, qty: 1 },  // Cumbuca
+        ],
+      },
+    });
+
+    expect(r.statusCode).toBe(400);
+    // Nada e gravado: nao existe meio pedido.
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it('a mensagem diz o que fazer, nao so que deu errado', async () => {
+    prismaMock.menuItem.findMany.mockResolvedValue([CARDAPIO[0], CARDAPIO[2]]);
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/m/pedido',
+      headers: comMesa,
+      payload: {
+        items: [
+          { menuItemId: BATATA, qty: 1 },
+          { menuItemId: MOQUECA, qty: 1 },
+        ],
+      },
+    });
+
+    // "Mande um pedido por cozinha" e a saida; sem ela, quem integra pela API
+    // fica adivinhando o que o servidor quer.
+    expect(r.json().error).toContain('uma cozinha');
+  });
+
+  it('continua aceitando varias linhas da mesma cozinha', async () => {
+    prismaMock.menuItem.findMany.mockResolvedValue([CARDAPIO[0], CARDAPIO[1]]);
+    prismaMock.order.create.mockResolvedValue(pedidoCriado());
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/m/pedido',
+      headers: comMesa,
+      payload: {
+        items: [
+          { menuItemId: BATATA, qty: 1 },
+          { menuItemId: SMASH, qty: 1 },
+        ],
+      },
+    });
+
+    expect(r.statusCode).toBe(201);
+  });
+});
 
 describe('cozinha que parou de receber', () => {
   it('pedido pra cozinha PAUSADA e recusado', async () => {

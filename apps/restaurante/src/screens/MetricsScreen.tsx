@@ -23,12 +23,12 @@ export function MetricsScreen() {
   const q = useMetricas(dias);
 
   return (
-    <main className="px-5 pb-28">
+    <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 pb-28">
       <section className="pt-6">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           Últimos {dias} dias
         </p>
-        <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight">
+        <h1 className="mt-1 font-display text-display-lg text-ink leading-tight">
           Como você está indo.
         </h1>
 
@@ -39,10 +39,10 @@ export function MetricsScreen() {
               type="button"
               onClick={() => setDias(j.dias)}
               className={[
-                'min-h-11 px-3 rounded-md border font-mono text-mono-sm uppercase tracking-wider',
+                'min-h-11 px-3 border font-mono text-mono-sm uppercase tracking-wider',
                 'cursor-pointer transition-colors duration-base ease-out',
                 dias === j.dias
-                  ? 'border-primary bg-primary text-inkInverse'
+                  ? 'border-primary bg-primary text-bg'
                   : 'border-hairline text-inkDim',
               ].join(' ')}
             >
@@ -73,7 +73,7 @@ function Blocos({ dados }: { dados: MetricasResponse }) {
   if (semVenda) {
     return (
       <section className="mt-10">
-        <p className="font-display italic text-display-md text-inkMuted text-pretty">
+        <p className="font-display text-display-md text-inkMuted text-pretty">
           Nenhum pedido no período. Os números aparecem sozinhos quando a cozinha rodar.
         </p>
       </section>
@@ -149,7 +149,7 @@ function BarrasPorHora({ porHora }: { porHora: MetricasResponse['porHora'] }) {
             <div className="w-full flex-1 flex items-end">
               <div
                 className={[
-                  'w-full rounded-t-sm transition-all duration-base ease-out',
+                  'w-full transition-all duration-base ease-out',
                   pico ? 'bg-primary' : 'bg-inkDim/40',
                 ].join(' ')}
                 style={{ height: v > 0 ? `${Math.max((v / max) * 100, 4)}%` : '2px' }}
@@ -203,7 +203,7 @@ function BlocoCancelamentos() {
     return (
       <section className="mt-12">
         <Divider label="Cancelamentos · 30 dias" />
-        <p className="mt-4 font-display italic text-display-md text-ink">
+        <p className="mt-4 font-display text-display-md text-ink">
           Nenhum cancelamento no período.
         </p>
         <p className="mt-1 font-sans text-body text-inkMuted">É o melhor número possível aqui.</p>
@@ -217,12 +217,26 @@ function BlocoCancelamentos() {
     <section className="mt-12">
       <Divider label="Cancelamentos · 30 dias" />
 
-      <p className="mt-4 font-display italic text-display-lg text-ink leading-none">
+      <p className="mt-4 font-display text-display-lg text-ink leading-none">
         {fmtBRL(data.perdaTotalCents)}
       </p>
       <p className="mt-1 font-sans text-body text-inkMuted">
         deixou de ser vendido em {data.totalItens} {data.totalItens === 1 ? 'item' : 'itens'}
       </p>
+
+      {/*
+        O total inclui REDUCAO aceita, nao so cancelamento cheio — reduzir de 3
+        pra 1 perde duas unidades igual a cancelar perderia. Mas quem for
+        conferir contando os cancelados na mao nao ia fechar a conta, e o numero
+        pareceria errado. Entao a tela diz de onde vem a diferenca.
+      */}
+      {data.reducoes.itens > 0 && (
+        <p className="mt-1 font-sans text-body-sm text-inkDim">
+          inclui {data.reducoes.itens}{' '}
+          {data.reducoes.itens === 1 ? 'unidade reduzida' : 'unidades reduzidas'} em pedidos que
+          seguiram ({fmtBRL(data.reducoes.perdaCents)})
+        </p>
+      )}
 
       <ul className="mt-6 space-y-3">
         {data.porMotivo.map((m) => (
@@ -234,7 +248,7 @@ function BlocoCancelamentos() {
               </span>
             </div>
             {/* Barra proporcional: a causa dominante salta aos olhos sem ler número */}
-            <div className="mt-1 h-1.5 rounded-sm bg-surfaceDeep overflow-hidden">
+            <div className="mt-1 h-1.5 bg-neutral-300 overflow-hidden">
               <div
                 className="h-full bg-primary"
                 style={{ width: `${Math.max(2, (m.itens / maior) * 100)}%` }}

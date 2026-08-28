@@ -3,5 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Override mobile-first do cliente: body 17px (ver pages/cliente.md) */
-html, body { font-size: 17px; }
+/*
+  Raiz em 16px — o padrão do navegador, de propósito.
+  A escala de espaço do Modernist é 4/8/12/16/24/32, que é exatamente o que as
+  classes rem do Tailwind rendem nessa raiz. Com os 17px que havia aqui antes,
+  `p-4` saía 17px e cada régua do desenho errava por um pixel acumulado.
+  O tamanho do corpo vem dos tokens (`text-body` = 15px), não da raiz.
+*/

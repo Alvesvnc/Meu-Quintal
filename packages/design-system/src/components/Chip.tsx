@@ -1,6 +1,20 @@
 import type { ReactNode } from 'react';
 
-type ChipTone = 'neutral' | 'primary' | 'accent' | 'warn' | 'danger';
+/**
+ * As quatro variantes de tag do sistema. Os quatro nomes seguintes
+ * (`primary`, `accent`, `warn`, `danger`) são a nomenclatura anterior,
+ * mantida porque as telas do dono e as secundárias do restaurante ainda a
+ * escrevem — cada um aponta pra variante que corresponde ao seu papel.
+ */
+type ChipTone =
+  | 'solid'
+  | 'outline'
+  | 'tint'
+  | 'neutral'
+  | 'primary'
+  | 'accent'
+  | 'warn'
+  | 'danger';
 
 interface ChipProps {
   tone?: ChipTone;
@@ -9,21 +23,28 @@ interface ChipProps {
 }
 
 const toneClasses: Record<ChipTone, string> = {
-  neutral: 'bg-surface text-inkMuted border-hairline ' +
-           'dark:bg-surfaceDeepCard dark:text-inkInverseDim dark:border-hairlineDark',
-  primary: 'bg-primaryWash text-primary border-primary/20',
-  accent:  'bg-accentWash text-accent border-accent/20',
-  warn:    'bg-warn/10 text-warn border-warn/20',
-  danger:  'bg-danger/10 text-danger border-danger/20',
+  /** Ênfase máxima — "FECHA 22H", "ATRASADO", "NOVO" no item. */
+  solid:   'bg-accent text-bg',
+  /** Contexto — "MESA 07", "NOVO" no card da fila. */
+  outline: 'border border-accent text-accent',
+  /** Informação de apoio sobre fundo lavado — "~4 MIN", "OBS". */
+  tint:    'bg-accent-100 text-accent-800',
+  /** Fim de linha — "CANCELADO", "ESGOTADO". Sem vermelho: não é ação. */
+  neutral: 'bg-neutral-900 text-bg',
+
+  primary: 'bg-accent text-bg',
+  accent:  'bg-accent-100 text-accent-800',
+  warn:    'border border-accent text-accent',
+  danger:  'bg-neutral-900 text-bg',
 };
 
-/** Chip mono uppercase — usado para status, contadores, badges. */
-export function Chip({ tone = 'neutral', children, className = '' }: ChipProps) {
+/** Tag 9–11px Archivo 800 uppercase, sem raio. */
+export function Chip({ tone = 'outline', children, className = '' }: ChipProps) {
   return (
     <span
       className={[
-        'inline-flex items-center px-2 py-0.5 rounded-sm border',
-        'font-mono text-mono-sm uppercase tracking-wider',
+        'inline-flex items-center px-2 py-[2px] rounded-none',
+        'font-display text-label font-bold uppercase',
         toneClasses[tone],
         className,
       ].join(' ')}

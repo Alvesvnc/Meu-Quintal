@@ -44,9 +44,33 @@ export type ErroDeProposta =
   | { tipo: 'sem-itens' }
   | { tipo: 'item-fora-do-pedido'; orderItemId: string }
   | { tipo: 'item-inativo'; orderItemId: string; status: OrderItemStatus }
+  /** Já saiu do fogão. Situação diferente de inativo — ver ALTERAVEIS. */
+  | { tipo: 'item-pronto'; orderItemId: string }
   | { tipo: 'qty-negativa'; orderItemId: string }
   | { tipo: 'nao-reduz'; orderItemId: string; qtyAtual: number; qtyProposta: number }
   | { tipo: 'linha-duplicada'; orderItemId: string };
+
+/**
+ * Até onde ainda dá pra propor alteração.
+ *
+ * ─── LISTA DO QUE PODE, NÃO DO QUE NÃO PODE ─────────────────────────────────
+ *
+ * Antes isto era o contrário: recusava `cancelado` e `retirado`, e liberava o
+ * resto. `pronto` não estava na lista de recusa, então passava — a cozinha
+ * conseguia propor reduzir de 2 pra 1 um prato que já estava empratado no
+ * balcão esperando ser retirado. Comida feita, e a proposta ainda por cima
+ * podia cancelá-la.
+ *
+ * Uma lista do que PODE não tem esse modo de falhar: status novo que apareça
+ * um dia nasce bloqueado até alguém decidir conscientemente incluí-lo. Uma
+ * lista do que não pode nasce permitindo — que foi exatamente como este furo
+ * apareceu.
+ *
+ * O corte é `preparando` porque é o último momento em que reduzir ainda
+ * significa alguma coisa: depois do `pronto` a comida existe, e a conversa
+ * deixa de ser "quer menos?" e passa a ser desperdício.
+ */
+const ALTERAVEIS: readonly OrderItemStatus[] = ['novo', 'preparando'];
 
 /**
  * Valida uma proposta contra os itens que a cozinha realmente tem no pedido.
@@ -84,9 +108,16 @@ export function validarProposta(
       continue;
     }
 
-    if (item.status === 'cancelado' || item.status === 'retirado') {
-      // Item já retirado foi entregue; já cancelado não existe mais.
-      erros.push({ tipo: 'item-inativo', orderItemId: item.id, status: item.status });
+    if (!ALTERAVEIS.includes(item.status)) {
+      // Dois erros diferentes de propósito: `pronto` é comida que existe e
+      // está esperando alguém buscar; `retirado` já foi entregue e `cancelado`
+      // não existe mais. Quem lê a recusa precisa saber qual dos dois é, senão
+      // a mensagem na tela mente.
+      erros.push(
+        item.status === 'pronto'
+          ? { tipo: 'item-pronto', orderItemId: item.id }
+          : { tipo: 'item-inativo', orderItemId: item.id, status: item.status },
+      );
       continue;
     }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@mq/design-system';
+import { Button, Logo } from '@mq/design-system';
 import { mensagemDeErro } from '@mq/shared';
 import { useLogin } from '../api/hooks';
 import { getToken } from '../api/client';
@@ -42,10 +42,13 @@ export function LoginScreen() {
   return (
     <main className="min-h-screen flex flex-col justify-center px-7 py-10 max-w-[440px] mx-auto">
       <header className="mb-8">
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Meu Quintal · restaurante
-        </p>
-        <h1 className="mt-2 font-display italic text-display-xl text-ink leading-tight text-pretty">
+        <div className="flex items-center gap-3">
+          <Logo size={20} />
+          <span className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
+            restaurante
+          </span>
+        </div>
+        <h1 className="mt-2 font-display text-display-xl text-ink leading-tight text-pretty">
           Bem-vinda à<br />sua cozinha.
         </h1>
       </header>
@@ -64,7 +67,7 @@ export function LoginScreen() {
             placeholder="responsavel@cozinha.com"
             required
             autoFocus
-            className="w-full px-4 py-3 bg-surface border border-hairline rounded-md
+            className="w-full px-4 py-3 bg-surface border border-hairline
                        font-sans text-body-lg text-ink placeholder:text-inkDim
                        focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash"
           />
@@ -82,7 +85,7 @@ export function LoginScreen() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="w-full px-4 py-3 bg-surface border border-hairline rounded-md
+            className="w-full px-4 py-3 bg-surface border border-hairline
                        font-sans text-body-lg text-ink
                        focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash"
           />
@@ -133,7 +136,7 @@ export function LoginScreen() {
                   key={dev}
                   type="button"
                   onClick={() => fillDev(dev)}
-                  className="block w-full text-left px-3 py-2 rounded-md
+                  className="block w-full text-left px-3 py-2
                              font-mono text-mono text-ink cursor-pointer
                              hover:bg-primaryWash hover:text-primary
                              transition-colors duration-base ease-out"

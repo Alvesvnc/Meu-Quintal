@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { QuintalResponse } from '@mq/shared';
 import { prisma } from '../lib/prisma.js';
+import { fotoDaCozinha } from '../lib/fotoDaCozinha.js';
 
 /**
  * GET /api/m/quintal — visao do cliente apos escanear QR.
@@ -41,7 +42,7 @@ export async function quintalRoutes(fastify: FastifyInstance) {
           name: k.name,
           category: k.category,
           tagline: k.tagline,
-          photoUrl: k.photoUrl,
+          photoUrl: fotoDaCozinha(k),
           slaMinutes: k.slaMinutes,
           priceMinCents: prices.length > 0 ? Math.min(...prices) : 0,
           priceMaxCents: prices.length > 0 ? Math.max(...prices) : 0,

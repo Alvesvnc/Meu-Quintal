@@ -18,6 +18,7 @@ import { aggregateStatus, totalAtivoCents } from '../lib/orderStatus.js';
 import type { MotivoCancelamento, MetricasCancelamentoResponse } from '@mq/shared';
 import { motivoParaPrisma, motivoParaAPI } from '../lib/motivo.js';
 import { loginsFalhados } from '../plugins/observabilidade.js';
+import { fotoDaCozinha } from '../lib/fotoDaCozinha.js';
 
 /**
  * Rotas do app restaurante. Todas sob /api/r/*.
@@ -118,7 +119,7 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
         where: { id: ctx.kitchenId },
         select: {
           id: true, slug: true, name: true, category: true,
-          photoUrl: true, slaMinutes: true, status: true,
+          photoUrl: true, photoKey: true, slaMinutes: true, status: true,
         },
       });
       if (!kitchen) return reply.code(404).send({ error: 'Cozinha nao encontrada.' });
@@ -127,7 +128,18 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
         userId: ctx.userId,
         email: ctx.email,
         role: ctx.role,
-        kitchen,
+        kitchen: {
+          id: kitchen.id,
+          slug: kitchen.slug,
+          name: kitchen.name,
+          category: kitchen.category,
+          // Aqui `photoUrl` e a foto que esta VALENDO, nao o campo antigo:
+          // quem le isto so quer mostrar a cozinha. Quem edita e a tela de
+          // perfil, que recebe as duas fontes separadas.
+          photoUrl: fotoDaCozinha(kitchen),
+          slaMinutes: kitchen.slaMinutes,
+          status: kitchen.status,
+        },
       };
       return reply.send(response);
     },
@@ -211,6 +223,7 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
             id: o.id,
             shortId: o.shortId,
             mesaNumero: o.table.numero,
+            nomeCliente: o.nomeCliente,
             createdAt: o.createdAt.toISOString(),
             acceptedAt: firstDateIso(o.items.map((i) => i.acceptedAt)),
             readyAt: firstDateIso(o.items.map((i) => i.readyAt)),
@@ -286,6 +299,41 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
         },
       });
 
+      // ─── REDUCAO ACEITA TAMBEM E VENDA PERDIDA ────────────────────────
+      //
+      // A consulta acima pega o item com status `cancelado`. Isso cobre a
+      // proposta RECUSADA, a EXPIRADA e a aceita com quantidade zero — nos tres
+      // o item morre inteiro (ver efeitosDaResposta em lib/alteracao.ts).
+      //
+      // O que escapava era a aceita que so REDUZ: 3 pra 1 deixa o item vivo com
+      // qty 1 e status `novo`, e as duas unidades perdidas nao apareciam em
+      // lugar nenhum do relatorio.
+      //
+      // `qtyProposta > 0` E O QUE EVITA CONTAR DUAS VEZES: a proposta aceita
+      // com zero ja virou item cancelado e ja foi somada acima.
+      //
+      // Sai de dado que ja existe — `OrderChangeItem` guarda qtyAnterior e
+      // qtyProposta desde sempre. Nenhuma coluna nova, e o historico inteiro
+      // passa a contar retroativamente.
+      const reducoes = await prisma.orderChangeItem.findMany({
+        where: {
+          qtyProposta: { gt: 0 },
+          change: {
+            kitchenId: ctx.kitchenId,
+            status: 'aceita',
+            // `respondedAt` e nao `createdAt`: a pergunta e quando a perda foi
+            // decidida, igual ao `canceledAt` da consulta de cima.
+            respondedAt: { gte: desde },
+          },
+        },
+        select: {
+          qtyAnterior: true,
+          qtyProposta: true,
+          change: { select: { motivo: true } },
+          orderItem: { select: { unitPriceCents: true, nameSnapshot: true } },
+        },
+      });
+
       const porMotivo = new Map<MotivoCancelamento, { itens: number; perdaCents: number }>();
       const porItem = new Map<string, { itens: number; perdaCents: number }>();
       let totalItens = 0;
@@ -310,6 +358,35 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
         perdaTotalCents += perda;
       }
 
+      let itensReduzidos = 0;
+      let perdaPorReducaoCents = 0;
+
+      for (const r of reducoes) {
+        const perdidas = r.qtyAnterior - r.qtyProposta;
+        // Proposta que nao reduz e recusada na criacao, mas a soma nao pode
+        // depender disso: um numero negativo aqui viraria perda NEGATIVA e
+        // faria o relatorio inteiro mentir pra menos.
+        if (perdidas <= 0) continue;
+
+        const motivo = motivoParaAPI(r.change.motivo);
+        const perda = perdidas * r.orderItem.unitPriceCents;
+
+        const m = porMotivo.get(motivo) ?? { itens: 0, perdaCents: 0 };
+        m.itens += perdidas;
+        m.perdaCents += perda;
+        porMotivo.set(motivo, m);
+
+        const i = porItem.get(r.orderItem.nameSnapshot) ?? { itens: 0, perdaCents: 0 };
+        i.itens += perdidas;
+        i.perdaCents += perda;
+        porItem.set(r.orderItem.nameSnapshot, i);
+
+        totalItens += perdidas;
+        perdaTotalCents += perda;
+        itensReduzidos += perdidas;
+        perdaPorReducaoCents += perda;
+      }
+
       const response: MetricasCancelamentoResponse = {
         dias,
         desde: desde.toISOString(),
@@ -324,6 +401,7 @@ export async function restauranteRoutes(fastify: FastifyInstance) {
           .map(([name, v]) => ({ name, ...v }))
           .sort((a, b) => b.itens - a.itens)
           .slice(0, 5),
+        reducoes: { itens: itensReduzidos, perdaCents: perdaPorReducaoCents },
       };
 
       return response;

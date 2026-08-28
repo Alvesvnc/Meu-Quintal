@@ -2,9 +2,14 @@ import type { FastifyInstance } from 'fastify';
 import {
   criarItemCardapioSchema,
   editarItemCardapioSchema,
+  criarCategoriaSchema,
+  editarCategoriaSchema,
+  ordenarCategoriasSchema,
+  excluirCategoriaSchema,
   perfilCozinhaSchema,
   janelaDiasSchema,
   type CardapioResponse,
+  type CategoriaCardapio,
   type ItemCardapio,
   type PerfilCozinhaResponse,
   type HistoricoResponse,
@@ -16,7 +21,8 @@ import {
 import { prisma } from '../lib/prisma.js';
 import { totalAtivoCents } from '../lib/orderStatus.js';
 import { processarFoto, ImagemInvalida, EXTENSAO } from '../lib/imagem.js';
-import { guardar, apagar } from '../lib/armazenamento.js';
+import { guardar, apagar, urlPublica } from '../lib/armazenamento.js';
+import { fotoDaCozinha } from '../lib/fotoDaCozinha.js';
 
 /**
  * Teto de fotos por item.
@@ -25,6 +31,16 @@ import { guardar, apagar } from '../lib/armazenamento.js';
  * cliente rola sem decidir nada e a primeira — que e a que vende — se perde.
  */
 const MAX_FOTOS = 6;
+
+/**
+ * Teto de secoes por cardapio.
+ *
+ * Tambem e edicao, nao limite tecnico: a linha de secoes do app do cliente e
+ * uma grade de celulas iguais. Passando de uma dezena, cada celula fica estreita
+ * demais pra caber o nome, e o cliente perde de vista o cardapio inteiro logo na
+ * primeira tela.
+ */
+const MAX_CATEGORIAS = 12;
 
 /**
  * A cozinha administrando a si mesma: cardápio, perfil, histórico e métricas.
@@ -49,7 +65,7 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
 
   const paraAPI = (i: {
     id: string;
-    category: string;
+    categoriaId: string;
     name: string;
     description: string | null;
     priceCents: number;
@@ -60,14 +76,14 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
     fotos?: Array<{ id: string; storageKey: string; width: number; height: number }>;
   }): ItemCardapio => ({
     id: i.id,
-    category: i.category as ItemCardapio['category'],
+    categoriaId: i.categoriaId,
     name: i.name,
     description: i.description,
     priceCents: i.priceCents,
     photoUrl: i.photoUrl,
     fotos: (i.fotos ?? []).map((f) => ({
       id: f.id,
-      url: urlDaFoto(f.storageKey),
+      url: urlPublica(f.storageKey),
       width: f.width,
       height: f.height,
     })),
@@ -93,21 +109,273 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
     return item?.id ?? null;
   }
 
+  /** Confirma que a secao e da cozinha logada. Devolve o id, ou `null`. */
+  async function categoriaDaCozinha(id: string, kitchenId: string): Promise<string | null> {
+    const c = await prisma.menuCategoria.findFirst({
+      where: { id, kitchenId },
+      select: { id: true },
+    });
+    return c?.id ?? null;
+  }
+
+  /**
+   * As secoes do cardapio, na ordem de exibicao, com quantos itens tem cada uma.
+   *
+   * `itemCount` conta so o que esta VALENDO (nao arquivado): e o numero que a
+   * cozinha reconhece olhando o proprio cardapio. Apagar uma secao, porem, olha
+   * os arquivados tambem — eles continuam apontando pra ela.
+   */
+  async function categoriasDaCozinha(kitchenId: string): Promise<CategoriaCardapio[]> {
+    const linhas = await prisma.menuCategoria.findMany({
+      where: { kitchenId },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        sortOrder: true,
+        _count: { select: { items: { where: { archivedAt: null } } } },
+      },
+    });
+    return linhas.map((c) => ({
+      id: c.id,
+      name: c.name,
+      sortOrder: c.sortOrder,
+      itemCount: c._count.items,
+    }));
+  }
+
+  /**
+   * Traduz a violacao de nome repetido do Postgres numa frase que se entende.
+   *
+   * O unique e (kitchenId, name). Sem isto o app mostraria "Unique constraint
+   * failed on the fields: (kitchenId,name)" pra quem so quis criar duas secoes
+   * com o mesmo nome sem perceber.
+   */
+  const nomeRepetido = (e: unknown) =>
+    typeof e === 'object' && e !== null && (e as { code?: string }).code === 'P2002';
+
   // ─── GET /api/r/cardapio ────────────────────────────────────────────────
   fastify.get('/api/r/cardapio', auth, async (req) => {
     const ctx = req.kitchen!;
 
-    const items = await prisma.menuItem.findMany({
-      // `archivedAt: null`: item excluido pela cozinha some daqui, mas continua
-      // no banco porque OrderItem aponta pra ele — ver o comentario no schema.
-      where: { kitchenId: ctx.kitchenId, archivedAt: null },
-      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
-      include: incluirFotos,
-    });
+    const [categorias, items] = await Promise.all([
+      categoriasDaCozinha(ctx.kitchenId),
+      prisma.menuItem.findMany({
+        // `archivedAt: null`: item excluido pela cozinha some daqui, mas continua
+        // no banco porque OrderItem aponta pra ele — ver o comentario no schema.
+        where: { kitchenId: ctx.kitchenId, archivedAt: null },
+        orderBy: [{ categoria: { sortOrder: 'asc' } }, { sortOrder: 'asc' }, { name: 'asc' }],
+        include: incluirFotos,
+      }),
+    ]);
 
-    const response: CardapioResponse = { items: items.map(paraAPI) };
+    const response: CardapioResponse = { categorias, items: items.map(paraAPI) };
     return response;
   });
+
+  // ─── POST /api/r/cardapio/categorias ────────────────────────────────────
+  //
+  // Os topicos do cardapio sao da COZINHA. Eram um enum de quatro valores ate
+  // 2026-08-27, o que obrigava padaria, bar e sorveteria a se descrever com o
+  // vocabulario de um restaurante.
+  fastify.post('/api/r/cardapio/categorias', auth, async (req, reply) => {
+    const ctx = req.kitchen!;
+    const parsed = criarCategoriaSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'Secao invalida.', details: parsed.error.flatten().fieldErrors });
+    }
+
+    const quantas = await prisma.menuCategoria.count({ where: { kitchenId: ctx.kitchenId } });
+    if (quantas >= MAX_CATEGORIAS) {
+      return reply.code(409).send({
+        error: `O cardapio cabe ate ${MAX_CATEGORIAS} secoes. Junte duas antes de criar outra.`,
+      });
+    }
+
+    // A nova entra no FIM. Chegar no meio mexeria numa ordem que a cozinha
+    // decidiu, e ela nao pediu isso — so pediu uma secao a mais.
+    const ultima = await prisma.menuCategoria.findFirst({
+      where: { kitchenId: ctx.kitchenId },
+      orderBy: { sortOrder: 'desc' },
+      select: { sortOrder: true },
+    });
+
+    try {
+      const criada = await prisma.menuCategoria.create({
+        // `kitchenId` do TOKEN, nunca do body — mesma regra do item.
+        data: {
+          kitchenId: ctx.kitchenId,
+          name: parsed.data.name,
+          sortOrder: (ultima?.sortOrder ?? -1) + 1,
+        },
+        select: { id: true, name: true, sortOrder: true },
+      });
+      req.log.info(
+        { categoriaId: criada.id, kitchenId: ctx.kitchenId },
+        'secao de cardapio criada',
+      );
+      const resposta: CategoriaCardapio = { ...criada, itemCount: 0 };
+      return reply.code(201).send(resposta);
+    } catch (e) {
+      if (nomeRepetido(e)) {
+        return reply.code(409).send({ error: 'Ja existe uma secao com esse nome.' });
+      }
+      throw e;
+    }
+  });
+
+  // ─── PATCH /api/r/cardapio/categorias/ordem ─────────────────────────────
+  //
+  // Vem ANTES da rota com `:id` por clareza — o roteador do Fastify ja prefere
+  // o trecho literal, mas quem le o arquivo nao deveria precisar saber disso.
+  //
+  // Recebe a lista INTEIRA e reescreve numa transacao. O porque esta no schema
+  // (ordenarCategoriasSchema): mover de um em um deixa duas secoes na mesma
+  // posicao se a segunda escrita falhar.
+  fastify.patch('/api/r/cardapio/categorias/ordem', auth, async (req, reply) => {
+    const ctx = req.kitchen!;
+    const parsed = ordenarCategoriasSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'Ordem invalida.', details: parsed.error.flatten().fieldErrors });
+    }
+
+    const { ids } = parsed.data;
+    if (new Set(ids).size !== ids.length) {
+      return reply.code(400).send({ error: 'A mesma secao apareceu duas vezes na ordem.' });
+    }
+
+    // Todas tem que ser da cozinha logada, e tem que ser TODAS as que ela tem:
+    // uma lista parcial deixaria as de fora com posicao repetida, e o cardapio
+    // escolheria sozinho quem vem antes.
+    const minhas = await prisma.menuCategoria.findMany({
+      where: { kitchenId: ctx.kitchenId },
+      select: { id: true },
+    });
+    const conhecidas = new Set(minhas.map((c) => c.id));
+    if (ids.length !== minhas.length || ids.some((id) => !conhecidas.has(id))) {
+      return reply
+        .code(400)
+        .send({ error: 'A ordem precisa listar todas as secoes do cardapio.' });
+    }
+
+    await prisma.$transaction(
+      ids.map((id, i) =>
+        // `updateMany` com kitchenId no where mesmo depois da checagem acima: a
+        // garantia de dono fica na propria escrita, nao numa leitura anterior.
+        prisma.menuCategoria.updateMany({
+          where: { id, kitchenId: ctx.kitchenId },
+          data: { sortOrder: i },
+        }),
+      ),
+    );
+
+    return reply.send({ categorias: await categoriasDaCozinha(ctx.kitchenId) });
+  });
+
+  // ─── PATCH /api/r/cardapio/categorias/:id ───────────────────────────────
+  //
+  // So o nome. O item aponta pro ID, entao renomear NAO move item de lugar — e
+  // era exatamente isso que o enum nao deixava fazer.
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/r/cardapio/categorias/:id',
+    auth,
+    async (req, reply) => {
+      const ctx = req.kitchen!;
+      const parsed = editarCategoriaSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: 'Secao invalida.', details: parsed.error.flatten().fieldErrors });
+      }
+
+      try {
+        const { count } = await prisma.menuCategoria.updateMany({
+          where: { id: req.params.id, kitchenId: ctx.kitchenId },
+          data: { name: parsed.data.name },
+        });
+        if (count === 0) return reply.code(404).send({ error: 'Secao nao encontrada.' });
+      } catch (e) {
+        if (nomeRepetido(e)) {
+          return reply.code(409).send({ error: 'Ja existe uma secao com esse nome.' });
+        }
+        throw e;
+      }
+
+      return reply.send({ categorias: await categoriasDaCozinha(ctx.kitchenId) });
+    },
+  );
+
+  // ─── DELETE /api/r/cardapio/categorias/:id ──────────────────────────────
+  //
+  // Apaga DE VERDADE (diferente do item, que arquiva): secao nao aparece em
+  // pedido nenhum, entao nao ha historico pra preservar. O que ela nao pode e
+  // levar item junto — por isso o `destino`.
+  fastify.delete<{ Params: { id: string }; Querystring: { destino?: string } }>(
+    '/api/r/cardapio/categorias/:id',
+    auth,
+    async (req, reply) => {
+      const ctx = req.kitchen!;
+      const parsed = excluirCategoriaSchema.safeParse(req.query);
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: 'Pedido invalido.', details: parsed.error.flatten().fieldErrors });
+      }
+
+      const id = await categoriaDaCozinha(req.params.id, ctx.kitchenId);
+      if (!id) return reply.code(404).send({ error: 'Secao nao encontrada.' });
+
+      // A ultima nao sai. Sem nenhuma secao o cardapio nao teria onde por o
+      // proximo item — e a cozinha descobriria isso no meio do servico, tentando
+      // cadastrar um prato. Renomear resolve o caso real ("quero outra coisa
+      // aqui") sem criar esse buraco.
+      const quantas = await prisma.menuCategoria.count({ where: { kitchenId: ctx.kitchenId } });
+      if (quantas <= 1) {
+        return reply.code(409).send({
+          error: 'O cardapio precisa de pelo menos uma secao. Renomeie esta em vez de apagar.',
+        });
+      }
+
+      // Conta o ARQUIVADO tambem: ele continua apontando pra ca, e a chave
+      // estrangeira (Restrict) barraria o DELETE mesmo sem nada visivel dentro.
+      const itens = await prisma.menuItem.count({ where: { categoriaId: id } });
+
+      if (itens > 0) {
+        const destino = parsed.data.destino;
+        if (!destino || destino === id) {
+          return reply.code(409).send({
+            error: 'Escolha pra onde vao os itens desta secao antes de apagar.',
+            itemCount: itens,
+          });
+        }
+        if (!(await categoriaDaCozinha(destino, ctx.kitchenId))) {
+          return reply.code(400).send({ error: 'Essa secao de destino nao e do seu cardapio.' });
+        }
+
+        // Mover e apagar na MESMA transacao: se o apagar falhasse depois de
+        // mover, os itens teriam trocado de secao sem que ninguem pedisse.
+        await prisma.$transaction([
+          prisma.menuItem.updateMany({
+            where: { categoriaId: id, kitchenId: ctx.kitchenId },
+            data: { categoriaId: destino },
+          }),
+          prisma.menuCategoria.deleteMany({ where: { id, kitchenId: ctx.kitchenId } }),
+        ]);
+      } else {
+        await prisma.menuCategoria.deleteMany({ where: { id, kitchenId: ctx.kitchenId } });
+      }
+
+      req.log.info(
+        { categoriaId: id, kitchenId: ctx.kitchenId, itensMovidos: itens },
+        'secao de cardapio apagada',
+      );
+      return reply.send({ categorias: await categoriasDaCozinha(ctx.kitchenId) });
+    },
+  );
 
   // ─── POST /api/r/cardapio ───────────────────────────────────────────────
   fastify.post('/api/r/cardapio', auth, async (req, reply) => {
@@ -119,12 +387,18 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
         .send({ error: 'Item invalido.', details: parsed.error.flatten().fieldErrors });
     }
 
+    // A secao vem do body (e um id), entao PRECISA ser conferida: sem isto
+    // bastaria conhecer um id pra pendurar um item no cardapio da vizinha.
+    if (!(await categoriaDaCozinha(parsed.data.categoriaId, ctx.kitchenId))) {
+      return reply.code(400).send({ error: 'Essa secao nao e do seu cardapio.' });
+    }
+
     const item = await prisma.menuItem.create({
       // `kitchenId` vem do TOKEN, nunca do body: aceitar do cliente deixaria
       // qualquer cozinha escrever no cardapio da vizinha.
       data: {
         kitchenId: ctx.kitchenId,
-        category: parsed.data.category,
+        categoriaId: parsed.data.categoriaId,
         name: parsed.data.name,
         description: parsed.data.description,
         priceCents: parsed.data.priceCents,
@@ -147,6 +421,14 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
       return reply
         .code(400)
         .send({ error: 'Alteracao invalida.', details: parsed.error.flatten().fieldErrors });
+    }
+
+    // Mudar de secao passa pela mesma conferencia da criacao: o id vem do body.
+    if (
+      parsed.data.categoriaId !== undefined &&
+      !(await categoriaDaCozinha(parsed.data.categoriaId, ctx.kitchenId))
+    ) {
+      return reply.code(400).send({ error: 'Essa secao nao e do seu cardapio.' });
     }
 
     // `updateMany` com kitchenId no where, e nao `update` por id: com `update`
@@ -253,7 +535,7 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
 
       return reply.code(201).send({
         id: foto.id,
-        url: urlDaFoto(foto.storageKey),
+        url: urlPublica(foto.storageKey),
         width: foto.width,
         height: foto.height,
       });
@@ -333,18 +615,7 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
     const k = await prisma.kitchen.findUnique({ where: { id: ctx.kitchenId } });
     if (!k) return reply.code(404).send({ error: 'Cozinha nao encontrada.' });
 
-    const response: PerfilCozinhaResponse = {
-      id: k.id,
-      slug: k.slug,
-      name: k.name,
-      category: k.category,
-      tagline: k.tagline,
-      description: k.description,
-      photoUrl: k.photoUrl,
-      slaMinutes: k.slaMinutes,
-      status: k.status,
-    };
-    return reply.send(response);
+    return reply.send(montarPerfil(k));
   });
 
   // ─── PATCH /api/r/perfil ────────────────────────────────────────────────
@@ -371,18 +642,89 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
       );
     }
 
-    const response: PerfilCozinhaResponse = {
-      id: k.id,
-      slug: k.slug,
-      name: k.name,
-      category: k.category,
-      tagline: k.tagline,
-      description: k.description,
-      photoUrl: k.photoUrl,
-      slaMinutes: k.slaMinutes,
-      status: k.status,
-    };
-    return reply.send(response);
+    return reply.send(montarPerfil(k));
+  });
+
+  // ─── POST /api/r/perfil/foto ────────────────────────────────────────────
+  //
+  // Sobe a foto de capa da cozinha do proprio dispositivo. Mesmo caminho da
+  // foto de prato: `processarFoto` reencoda pra webp, redimensiona e joga fora
+  // o metadado — inclusive o GPS que a camera do celular grava. Ver
+  // lib/imagem.ts.
+  fastify.post('/api/r/perfil/foto', auth, async (req, reply) => {
+    const ctx = req.kitchen!;
+
+    if (!req.isMultipart()) {
+      return reply.code(400).send({ error: 'Envie o arquivo como multipart/form-data.' });
+    }
+
+    const arquivo = await req.file();
+    if (!arquivo) return reply.code(400).send({ error: 'Nenhum arquivo recebido.' });
+
+    let bruto: Buffer;
+    try {
+      bruto = await arquivo.toBuffer();
+    } catch {
+      // O @fastify/multipart estoura aqui quando passa do limite configurado.
+      return reply.code(413).send({ error: 'Imagem maior que 8 MB.' });
+    }
+    if (arquivo.file.truncated) {
+      return reply.code(413).send({ error: 'Imagem maior que 8 MB.' });
+    }
+
+    let processada;
+    try {
+      processada = await processarFoto(bruto);
+    } catch (e) {
+      if (e instanceof ImagemInvalida) return reply.code(400).send({ error: e.message });
+      throw e;
+    }
+
+    const anterior = await prisma.kitchen.findUnique({
+      where: { id: ctx.kitchenId },
+      select: { photoKey: true },
+    });
+
+    const photoKey = await guardar(processada.data, EXTENSAO);
+    const k = await prisma.kitchen.update({
+      where: { id: ctx.kitchenId },
+      data: { photoKey },
+    });
+
+    // So depois do commit. Apagar antes deixaria a cozinha sem foto nenhuma se
+    // a escrita no banco falhasse — e o arquivo velho ja teria ido embora.
+    if (anterior?.photoKey) await apagar(anterior.photoKey);
+
+    req.log.info(
+      { kitchenId: ctx.kitchenId, bytes: processada.bytes },
+      'foto da cozinha enviada',
+    );
+
+    return reply.code(201).send(montarPerfil(k));
+  });
+
+  // ─── DELETE /api/r/perfil/foto ──────────────────────────────────────────
+  //
+  // Tira SO a foto enviada. A URL antiga, se existir, volta a valer — e ela
+  // tem campo proprio no formulario, entao apagar as duas aqui seria mexer no
+  // que a cozinha nao pediu pra mexer.
+  fastify.delete('/api/r/perfil/foto', auth, async (req, reply) => {
+    const ctx = req.kitchen!;
+
+    const anterior = await prisma.kitchen.findUnique({
+      where: { id: ctx.kitchenId },
+      select: { photoKey: true },
+    });
+
+    const k = await prisma.kitchen.update({
+      where: { id: ctx.kitchenId },
+      data: { photoKey: null },
+    });
+
+    if (anterior?.photoKey) await apagar(anterior.photoKey);
+
+    req.log.info({ kitchenId: ctx.kitchenId }, 'foto da cozinha removida');
+    return reply.send(montarPerfil(k));
   });
 
   // ─── GET /api/r/historico ───────────────────────────────────────────────
@@ -542,9 +884,33 @@ export async function cozinhaRoutes(fastify: FastifyInstance) {
   });
 }
 
-/** Endereco publico de uma foto guardada. Ver modules/fotos.ts. */
-function urlDaFoto(storageKey: string): string {
-  return '/api/fotos/' + storageKey;
+function montarPerfil(k: {
+  id: string;
+  slug: string;
+  name: string;
+  category: string | null;
+  tagline: string | null;
+  description: string | null;
+  photoUrl: string | null;
+  photoKey: string | null;
+  slaMinutes: number;
+  status: 'ativa' | 'pausada' | 'rascunho';
+}): PerfilCozinhaResponse {
+  return {
+    id: k.id,
+    slug: k.slug,
+    name: k.name,
+    category: k.category,
+    tagline: k.tagline,
+    description: k.description,
+    // O formulario precisa dos DOIS separados: `foto` e o que esta valendo,
+    // `photoUrl` e o campo antigo que ele ainda deixa editar. Colapsar num so
+    // deixaria a tela sem saber qual dos dois o botao "remover" apaga.
+    foto: fotoDaCozinha(k),
+    photoUrl: k.photoUrl,
+    slaMinutes: k.slaMinutes,
+    status: k.status,
+  };
 }
 
 /** Meia-noite local de N-1 dias atrás. `dias: 1` = hoje desde as 00h. */

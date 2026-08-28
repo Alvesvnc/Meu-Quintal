@@ -16,7 +16,9 @@ import { env } from '../lib/env.js';
 import { generateShortId } from '../lib/shortId.js';
 import { aggregateStatus, nextStatus, totalAtivoCents } from '../lib/orderStatus.js';
 import { salaDaCozinha, salaDoPedido } from '../lib/salas.js';
+import { avisarCozinha } from '../lib/push.js';
 import { alteracaoPendenteDoPedido } from './alteracao.js';
+import { fotoDoItem } from '../lib/fotoDoItem.js';
 import { pedidosCriados } from '../plugins/observabilidade.js';
 
 /**
@@ -104,6 +106,31 @@ export async function orderRoutes(fastify: FastifyInstance) {
       });
     }
 
+    // ─── UM PEDIDO, UMA COZINHA ─────────────────────────────────────────
+    //
+    // O app do cliente ja funciona assim: o carrinho e agrupado por cozinha e
+    // o CartScreen dispara um POST por grupo. Mas o CONTRATO aceitava itens de
+    // varias, e o resto do sistema nao aguenta isso:
+    //
+    //   GET /api/m/pedidos rotula o pedido inteiro com `items[0].kitchen` —
+    //   num pedido misto o cliente veria a cozinha errada;
+    //
+    //   `Order.totalCents` e um numero so, e fechar conta e por cozinha —
+    //   entao o valor exibido nao bateria com o que se paga em cada balcao.
+    //
+    // Ficava de pe so porque nenhuma tela criava pedido misto. Quem chamasse a
+    // API direto derrubava a suposicao — sem erro, so com telas mentindo.
+    //
+    // A regra agora e explicita e recusada na porta. Zero pedidos no banco
+    // violam isto (conferido antes de escrever), entao nada existente quebra.
+    const cozinhasNoPedido = new Set(menuItems.map((mi) => mi.kitchenId));
+    if (cozinhasNoPedido.size > 1) {
+      return reply.code(400).send({
+        error: 'Um pedido so pode ter itens de uma cozinha. Mande um pedido por cozinha.',
+        cozinhas: cozinhasNoPedido.size,
+      });
+    }
+
     const itemsByMenuItemId = new Map(menuItems.map((mi) => [mi.id, mi]));
     const totalCents = parsed.data.items.reduce((acc, line) => {
       const mi = itemsByMenuItemId.get(line.menuItemId)!;
@@ -121,6 +148,9 @@ export async function orderRoutes(fastify: FastifyInstance) {
             spaceId: mesa.spaceId,
             tableId: mesa.tableId,
             totalCents,
+            // `?? null` e nao `undefined`: o filtro de fechar conta compara
+            // com igualdade, e precisa que "sem nome" seja NULL no banco.
+            nomeCliente: parsed.data.nomeCliente ?? null,
             items: {
               create: parsed.data.items.map((line) => {
                 const mi = itemsByMenuItemId.get(line.menuItemId)!;
@@ -174,6 +204,29 @@ export async function orderRoutes(fastify: FastifyInstance) {
         itemCount: g.count,
         kitchenSlug: g.slug,
       });
+
+      /*
+        A TERCEIRA CAMADA DO AVISO, e a unica que alcanca tela apagada.
+
+        Sem `await`, de proposito: sao requisicoes HTTP pro servico de push
+        do fabricante do navegador, uma por aparelho, e isto aqui e o
+        caminho quente da criacao de pedido. O pedido JA esta no banco e o
+        socket JA saiu — segurar a resposta do cliente pra esperar o Google
+        seria trocar latencia de venda por um aviso que nem sempre chega.
+
+        Sem valor no corpo: a notificacao aparece em tela bloqueada, que
+        qualquer um por perto le. Mesa e quantidade bastam pra decidir ir
+        olhar; quanto o pedido deu e assunto de dentro do app.
+      */
+      void avisarCozinha(kitchenId, 'pedido-novo', {
+        titulo: 'Pedido novo',
+        corpo: `Mesa ${mesa.tableNumero} · ${g.count} ${g.count === 1 ? 'item' : 'itens'}`,
+        // Tag POR PEDIDO: cinco pedidos com o tablet dormindo devem virar
+        // cinco linhas na bandeja. Com tag fixa a cozinha acordaria vendo
+        // so o ultimo e nao saberia que perdeu quatro.
+        tag: `pedido-${order.shortId}`,
+        url: '/fila',
+      });
     }
 
     pedidosCriados.inc({ space: mesa.spaceSlug });
@@ -198,14 +251,42 @@ export async function orderRoutes(fastify: FastifyInstance) {
         },
       },
       include: {
-        items: { include: { kitchen: { select: { slug: true, name: true } } } },
+        items: {
+          include: {
+            kitchen: { select: { id: true, slug: true, name: true } },
+            // A capa de cada item: e ela que a lista desenha no lugar de
+            // "2 itens" em texto. `take: 1` porque so a primeira aparece.
+            menuItem: {
+              select: {
+                photoUrl: true,
+                fotos: {
+                  orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+                  select: { storageKey: true },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
     const response: OrdersListResponse = {
       orders: orders.map((o) => {
-        // Cada Order tem só items de UMA cozinha (modelo novo: 1 pedido por cozinha)
+        // UMA cozinha por pedido — agora garantido na criacao, nao suposto.
+        // Ver a checagem em POST /api/m/pedido.
+        //
+        // O aviso cobre dado legado: se um pedido misto anterior a regra ainda
+        // existir, o rotulo abaixo estaria errado. Melhor aparecer no log do
+        // que a tela mentir em silencio.
+        const cozinhasDoPedido = new Set(o.items.map((i) => i.kitchen.id));
+        if (cozinhasDoPedido.size > 1) {
+          req.log.warn(
+            { orderId: o.id, cozinhas: cozinhasDoPedido.size },
+            'pedido com itens de varias cozinhas: o rotulo mostra so a primeira',
+          );
+        }
         const firstKitchen = o.items[0]?.kitchen;
         const aggStatus = aggregateStatus(o.items.map((i) => i.status as OrderItemStatus));
         return {
@@ -224,6 +305,15 @@ export async function orderRoutes(fastify: FastifyInstance) {
           kitchenName: firstKitchen?.name ?? '',
           status: aggStatus,
           itemCount: o.items.reduce((acc, i) => acc + i.qty, 0),
+          // Cancelado fora: a fileira de miniaturas mostra o que VAI CHEGAR.
+          itens: o.items
+            .filter((i) => i.status !== 'cancelado')
+            .map((i) => ({
+              id: i.id,
+              name: i.nameSnapshot,
+              qty: i.qty,
+              foto: fotoDoItem(i.menuItem),
+            })),
           paymentRequestedAt: o.paymentRequestedAt?.toISOString() ?? null,
           paidAt: o.paidAt?.toISOString() ?? null,
         };
@@ -236,6 +326,13 @@ export async function orderRoutes(fastify: FastifyInstance) {
   // ─── POST /api/m/pedidos/fechar-conta ─ pedir cobranca pra cozinha X ─────
   const requestPaymentSchema = z.object({
     kitchenSlug: z.string().min(1),
+    /**
+     * De QUEM e a conta que esta sendo fechada. Ausente = a conta da mesa,
+     * feita pelos pedidos que ninguem assinou.
+     *
+     * Ver a regra do filtro abaixo.
+     */
+    nomeCliente: z.string().trim().max(40).optional(),
   });
 
   fastify.post('/api/m/pedidos/fechar-conta', async (req, reply) => {
@@ -247,10 +344,31 @@ export async function orderRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'kitchenSlug obrigatorio.' });
     }
 
-    // Acha todos os orders ABERTOS (com items ativos) da mesa+cozinha ainda nao solicitados
+    // FECHA A CONTA DE UMA PESSOA, NAO DA MESA INTEIRA.
+    //
+    // Antes o filtro era so mesa+cozinha, e o efeito aparecia quando duas
+    // pessoas dividiam mesa e pediam da mesma cozinha: quem apertasse primeiro
+    // mandava cobrar o pedido do vizinho junto. Numa praca de alimentacao,
+    // dividir mesa com estranho e a regra, nao a excecao.
+    //
+    // A comparacao e por igualdade EXATA, incluindo o nulo:
+    //
+    //   com nome  -> fecha so os pedidos assinados com aquele nome
+    //   sem nome  -> fecha so os pedidos que ninguem assinou (a conta da mesa)
+    //
+    // Simetrico nos dois sentidos: quem assinou nao arrasta a conta da mesa, e
+    // a conta da mesa nao arrasta a de quem assinou.
+    //
+    // NAO E PROTECAO. O nome vem do aparelho do cliente e qualquer um pode
+    // digitar o do outro. Isso resolve o caso REAL — gente que nao quer se
+    // misturar — e nao o caso do mal-intencionado, que so login resolveria; e
+    // login na porta de um restaurante custa mais venda do que protege.
+    const nomeDaConta = parsed.data.nomeCliente || null;
+
     const orders = await prisma.order.findMany({
       where: {
         tableId: mesa.tableId,
+        nomeCliente: nomeDaConta,
         paymentRequestedAt: null,
         paidAt: null,
         items: {
@@ -327,6 +445,21 @@ export async function orderRoutes(fastify: FastifyInstance) {
     };
     fastify.io.to(salaDaCozinha(cozinha.id)).emit('payment:requested', event);
 
+    // A tag agrupa por MESA E PESSOA. Por mesa apenas — como era — o pedido de
+    // conta da Ana silenciaria o do Luiz na mesma mesa: a segunda notificacao
+    // substituiria a primeira e a cozinha cobraria uma pessoa so.
+    //
+    // Dentro da mesma pessoa, agrupar continua certo: quem toca duas vezes em
+    // "fechar conta" nao deve gerar duas linhas na bandeja.
+    void avisarCozinha(cozinha.id, 'fechar-conta', {
+      titulo: 'Fechar conta',
+      corpo: nomeDaConta
+        ? `Mesa ${mesa.tableNumero} · ${nomeDaConta} pediu a conta`
+        : `Mesa ${mesa.tableNumero} pediu a conta`,
+      tag: `conta-${mesa.tableId}-${nomeDaConta ?? 'mesa'}`,
+      url: '/fila',
+    });
+
     const response: RequestPaymentResponse = {
       ok: true,
       requested: orders.length,
@@ -343,7 +476,21 @@ export async function orderRoutes(fastify: FastifyInstance) {
       where: { id: req.params.id, tableId: mesa.tableId },
       include: {
         table: { select: { numero: true } },
-        items: { include: { kitchen: { select: { slug: true, name: true, slaMinutes: true } } } },
+        items: {
+          include: {
+            kitchen: { select: { slug: true, name: true, slaMinutes: true } },
+            menuItem: {
+              select: {
+                photoUrl: true,
+                fotos: {
+                  orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+                  select: { storageKey: true },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -369,6 +516,7 @@ export async function orderRoutes(fastify: FastifyInstance) {
         unitPriceCents: item.unitPriceCents,
         note: item.note,
         status: item.status,
+        foto: fotoDoItem(item.menuItem),
       });
       groups.set(item.kitchen.slug, g);
     }

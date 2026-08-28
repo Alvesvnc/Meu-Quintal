@@ -1,54 +1,75 @@
 import { useEffect, useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import { Pulso } from '@mq/design-system';
 import { useAuth } from '../stores/auth';
-import { useFila } from '../api/hooks';
+import { useAbas } from './abas';
 
 /**
- * Cabeçalho da cozinha: nome, quantos pedidos estão em aberto, relógio.
+ * Cabeçalho da cozinha: nome e se está aberta, com o relógio da parede.
  *
- * O contador vem da MESMA query que a fila desenha (`useFila`), e não de um
- * store paralelo. Havia um `stores/queue.ts` alimentado por mock aqui: o badge
- * mostrava um número e a fila logo abaixo mostrava outro, na mesma tela. Se um
- * dia o contador precisar de outra fonte, a pergunta certa é por que ele
- * discorda do que está na tela.
+ * O contador de pedidos ativos saiu daqui. Ele repetia, em cinza e menor, o
+ * que o placar logo abaixo já diz em 26px — e nas telas sem placar (cardápio,
+ * conta) era um número sobre pedidos que a tela não estava mostrando.
  */
 export function AppHeader() {
-  const nome = useAuth((s) => s.me?.kitchen.name);
-  const { data } = useFila();
+  const cozinha = useAuth((s) => s.me?.kitchen);
+  const abas = useAbas();
   const [agora, setAgora] = useState(() => new Date());
-
-  const ativos =
-    data?.orders.filter((o) => o.status === 'novo' || o.status === 'preparando').length ?? 0;
 
   useEffect(() => {
     const id = setInterval(() => setAgora(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
 
+  const aberta = cozinha?.status === 'ativa';
+
   return (
-    <header className="sticky top-0 z-20 h-16 bg-bg border-b border-hairlineSoft">
-      <div className="h-full px-5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <span
-            className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-accent"
-            aria-hidden
-          />
-          <div className="min-w-0">
-            <h1 className="font-display text-display-md text-ink leading-tight truncate">
-              {nome ?? 'Minha cozinha'}
-            </h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span
-            className="font-mono text-mono-sm uppercase tracking-wider text-inkDim"
-            aria-label={`${ativos} pedidos ativos`}
-          >
-            {ativos} ativos
+    <header className="sticky top-0 z-20 h-14 bg-bg border-b-rule border-divider">
+      <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
+        <h1 className="font-display text-body-lg font-bold uppercase text-ink min-w-0 truncate">
+          {cozinha?.name ?? 'Minha cozinha'}
+        </h1>
+
+        {/*
+          NAVEGACAO DE MOUSE. `hidden mouse:flex` — so aparece pra quem aponta
+          com mouse ou trackpad; no dedo a barra de baixo continua sendo a
+          navegacao, com alvos grandes. Ver a variante `mouse:` no preset.
+
+          Como `hidden` e `display: none`, a que estiver escondida sai tambem da
+          arvore de acessibilidade: nunca ha duas navegacoes anunciadas ao mesmo
+          tempo, mesmo com as duas no HTML.
+        */}
+        <nav aria-label="Seções" className="hidden mouse:flex items-center gap-1 mx-auto">
+          {abas.map((a) => (
+            <NavLink
+              key={a.to}
+              to={a.to}
+              className={({ isActive }) =>
+                [
+                  'px-4 py-1.5 inline-flex items-center gap-2 cursor-pointer',
+                  'font-display text-label font-bold uppercase',
+                  'transition-colors duration-base ease-out',
+                  isActive ? 'bg-accent text-bg' : 'text-neutral-700 hover:text-ink',
+                ].join(' ')
+              }
+            >
+              <a.icon size={16} strokeWidth={2} aria-hidden />
+              {a.label}
+              {a.badge && <span className="tabular">{a.badge}</span>}
+            </NavLink>
+          ))}
+        </nav>
+
+        <span className="shrink-0 inline-flex items-center gap-1.5 font-display text-label font-bold uppercase text-ink">
+          {aberta && <Pulso />}
+          <span className={aberta ? '' : 'text-neutral-600'}>
+            {aberta ? 'Aberta' : 'Pausada'}
           </span>
-          <span className="font-mono text-mono text-ink tabular-nums" aria-label="Hora atual">
+          <span className="text-neutral-600">·</span>
+          <span className="tabular" aria-label="Hora atual">
             {agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </span>
-        </div>
+        </span>
       </div>
     </header>
   );

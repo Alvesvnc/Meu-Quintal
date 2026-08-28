@@ -4,7 +4,7 @@ import { parseEnv } from './envSchema.js';
 const base = {
   DATABASE_URL: 'postgresql://u:p@db:5432/meu_quintal',
   JWT_SECRET: 'a'.repeat(48),
-  CORS_ORIGINS: 'https://app.meuquintal.com.br',
+  CORS_ORIGINS: 'https://app.qro.com.br',
 };
 
 /** Erros achatados por campo, pra assertar sem depender da mensagem exata. */
@@ -113,7 +113,7 @@ describe('env — travas de producao', () => {
   });
 
   it('recusa CORS sem https', () => {
-    const r = parseEnv({ ...prod, CORS_ORIGINS: 'http://app.meuquintal.com.br' });
+    const r = parseEnv({ ...prod, CORS_ORIGINS: 'http://app.qro.com.br' });
     expect(r.success).toBe(false);
     expect(camposComErro(r)).toContain('CORS_ORIGINS');
   });
@@ -129,5 +129,106 @@ describe('env — travas de producao', () => {
     const campos = r.error.flatten().fieldErrors;
     expect(campos.JWT_SECRET?.length).toBeGreaterThanOrEqual(2);
     expect(campos.CORS_ORIGINS?.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ─── Asaas ──────────────────────────────────────────────────────────────────
+
+describe('env — Asaas', () => {
+  const prod = { ...base, NODE_ENV: 'production' };
+
+  it('sem chave, o pagamento fica desligado e nada e exigido', () => {
+    const r = parseEnv(prod);
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    // Padrao seguro: o que nao move dinheiro de verdade.
+    expect(r.data.ASAAS_AMBIENTE).toBe('sandbox');
+    expect(r.data.ASAAS_API_KEY).toBeUndefined();
+  });
+
+  it('com chave, o token de webhook passa a ser obrigatorio', () => {
+    // Sem ele, qualquer um na internet ativa a propria conta com um POST.
+    const r = parseEnv({ ...prod, ASAAS_API_KEY: 'chave', ASAAS_AMBIENTE: 'producao' });
+    expect(camposComErro(r)).toContain('ASAAS_WEBHOOK_TOKEN');
+  });
+
+  it('o token de webhook nao pode ser a chave da API', () => {
+    // O proprio Asaas alerta: reusar a chave a exporia a quem recebe webhooks
+    // — e a chave da API move dinheiro.
+    const chave = 'chave-de-api-bem-longa-pra-passar';
+    const r = parseEnv({
+      ...prod,
+      ASAAS_API_KEY: chave,
+      ASAAS_WEBHOOK_TOKEN: chave,
+      ASAAS_AMBIENTE: 'producao',
+    });
+    expect(camposComErro(r)).toContain('ASAAS_WEBHOOK_TOKEN');
+  });
+
+  /**
+   * O erro caro e silencioso: o checkout abre, o cliente "paga" com dinheiro de
+   * mentira, a conta ativa, e nunca entrou um centavo. Nada nesse caminho
+   * parece quebrado — por isso o boot recusa.
+   */
+  it('producao apontando pro sandbox e recusada', () => {
+    const r = parseEnv({
+      ...prod,
+      ASAAS_API_KEY: 'chave',
+      ASAAS_WEBHOOK_TOKEN: 'w'.repeat(32),
+      ASAAS_AMBIENTE: 'sandbox',
+    });
+    expect(camposComErro(r)).toContain('ASAAS_AMBIENTE');
+  });
+
+  it('configuracao completa de producao passa', () => {
+    const r = parseEnv({
+      ...prod,
+      ASAAS_API_KEY: 'chave',
+      ASAAS_WEBHOOK_TOKEN: 'w'.repeat(32),
+      ASAAS_AMBIENTE: 'producao',
+      PRECO_PRACA_CENTS: '19900',
+    });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.PRECO_PRACA_CENTS).toBe(19900);
+  });
+
+  it('preco vazio no .env.example nao derruba o boot', () => {
+    // `PRECO_PRACA_CENTS=` significa "nao configurado", nao "zero" — ver
+    // semVazios(). Copiar o .env.example nao pode quebrar o servidor.
+    const r = parseEnv({ ...prod, PRECO_PRACA_CENTS: '', ASAAS_API_KEY: '' });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.PRECO_PRACA_CENTS).toBeUndefined();
+  });
+});
+
+describe('env — TRIAL_DIAS', () => {
+  it('padrao e 7 dias', () => {
+    const r = parseEnv({ ...base, NODE_ENV: 'development' });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.TRIAL_DIAS).toBe(7);
+  });
+
+  it('zero e valido: e assim que o teste se desliga', () => {
+    const r = parseEnv({ ...base, NODE_ENV: 'development', TRIAL_DIAS: '0' });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.TRIAL_DIAS).toBe(0);
+  });
+
+  it('vazio no .env.example cai no padrao, nao em zero', () => {
+    // Vazio significa "nao configurado". Se virasse 0, copiar o .env.example
+    // desligaria o teste sem ninguem pedir.
+    const r = parseEnv({ ...base, NODE_ENV: 'development', TRIAL_DIAS: '' });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.TRIAL_DIAS).toBe(7);
+  });
+
+  it('recusa negativo e absurdo', () => {
+    expect(camposComErro(parseEnv({ ...base, TRIAL_DIAS: '-1' }))).toContain('TRIAL_DIAS');
+    expect(camposComErro(parseEnv({ ...base, TRIAL_DIAS: '5000' }))).toContain('TRIAL_DIAS');
   });
 });

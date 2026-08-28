@@ -48,7 +48,7 @@ function token() {
     sub: 'user-1',
     accountId: CONTA.id,
     accountSlug: CONTA.slug,
-    email: 'marina@meuquintal.app',
+    email: 'marina@qro.app',
     role: 'owner',
   });
 }

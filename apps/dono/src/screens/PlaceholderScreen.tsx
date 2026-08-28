@@ -9,7 +9,7 @@ export function PlaceholderScreen({ title, note }: PlaceholderScreenProps) {
   return (
     <>
       <Divider label="Em construção" />
-      <h1 className="mt-6 font-display italic text-display-xl text-ink leading-tight">
+      <h1 className="mt-6 font-display text-display-xl text-ink leading-tight">
         {title}
       </h1>
       {note && (

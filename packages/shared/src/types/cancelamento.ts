@@ -55,4 +55,16 @@ export interface MetricasCancelamentoResponse {
   porMotivo: CancelamentoPorMotivo[];
   /** Os itens que mais são cancelados — onde olhar primeiro. */
   itensMaisCancelados: Array<{ name: string; itens: number; perdaCents: number }>;
+  /**
+   * Quanto dos totais acima veio de REDUÇÃO aceita, não de cancelamento cheio.
+   *
+   * Os dois entram no mesmo total de propósito: a pergunta que a métrica
+   * responde é "quanto deixei de vender", e reduzir de 3 pra 1 perde duas
+   * unidades exatamente como cancelar perderia.
+   *
+   * Mas a tela precisa poder dizer isso em voz alta. Um número rotulado só
+   * "cancelamentos" que na verdade inclui reduções é um número que mente — e
+   * quem for conferir contando os itens cancelados na mão não vai fechar.
+   */
+  reducoes: { itens: number; perdaCents: number };
 }

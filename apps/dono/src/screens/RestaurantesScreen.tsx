@@ -75,7 +75,7 @@ export function RestaurantesScreen() {
           <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">
             Configurar · cozinhas
           </p>
-          <h1 className="font-display italic text-display-xl text-ink leading-tight">
+          <h1 className="font-display text-display-xl text-ink leading-tight">
             {ativas} cozinha{ativas === 1 ? '' : 's'} ativa{ativas === 1 ? '' : 's'}.
           </h1>
         </div>

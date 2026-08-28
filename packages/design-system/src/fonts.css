@@ -1,2 +1,57 @@
-/* Fraunces (display, opsz variável) + DM Sans (UI) + JetBrains Mono (números) */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500;1,9..144,600&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Archivo — família única do sistema Modernist.
+   400 corpo · 600 nomes de item · 800 títulos, labels e botões.
+   Substituiu Fraunces + DM Sans + JetBrains Mono: o papel dos números
+   monoespaçados passou a ser de `font-variant-numeric: tabular-nums`.
+
+   ─────────────────────────────────────────────────────────────────────────
+   HOSPEDADA AQUI, NÃO NO GOOGLE FONTS — E NÃO É PREFERÊNCIA.
+
+   Isto era um `@import` de fonts.googleapis.com. Em produção a fonte
+   simplesmente não carregava: o CSP que o nginx manda (apps/nginx.conf.template)
+   diz `style-src 'self' 'unsafe-inline'` e `font-src 'self' data:`, e nenhum
+   dos dois lista o Google. O navegador bloqueava a folha E os arquivos, e os
+   três apps caíam na fonte do sistema — ou seja, a identidade inteira ia
+   embora justamente no ambiente que o cliente vê.
+
+   Servir do próprio domínio resolve três coisas de uma vez:
+     1. passa no CSP sem afrouxar nada;
+     2. entra no precache do service worker do app da cozinha, então a
+        tipografia sobrevive a wifi ruim e ao app instalado;
+     3. some uma requisição a terceiro no caminho crítico da primeira pintura.
+
+   ─────────────────────────────────────────────────────────────────────────
+   UM ARQUIVO POR SUBSET, NÃO UM POR PESO.
+
+   Archivo é fonte VARIÁVEL: o mesmo woff2 cobre 100–900, e é por isso que os
+   pesos 400, 600 e 800 vinham do mesmo arquivo no Google. Declarar
+   `font-weight: 100 900` é o que destrava o eixo — com um valor fixo o
+   navegador sintetizaria o negrito em vez de usar o desenho real.
+
+   Vietnamita ficou de fora de propósito: são +32 KB que nenhum dos apps usa.
+   Arquivos: Archivo v25, SIL Open Font License 1.1 — ver ./fontes/OFL.txt. */
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./fontes/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Português cabe inteiro no `latin` acima. Este subset existe pro que vem de
+   fora do nosso texto — nome de cozinha, de prato, de quem assina a conta. */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./fontes/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}

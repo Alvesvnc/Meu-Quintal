@@ -489,6 +489,128 @@ describe('GET /api/r/metricas/cancelamentos', () => {
     expect(where.canceledAt.gte).toBeInstanceOf(Date);
   });
 
+  /**
+   * REDUCAO ACEITA TAMBEM E VENDA PERDIDA.
+   *
+   * A consulta principal olha `orderItem` com status `cancelado`. Isso cobre a
+   * proposta recusada, a expirada e a aceita com quantidade zero — nos tres o
+   * item morre inteiro.
+   *
+   * Escapava a aceita que so REDUZ: 3 pra 1 deixa o item vivo com qty 1, e as
+   * duas unidades perdidas nao apareciam em relatorio nenhum. Do ponto de vista
+   * de "quanto deixei de vender", elas sao perda igual.
+   */
+  const reducao = (over: Record<string, unknown> = {}) => ({
+    qtyAnterior: 3,
+    qtyProposta: 1,
+    change: { motivo: 'sem_ingrediente' },
+    orderItem: { unitPriceCents: 1800, nameSnapshot: 'Batata-doce frita' },
+    ...over,
+  });
+
+  it('soma as unidades perdidas numa reducao aceita', async () => {
+    prismaMock.orderItem.findMany.mockResolvedValue([]);
+    prismaMock.orderChangeItem.findMany.mockResolvedValue([reducao()]);
+
+    const r = await app.inject({
+      method: 'GET',
+      url: '/api/r/metricas/cancelamentos',
+      headers: auth(),
+    });
+
+    const d = r.json();
+    // 3 -> 1 perde 2 unidades a 18,00.
+    expect(d.totalItens).toBe(2);
+    expect(d.perdaTotalCents).toBe(2 * 1800);
+    expect(d.reducoes).toEqual({ itens: 2, perdaCents: 2 * 1800 });
+  });
+
+  /**
+   * A TRAVA CONTRA CONTAGEM DUPLA.
+   *
+   * Proposta aceita com qtyProposta 0 vira item CANCELADO, e o item cancelado
+   * ja e somado pela consulta principal. Se a consulta de reducoes pegasse
+   * essas linhas tambem, toda proposta de cancelamento total contaria duas
+   * vezes e o relatorio inflaria a perda.
+   */
+  it('nao busca as propostas de quantidade zero — elas ja viraram cancelamento', async () => {
+    prismaMock.orderItem.findMany.mockResolvedValue([]);
+    prismaMock.orderChangeItem.findMany.mockResolvedValue([]);
+
+    await app.inject({
+      method: 'GET',
+      url: '/api/r/metricas/cancelamentos',
+      headers: auth(),
+    });
+
+    const where = prismaMock.orderChangeItem.findMany.mock.calls[0][0].where;
+    expect(where.qtyProposta).toEqual({ gt: 0 });
+    // So proposta ACEITA: recusada e expirada cancelam o item inteiro, e o
+    // cancelado ja e contado do outro lado.
+    expect(where.change.status).toBe('aceita');
+    expect(where.change.kitchenId).toBe(COZINHA.id);
+    // `respondedAt`, nao `createdAt`: a pergunta e quando a perda foi decidida.
+    expect(where.change.respondedAt.gte).toBeInstanceOf(Date);
+  });
+
+  it('cancelamento e reducao somam no mesmo total', async () => {
+    prismaMock.orderItem.findMany.mockResolvedValue([cancelado({ qty: 1 })]);
+    prismaMock.orderChangeItem.findMany.mockResolvedValue([reducao()]);
+
+    const d = (
+      await app.inject({
+        method: 'GET',
+        url: '/api/r/metricas/cancelamentos',
+        headers: auth(),
+      })
+    ).json();
+
+    // 1 cancelado + 2 reduzidas = 3 unidades que a cozinha deixou de vender.
+    expect(d.totalItens).toBe(3);
+    expect(d.perdaTotalCents).toBe(3 * 1800);
+    // E a tela consegue dizer quanto veio de reducao, pra o numero nao mentir.
+    expect(d.reducoes.itens).toBe(2);
+  });
+
+  it('reducao entra no motivo e no ranking de itens, junto com o cancelamento', async () => {
+    prismaMock.orderItem.findMany.mockResolvedValue([]);
+    prismaMock.orderChangeItem.findMany.mockResolvedValue([reducao()]);
+
+    const d = (
+      await app.inject({
+        method: 'GET',
+        url: '/api/r/metricas/cancelamentos',
+        headers: auth(),
+      })
+    ).json();
+
+    expect(d.porMotivo[0]).toMatchObject({ motivo: 'sem-ingrediente', itens: 2 });
+    expect(d.itensMaisCancelados[0]).toMatchObject({ name: 'Batata-doce frita', itens: 2 });
+  });
+
+  /**
+   * Proposta que nao reduz e recusada na criacao, mas a soma nao pode depender
+   * disso: um delta negativo viraria perda NEGATIVA e faria o relatorio inteiro
+   * mentir pra menos, escondendo perda de verdade que veio de outra linha.
+   */
+  it('linha que nao reduz nao vira perda negativa', async () => {
+    prismaMock.orderItem.findMany.mockResolvedValue([]);
+    prismaMock.orderChangeItem.findMany.mockResolvedValue([
+      reducao({ qtyAnterior: 1, qtyProposta: 3 }),
+    ]);
+
+    const d = (
+      await app.inject({
+        method: 'GET',
+        url: '/api/r/metricas/cancelamentos',
+        headers: auth(),
+      })
+    ).json();
+
+    expect(d.totalItens).toBe(0);
+    expect(d.perdaTotalCents).toBe(0);
+  });
+
   it('recusa janela invalida', async () => {
     for (const dias of ['0', '-5', '400', 'abc']) {
       const r = await app.inject({

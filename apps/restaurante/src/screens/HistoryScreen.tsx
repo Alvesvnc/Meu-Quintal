@@ -29,12 +29,12 @@ export function HistoryScreen() {
   };
 
   return (
-    <main className="px-5 pb-28">
+    <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 pb-28">
       <section className="pt-6">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           {dias === 1 ? 'Hoje' : `Últimos ${dias} dias`}
         </p>
-        <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight text-pretty">
+        <h1 className="mt-1 font-display text-display-lg text-ink leading-tight text-pretty">
           {titulo()}
         </h1>
 
@@ -45,10 +45,10 @@ export function HistoryScreen() {
               type="button"
               onClick={() => setDias(j.dias)}
               className={[
-                'min-h-11 px-3 rounded-md border font-mono text-mono-sm uppercase tracking-wider',
+                'min-h-11 px-3 border font-mono text-mono-sm uppercase tracking-wider',
                 'cursor-pointer transition-colors duration-base ease-out',
                 dias === j.dias
-                  ? 'border-primary bg-primary text-inkInverse'
+                  ? 'border-primary bg-primary text-bg'
                   : 'border-hairline text-inkDim',
               ].join(' ')}
             >

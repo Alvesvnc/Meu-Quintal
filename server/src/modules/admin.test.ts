@@ -16,7 +16,7 @@ function tokenDono(role: 'owner' | 'admin' | 'staff' = 'owner', accountId = CONT
     sub: 'user-1',
     accountId,
     accountSlug: CONTA.slug,
-    email: 'marina@meuquintal.app',
+    email: 'marina@qro.app',
     role,
   });
 }

@@ -45,18 +45,18 @@ export function CancelarPedidoSheet({ order, onClose }: Props) {
   return (
     <Sheet open onClose={onClose} ariaLabel="Cancelar pedido">
       <SheetHeader>
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkInverseDim">
+        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           Pedido #{order.shortId} · Mesa {String(order.mesaNumero).padStart(2, '0')}
         </p>
-        <h2 className="mt-1 font-display italic text-display-md text-inkInverse leading-tight">
+        <h2 className="mt-1 font-display text-display-md text-ink leading-tight">
           Cancelar o pedido inteiro?
         </h2>
       </SheetHeader>
 
       <SheetBody>
-        <p className="font-sans text-body text-inkInverseDim">
+        <p className="font-sans text-body text-inkMuted">
           O cliente vai ver o pedido como cancelado e não vai pagar por ele. Se você consegue
-          entregar parte, use <span className="text-inkInverse">alterar itens</span> — assim ele
+          entregar parte, use <span className="text-ink">alterar itens</span> — assim ele
           não perde o pedido todo.
         </p>
 
@@ -64,8 +64,8 @@ export function CancelarPedidoSheet({ order, onClose }: Props) {
           {order.items
             .filter((i) => i.status !== 'cancelado')
             .map((i) => (
-              <li key={i.id} className="font-sans text-body text-inkInverseDim">
-                <span className="font-mono text-inkInverse mr-2 tabular-nums">{i.qty}×</span>
+              <li key={i.id} className="font-sans text-body text-inkMuted">
+                <span className="font-mono text-ink mr-2 tabular-nums">{i.qty}×</span>
                 {i.name}
               </li>
             ))}

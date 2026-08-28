@@ -13,6 +13,8 @@ import type {
   OverviewResponse,
   PrimeiroAcessoResponse,
   DefinirSenhaResponse,
+  AssinaturaResponse,
+  CheckoutResponse,
 } from '@mq/shared';
 import { api, setToken } from './client';
 import { useAuth, useEspacoAtual } from '../stores/auth';
@@ -236,5 +238,48 @@ export function useDefinirSenha() {
       if (data.app === 'dono') setMe(data.me);
       qc.invalidateQueries();
     },
+  });
+}
+
+// ─── Assinatura do QRO ───────────────────────────────────────────────────────
+//
+// O dono pagando A NÓS. Nada a ver com /api/a/financeiro, que é o dono cobrando
+// as cozinhas dele.
+
+export function useAssinatura() {
+  return useQuery({
+    queryKey: ['assinatura'],
+    queryFn: async () => (await api.get<AssinaturaResponse>('/api/a/assinatura')).data,
+    // Curto: quem volta do provedor precisa ver o estado novo, e o webhook leva
+    // alguns segundos pra chegar.
+    staleTime: 10_000,
+  });
+}
+
+/**
+ * Abre o checkout e MANDA a pessoa pra página do provedor.
+ *
+ * O redirecionamento acontece aqui dentro, e não na tela, porque o link vale
+ * uma hora e serve a uma sessão só: guardá-lo em estado pra usar depois faria a
+ * pessoa cair num link morto.
+ */
+export function useAssinar() {
+  return useMutation({
+    mutationFn: async () =>
+      (await api.post<CheckoutResponse>('/api/a/assinatura/checkout')).data,
+    onSuccess: (data) => {
+      window.location.href = data.link;
+    },
+  });
+}
+
+export function useCancelarAssinatura() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await api.delete('/api/a/assinatura')).data,
+    // O estado real vem do webhook, que chega depois. Invalidar aqui só faz a
+    // tela buscar de novo — se ainda não chegou, ela continua mostrando o
+    // estado anterior, que é a verdade naquele instante.
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['assinatura'] }),
   });
 }

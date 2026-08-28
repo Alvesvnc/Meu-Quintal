@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Divider } from '@mq/design-system';
+import { Button } from '@mq/design-system';
 import { useOrder } from '../api/hooks';
+import { TelaHeader } from '../components/TelaHeader';
+import { FaixaFixa } from '../components/FaixaFixa';
 import { ScreenError } from '../components/ScreenError';
 
 const SCALE = [
@@ -14,7 +16,7 @@ const SCALE = [
 
 type Rating = (typeof SCALE)[number]['value'];
 
-/** Tela 06 — Avaliação pós-consumo, uma pergunta por cozinha. */
+/** Tela — Avaliação pós-consumo, uma pergunta por cozinha. */
 export function ReviewScreen() {
   const { orderId = '' } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
@@ -26,37 +28,30 @@ export function ReviewScreen() {
 
   if (isLoading) {
     return (
-      <main className="px-5 pt-8 text-center">
-        <p className="font-display italic text-display-md text-inkMuted">Carregando…</p>
+      <main className="px-4 pt-8">
+        <p className="font-display text-display-md text-neutral-600">Carregando…</p>
       </main>
     );
   }
 
   if (error || !order) {
-    return (
-      <ScreenError
-        title="Pedido não encontrado."
-        onRetry={() => refetch()}
-      />
-    );
+    return <ScreenError title="Pedido não encontrado." onRetry={() => refetch()} />;
   }
 
   const allRated = order.kitchens.every((k) => ratings[k.kitchenSlug] != null);
 
   if (sent) {
     return (
-      <main className="px-5 py-12 text-center">
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
+      <main className="px-4 py-10">
+        <p className="font-display text-label font-bold uppercase text-neutral-600 tabular">
           Pedido #{order.shortId}
         </p>
-        <h1 className="mt-3 font-display italic text-display-xl text-ink leading-tight text-pretty">
-          Obrigada.
-        </h1>
-        <p className="mt-4 font-sans text-body-lg text-inkMuted text-pretty">
+        <h1 className="mt-3 font-display text-display-lg text-ink">Obrigada.</h1>
+        <p className="mt-3 text-body-sm text-neutral-700 text-pretty">
           O quintal fica melhor com o que você acabou de mandar.
         </p>
-        <div className="mt-10">
-          <Button variant="ghost" size="lg" onClick={() => navigate('/')}>
+        <div className="mt-6">
+          <Button variant="secondary" size="lg" fullWidth onClick={() => navigate('/')}>
             Pedir mais alguma coisa
           </Button>
         </div>
@@ -65,104 +60,103 @@ export function ReviewScreen() {
   }
 
   return (
-    <main className="pb-32 px-5">
-      <section className="pt-6 pb-2">
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Pedido #{order.shortId}
-        </p>
-        <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight text-pretty">
-          Como foi?
-        </h1>
-        <p className="mt-2 font-sans text-body text-inkMuted">
-          Uma palavra por cozinha basta. A nota chega só pra cozinha — só ela vê.
-        </p>
-      </section>
+    <>
+      <TelaHeader
+        voltarPara={`/pedido/${orderId}`}
+        titulo={
+          <span className="text-meta uppercase text-neutral-700 tabular">
+            #{order.shortId} · Avaliar
+          </span>
+        }
+      />
 
-      <div className="mt-6 space-y-7">
-        {order.kitchens.map((k) => (
-          <section key={k.kitchenSlug}>
-            <Divider label={k.kitchenName} />
-            <div className="mt-4 grid grid-cols-5 gap-2">
-              {SCALE.map((s) => {
-                const active = ratings[k.kitchenSlug] === s.value;
-                return (
-                  <button
-                    key={s.value}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() =>
-                      setRatings((r) => ({ ...r, [k.kitchenSlug]: s.value }))
-                    }
-                    className={[
-                      'min-h-[64px] px-1 py-2 rounded-md border text-center cursor-pointer',
-                      'transition-colors duration-base ease-out',
-                      active
-                        ? 'border-primary bg-primaryWash'
-                        : 'border-hairline bg-surface hover:border-primary/40',
-                    ].join(' ')}
-                  >
-                    <span
+      <main className="pb-28">
+        <section className="px-4 py-4">
+          <h1 className="font-display text-display-md text-ink">Como foi?</h1>
+          <p className="mt-1 text-meta text-neutral-600">
+            Uma palavra por cozinha. A nota chega só pra cozinha — só ela vê.
+          </p>
+        </section>
+
+        <div className="px-4 flex flex-col gap-6">
+          {order.kitchens.map((k) => (
+            <section key={k.kitchenSlug}>
+              <h2
+                className="font-display text-meta font-bold uppercase text-ink
+                           pb-1 mb-2 border-b-rule border-divider"
+              >
+                {k.kitchenName}
+              </h2>
+
+              {/* Sem gap: as cinco células se tocam e formam uma régua só. */}
+              <div className="grid grid-cols-5">
+                {SCALE.map((s, i) => {
+                  const active = ratings[k.kitchenSlug] === s.value;
+                  return (
+                    <button
+                      key={s.value}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setRatings((r) => ({ ...r, [k.kitchenSlug]: s.value }))}
                       className={[
-                        'block font-mono text-mono tabular-nums',
-                        active ? 'text-primary' : 'text-inkDim',
+                        'min-h-[60px] px-1 py-2 flex flex-col items-start justify-center gap-0.5',
+                        'border border-divider cursor-pointer transition-colors duration-base ease-out',
+                        i > 0 ? 'border-l-0' : '',
+                        active ? 'bg-accent text-bg' : 'text-neutral-700 hover:bg-ink/[0.07]',
                       ].join(' ')}
                     >
-                      {s.value}
-                    </span>
-                    <span
-                      className={[
-                        'mt-1 block font-display italic text-body-sm leading-tight',
-                        active ? 'text-ink' : 'text-inkMuted',
-                      ].join(' ')}
-                    >
-                      {s.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
-
-      <section className="mt-8">
-        <label
-          htmlFor="note"
-          className="block font-mono text-label uppercase tracking-wider text-inkDim mb-2"
-        >
-          Alguma coisa pra contar?{' '}
-          <span className="text-inkDim/70 normal-case tracking-normal">· opcional</span>
-        </label>
-        <textarea
-          id="note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Algo deu certo? Algo deu errado?"
-          rows={3}
-          maxLength={280}
-          className="w-full px-4 py-3 bg-surface border border-hairline rounded-md
-                     font-sans text-body text-ink placeholder:text-inkDim
-                     focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash
-                     resize-none"
-        />
-        <p className="mt-1 font-mono text-mono-sm text-inkDim text-right">{note.length}/280</p>
-      </section>
-
-      <div className="fixed inset-x-0 bottom-16 z-30 pointer-events-none">
-        <div className="mx-auto max-w-[480px] px-5 py-3 bg-bg/95 backdrop-blur-[2px] border-t border-hairlineSoft pointer-events-auto">
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            disabled={!allRated}
-            onClick={() => setSent(true)}
-          >
-            {allRated
-              ? 'Enviar'
-              : `Avalie ${order.kitchens.length - Object.keys(ratings).length} cozinha(s)`}
-          </Button>
+                      <span className="font-display text-body-lg font-bold tabular px-1">
+                        {s.value}
+                      </span>
+                      <span className="font-display text-label-sm font-bold uppercase px-1 truncate max-w-full">
+                        {s.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
-      </div>
-    </main>
+
+        <section className="px-4 mt-6">
+          <label
+            htmlFor="note"
+            className="block font-display text-label font-bold uppercase text-ink mb-1.5"
+          >
+            Alguma coisa pra contar?
+          </label>
+          <textarea
+            id="note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Algo deu certo? Algo deu errado?"
+            rows={3}
+            maxLength={280}
+            className="w-full px-3 py-2 bg-surface border border-divider rounded-none
+                       text-body-sm text-ink placeholder:text-neutral-500
+                       caret-accent resize-none
+                       focus-visible:border-accent focus-visible:outline-offset-0"
+          />
+          <p className="mt-1 text-label-sm text-neutral-600 tabular text-right">
+            {note.length}/280
+          </p>
+        </section>
+      </main>
+
+      <FaixaFixa>
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          disabled={!allRated}
+          onClick={() => setSent(true)}
+        >
+          {allRated
+            ? 'Enviar'
+            : `Falta avaliar ${order.kitchens.length - Object.keys(ratings).length}`}
+        </Button>
+      </FaixaFixa>
+    </>
   );
 }

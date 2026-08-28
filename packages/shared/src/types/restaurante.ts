@@ -39,6 +39,14 @@ export interface FilaOrder {
   id: string;
   shortId: string;
   mesaNumero: number;
+  /**
+   * Quem pediu, quando a pessoa se identificou. `null` = pedido da mesa.
+   *
+   * Serve pra entregar sem perguntar "de quem e esse?" numa mesa com varias
+   * pessoas, e pra cobrar a conta certa. Nao e credencial — vem digitado do
+   * aparelho do cliente.
+   */
+  nomeCliente: string | null;
   createdAt: string;
   acceptedAt: string | null;
   readyAt: string | null;
@@ -107,8 +115,21 @@ export interface CancelOrderInput {
 
 // ─── Cardapio ────────────────────────────────────────────────────────────────
 
-export type CategoriaMenu = 'entradas' | 'pratos' | 'sobremesas' | 'bebidas';
 export type BadgeMenu = 'novo' | 'esgotando' | 'sem-estoque';
+
+/**
+ * Secao do cardapio como a COZINHA ve.
+ *
+ * `itemCount` vem do servidor porque a tela de secoes precisa dele mesmo
+ * quando nao carregou o cardapio inteiro — e porque apagar uma secao com item
+ * dentro exige escolher pra onde eles vao.
+ */
+export interface CategoriaCardapio {
+  id: string;
+  name: string;
+  sortOrder: number;
+  itemCount: number;
+}
 
 /**
  * Item como a COZINHA ve.
@@ -132,7 +153,8 @@ export interface FotoDoItem {
 
 export interface ItemCardapio {
   id: string;
-  category: CategoriaMenu;
+  /** A secao do cardapio. Resolve em `CardapioResponse.categorias`. */
+  categoriaId: string;
   name: string;
   description: string | null;
   priceCents: number;
@@ -149,6 +171,8 @@ export interface ItemCardapio {
 }
 
 export interface CardapioResponse {
+  /** Na ordem de exibicao. Inclui secao vazia — e onde a cozinha vai por item. */
+  categorias: CategoriaCardapio[];
   items: ItemCardapio[];
 }
 
@@ -161,6 +185,16 @@ export interface PerfilCozinhaResponse {
   category: string | null;
   tagline: string | null;
   description: string | null;
+  /**
+   * A foto que esta VALENDO, pronta pro `<img>` — enviada tem precedencia
+   * sobre `photoUrl`. Caminho relativo quando e arquivo nosso: passar por
+   * `urlDaFoto` antes de usar.
+   */
+  foto: string | null;
+  /**
+   * URL EXTERNA, colada a mao. Legado: existe pras cozinhas cadastradas antes
+   * de haver upload, e e o unico campo de foto que o PATCH aceita.
+   */
   photoUrl: string | null;
   slaMinutes: number;
   status: 'ativa' | 'pausada' | 'rascunho';

@@ -1,17 +1,25 @@
 import { useState } from 'react';
 import { Button, Chip, useAgora, useMinutosDesde } from '@mq/design-system';
+import { BellRing, ChevronRight, Clock, ShoppingBasket } from 'lucide-react';
+import { estadoDaProposta } from '../lib/escalonamento';
 import type { FilaOrder, OrderItemStatus } from '@mq/shared';
 import { useAccept, useReady, useDelivered, useCancel } from '../api/hooks';
 import { PropormAlteracaoSheet } from '../screens/PropormAlteracaoSheet';
 import { CancelarPedidoSheet } from '../screens/CancelarPedidoSheet';
+import { fmtHora } from '../lib/formato';
 
 interface OrderCardProps {
   order: FilaOrder;
 }
 
 /**
- * Card de pedido na fila — usa FilaOrder do server (sem mais mock).
- * Cronômetro UP (sempre crescente). Atraso = border-left primary + chip ATRASADO.
+ * Card de pedido na fila.
+ *
+ * O número da MESA virou um tile de 54×54 preenchido, e não mais texto numa
+ * linha de cabeçalho: quem monta o prato lê esse número de pé, a um metro da
+ * tela, com as mãos ocupadas. É a única informação do card que precisa ser
+ * legível sem foco — atrasado, o tile fica vermelho e o card ganha contorno da
+ * mesma cor.
  */
 export function OrderCard({ order }: OrderCardProps) {
   const accept = useAccept();
@@ -31,143 +39,197 @@ export function OrderCard({ order }: OrderCardProps) {
   const minutosRestantes = Math.floor(restantes / 60);
   const segundosRestantes = restantes % 60;
 
+  // Passado tempo demais sem resposta, para de esperar o celular: alguem vai
+  // ate a mesa. Ver lib/escalonamento.ts — no iOS nao ha notificacao que
+  // resolva isso, entao o caminho confiavel e humano.
+  const semResposta =
+    aguardando !== null && estadoDaProposta(aguardando.createdAt, agora) === 'ir-na-mesa';
+
+  // Alterar so ate `preparando`: depois do `pronto` a comida ja existe, e
+  // propor reduzir vira desperdicio. O servidor recusa item por item (ver
+  // ALTERAVEIS em server/src/lib/alteracao.ts); aqui e so pra nao oferecer um
+  // botao que so daria erro.
+  //
+  // `order.status` e o status AGREGADO, que e o mais atrasado dos itens ativos
+  // — entao um pedido com um item pronto e outro ainda preparando continua
+  // aparecendo como `preparando`, e o botao segue disponivel. Correto: ainda
+  // ha o que alterar.
+  const podeAlterar = order.status === 'novo' || order.status === 'preparando';
+
   // Cronometro que anda de verdade. Date.now() no corpo do render deixava o
   // numero congelado ate outra coisa causar re-render — ver useAgora.
   const startedAt = order.acceptedAt ?? order.createdAt;
   const elapsedMin = useMinutosDesde(startedAt) ?? 0;
   const createdMin = useMinutosDesde(order.createdAt) ?? 0;
 
-  const CTA_LABEL: Partial<Record<OrderItemStatus, string>> = {
-    novo:       'Aceitar',
-    preparando: 'Pronto',
-    pronto:     'Retirado',
-  };
-  const cta = CTA_LABEL[order.status] ?? null;
-
   const isPending =
     accept.isPending || ready.isPending || delivered.isPending || cancel.isPending;
 
   const handleAdvance = () => {
-    if (order.status === 'novo')       accept.mutate(order.id);
+    if (order.status === 'novo') accept.mutate(order.id);
     else if (order.status === 'preparando') ready.mutate(order.id);
-    else if (order.status === 'pronto')     delivered.mutate(order.id);
+    else if (order.status === 'pronto') delivered.mutate(order.id);
   };
 
-  const elapsedLabel = (() => {
-    if (order.status === 'novo')       return `entrou há ${createdMin} min`;
+  /** Rótulo e ícone da ação primária. O ícone diz o que acontece depois. */
+  const CTA: Partial<Record<OrderItemStatus, { label: string; icone: typeof ChevronRight }>> = {
+    novo:       { label: 'Aceitar pedido', icone: ChevronRight },
+    preparando: { label: 'Marcar pronto',  icone: BellRing },
+    pronto:     { label: 'Entregue',       icone: ShoppingBasket },
+  };
+  const cta = CTA[order.status] ?? null;
+  const IconeCta = cta?.icone;
+
+  const tempoLabel = (() => {
+    if (order.status === 'novo') return `há ${createdMin} min`;
     if (order.status === 'preparando') return `preparando há ${elapsedMin} min`;
-    if (order.status === 'pronto' && order.readyAt) {
-      return `pronto às ${fmtTime(order.readyAt)}`;
-    }
+    if (order.status === 'pronto' && order.readyAt) return `pronto às ${fmtHora(order.readyAt)}`;
     return '';
   })();
 
-  const showLate = order.isLate;
+  const atrasado = order.isLate;
+  const mesa = String(order.mesaNumero).padStart(2, '0');
 
   return (
     <article
       className={[
-        'rounded-lg bg-surface p-5',
-        showLate ? 'border-l-4 border-l-primary' : '',
-        order.status === 'pronto'
-          ? 'border border-primary'
-          : 'border border-hairline',
-      ].filter(Boolean).join(' ')}
+        'border-rule p-4 flex flex-col gap-3',
+        atrasado ? 'border-accent' : 'border-divider',
+      ].join(' ')}
     >
-      {/* Header: #id + mesa + chips */}
-      <div className="flex items-baseline justify-between gap-3 mb-1">
-        <div className="flex items-baseline gap-3">
-          <span className="font-mono text-mono text-inkDim">#{order.shortId}</span>
-          <span className="font-display text-display-md text-ink leading-none">
-            Mesa {String(order.mesaNumero).padStart(2, '0')}
+      {/* ── Cabeçalho: tile da mesa + identificação + status ────────────── */}
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden
+          className={[
+            'w-[54px] h-[54px] shrink-0 inline-flex items-center justify-center',
+            'font-display text-[22px] font-bold tabular',
+            atrasado ? 'bg-accent text-bg' : 'bg-neutral-900 text-bg',
+          ].join(' ')}
+        >
+          {mesa}
+        </span>
+
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <span className="font-display text-body-lg font-bold uppercase text-ink truncate">
+            Mesa {mesa}
+            {/*
+              O nome vem DEPOIS da mesa e em cinza: quem entrega procura a mesa
+              primeiro, e o nome so desempata quando ha mais de uma pessoa nela.
+              Invertido, o olho pararia no nome e teria que voltar pra achar
+              aonde ir.
+            */}
+            {order.nomeCliente && (
+              <span className="text-neutral-700"> · {order.nomeCliente}</span>
+            )}
+          </span>
+          <span
+            className={[
+              'flex items-center gap-1.5 text-meta tabular',
+              atrasado ? 'text-accent-700' : 'text-neutral-600',
+            ].join(' ')}
+          >
+            <Clock size={12} strokeWidth={2} aria-hidden className="shrink-0" />
+            #{order.shortId}
+            {tempoLabel && ` · ${tempoLabel}`}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          {order.paymentRequestedAt && (
-            <Chip tone="primary">fechou conta</Chip>
-          )}
-          {showLate && <Chip tone="warn">atrasado</Chip>}
-        </div>
+
+        <span className="ml-auto shrink-0 flex items-center gap-2">
+          {order.paymentRequestedAt && <Chip tone="tint">Fechou conta</Chip>}
+          {atrasado ? (
+            <Chip tone="solid">Atrasado</Chip>
+          ) : order.status === 'novo' ? (
+            <Chip tone="outline">Novo</Chip>
+          ) : null}
+        </span>
       </div>
 
-      <p className={[
-        'font-mono text-mono mb-3',
-        showLate ? 'text-primary' : 'text-inkDim',
-      ].join(' ')}>
-        {elapsedLabel}
-      </p>
+      {/* ── Proposta pendente ──────────────────────────────────────────── */}
+      {aguardando && (
+        <div
+          className={[
+            'border border-accent p-3 flex flex-col gap-2',
+            semResposta ? 'bg-accent-200' : 'bg-accent-100',
+          ].join(' ')}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-display text-label font-bold uppercase text-accent-800">
+              {/* O aviso diz O QUE FAZER, nao o que aconteceu. "Sem resposta"
+                  sozinho deixaria a pessoa olhando pro card sem saber que a
+                  acao agora e dela. */}
+              {semResposta ? `Vá até a mesa ${mesa}` : 'Aguardando o cliente'}
+            </span>
+            <span className="font-display text-body-lg font-bold text-accent-700 tabular shrink-0">
+              {minutosRestantes}:{String(segundosRestantes).padStart(2, '0')}
+            </span>
+          </div>
 
-      {/* Itens (snapshot do nome do server) */}
-      <ul className="border-t border-b border-hairline py-3 my-3 space-y-1.5">
-        {aguardando && (
-          <li className="mb-4 list-none rounded-md border border-primary bg-primaryWash px-4 py-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="font-mono text-mono-sm uppercase tracking-wider text-primaryDeep">
-                Aguardando o cliente
-              </span>
-              <span className="font-mono text-mono-sm tabular-nums text-primaryDeep shrink-0">
-                {minutosRestantes}:{String(segundosRestantes).padStart(2, '0')}
-              </span>
-            </div>
-
-            <ul className="mt-2 space-y-1">
-              {aguardando.linhas.map((l) => (
-                <li key={l.orderItemId} className="font-sans text-body-sm text-primaryDeep">
-                  {l.name}: <span className="line-through">{l.qtyAnterior}×</span>{' '}
-                  {l.qtyProposta === 0 ? 'cancelar' : `${l.qtyProposta}×`}
-                </li>
-              ))}
-            </ul>
-
-            <p className="mt-2 font-sans text-body-sm text-primaryDeep/80">
-              Sem resposta até lá,{' '}
-              {aguardando.linhas.length === 1 ? 'o item é cancelado' : 'os itens são cancelados'}.
+          {aguardando.linhas.map((l) => (
+            <p key={l.orderItemId} className="text-body-sm text-accent-800 tabular">
+              {l.name}: <s>{l.qtyAnterior}×</s> →{' '}
+              <strong>{l.qtyProposta === 0 ? 'cancelar' : `${l.qtyProposta}×`}</strong>
             </p>
-          </li>
-        )}
+          ))}
 
+          <p className="text-label text-accent-800 opacity-80 normal-case tracking-normal">
+            {semResposta
+              ? 'O celular não respondeu. Pergunte na mesa e peça pra pessoa abrir o app e responder — o prazo continua correndo.'
+              : `Sem resposta até 0:00, ${
+                  aguardando.linhas.length === 1 ? 'o item sai' : 'os itens saem'
+                } do pedido.`}
+          </p>
+        </div>
+      )}
+
+      {/* ── Itens ──────────────────────────────────────────────────────── */}
+      <ul className="border-y border-divider py-3 flex flex-col gap-2">
         {order.items.map((it) => {
           // Item cancelado precisa estar visivelmente riscado. Sem marca, o
           // operador prepara comida que ninguem vai buscar.
           const cancelado = it.status === 'cancelado';
           return (
-            <li key={it.id}>
-              <div className="flex items-baseline gap-3">
+            <li key={it.id} className={cancelado ? 'opacity-60' : ''}>
+              <div className="flex items-center gap-2">
                 <span
-                  className={[
-                    'font-mono text-body tabular-nums shrink-0',
-                    cancelado ? 'text-inkDim' : 'text-ink',
-                  ].join(' ')}
+                  aria-hidden
+                  className="min-w-[30px] h-[30px] shrink-0 inline-flex items-center justify-center
+                             border border-divider px-1
+                             font-display text-body-sm font-bold text-ink tabular"
                 >
                   {it.qty}×
                 </span>
                 <span
                   className={[
-                    'font-sans text-body-lg flex-1',
-                    cancelado ? 'text-inkDim line-through' : 'text-ink',
+                    'text-body-lg font-medium text-ink flex-1 min-w-0',
+                    cancelado ? 'line-through' : '',
                   ].join(' ')}
                 >
                   {it.name}
                 </span>
                 {cancelado && (
-                  <span className="font-mono text-mono-sm uppercase tracking-wider text-danger shrink-0">
-                    cancelado
+                  <span className="shrink-0">
+                    <Chip tone="neutral">Cancelado</Chip>
                   </span>
                 )}
               </div>
+
               {it.note && !cancelado && (
-                <p className="ml-9 mt-0.5 font-sans text-body italic text-inkDim">
-                  obs: {it.note}
-                </p>
+                <div className="mt-1 ml-[38px] flex items-center gap-2 bg-accent-100 px-3 py-2">
+                  <span className="font-display text-label-sm font-bold uppercase text-accent-800 shrink-0">
+                    Obs
+                  </span>
+                  <span className="text-body-sm text-accent-800">{it.note}</span>
+                </div>
               )}
             </li>
           );
         })}
       </ul>
 
-      {/* Ação primária XL + cancelar discreto */}
+      {/* ── Ação primária + secundárias ────────────────────────────────── */}
       {cta && (
-        <div className="mt-4">
+        <div className="flex flex-col gap-3">
           <Button
             variant="primary"
             size="xl"
@@ -176,9 +238,13 @@ export function OrderCard({ order }: OrderCardProps) {
             disabled={isPending}
             onClick={handleAdvance}
           >
-            {cta}
+            <span>{cta.label}</span>
+            {IconeCta && !isPending && (
+              <IconeCta size={18} strokeWidth={2} aria-hidden className="ml-auto" />
+            )}
           </Button>
-          <div className="mt-3 flex items-center justify-center gap-5">
+
+          <div className="flex items-center gap-6">
             {/*
               Alterar vem ANTES de cancelar, e nao so por ordem de leitura:
               reduzir "2 para 1" resolve a falta de ingrediente sem o cliente
@@ -188,13 +254,12 @@ export function OrderCard({ order }: OrderCardProps) {
               Enquanto ha proposta aberta o botao some: o servidor recusaria
               com 409, e mostrar um botao que so da erro e pior que nao mostrar.
             */}
-            {!aguardando && (
+            {!aguardando && podeAlterar && (
               <button
                 type="button"
                 onClick={() => setProporAlteracao(true)}
-                className="px-3 py-1 cursor-pointer
-                           font-mono text-mono-sm uppercase tracking-wider text-inkDim
-                           hover:text-primary transition-colors duration-base ease-out"
+                className="font-display text-label font-bold uppercase text-neutral-600
+                           cursor-pointer hover:text-accent transition-colors duration-base ease-out"
               >
                 Alterar itens
               </button>
@@ -204,11 +269,10 @@ export function OrderCard({ order }: OrderCardProps) {
               <button
                 type="button"
                 onClick={() => setConfirmCancel(true)}
-                className="px-3 py-1 cursor-pointer
-                           font-mono text-mono-sm uppercase tracking-wider text-inkDim
-                           hover:text-danger transition-colors duration-base ease-out"
+                className="font-display text-label font-bold uppercase text-neutral-600
+                           cursor-pointer hover:text-accent transition-colors duration-base ease-out"
               >
-                Cancelar pedido
+                Cancelar
               </button>
             )}
           </div>
@@ -222,11 +286,6 @@ export function OrderCard({ order }: OrderCardProps) {
       {confirmCancel && (
         <CancelarPedidoSheet order={order} onClose={() => setConfirmCancel(false)} />
       )}
-
     </article>
   );
-}
-
-function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }

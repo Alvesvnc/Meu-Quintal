@@ -1,4 +1,3 @@
-import type { CategoriaMenu } from '@mq/shared';
 import { API_BASE } from '../api/client';
 
 /** R$ 1.234,56 */
@@ -14,15 +13,6 @@ export function fmtBRL(cents: number): string {
 export function fmtHora(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
-
-export const CATEGORIA_LABEL: Record<CategoriaMenu, string> = {
-  entradas: 'Entradas',
-  pratos: 'Pratos',
-  sobremesas: 'Sobremesas',
-  bebidas: 'Bebidas',
-};
-
-export const CATEGORIAS: CategoriaMenu[] = ['entradas', 'pratos', 'sobremesas', 'bebidas'];
 
 /**
  * Endereço completo de uma foto do cardápio.

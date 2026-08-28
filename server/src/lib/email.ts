@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { env } from './env.js';
+import { env, isDev } from './env.js';
 
 /**
  * Envio de email, via Resend.
@@ -46,7 +46,33 @@ export interface ResultadoEnvio {
 
 export async function enviar(email: Email): Promise<ResultadoEnvio> {
   const r = obterCliente();
-  if (!r) return { enviado: false, erro: 'RESEND_API_KEY vazio' };
+  if (!r) {
+    /*
+      SEM CHAVE, EM DESENVOLVIMENTO, O E-MAIL VAI PRO CONSOLE.
+
+      Isto conserta um beco sem saída real. "Esqueci minha senha" responde
+      `{ok:true}` mesmo quando nada foi enviado — e responde igual para e-mail
+      que existe e que não existe, de propósito, para não contar a ninguém quem
+      tem conta aqui. Junto com `RESEND_API_KEY` vazio, o resultado era que o
+      link NÃO EXISTIA em lugar nenhum alcançável: nem na resposta, nem em
+      e-mail, nem em log. E ler o banco não resolvia — `access_tokens` guarda o
+      HASH do token, não o token.
+
+      SÓ EM DESENVOLVIMENTO. Link de recuperação em log de produção é falha de
+      segurança: quem lê o log passa a poder trocar a senha de qualquer pessoa.
+      Em produção isto continua silencioso, como sempre foi.
+    */
+    if (isDev) {
+      console.warn(
+        `\n─── E-MAIL NAO ENVIADO (RESEND_API_KEY vazio) ───\n` +
+          `para:    ${email.para}\n` +
+          `assunto: ${email.assunto}\n\n` +
+          `${email.texto.trim()}\n` +
+          `─────────────────────────────────────────────────\n`,
+      );
+    }
+    return { enviado: false, erro: 'RESEND_API_KEY vazio' };
+  }
 
   try {
     const { error } = await r.emails.send({
@@ -90,7 +116,7 @@ export interface ConviteDeCozinha {
 /**
  * O convite para operar uma cozinha.
  *
- * Escrito para alguém que talvez nunca tenha ouvido falar do Meu Quintal: diz
+ * Escrito para alguém que talvez nunca tenha ouvido falar do QRO: diz
  * quem convidou, para quê, e o que acontece ao clicar. Um email que só diz
  * "clique aqui" com um link estranho vai para o lixo — ou pior, treina a pessoa
  * a clicar em link estranho.
@@ -101,9 +127,9 @@ export function conviteDeCozinha(dados: ConviteDeCozinha): Email {
   const cozinha = esc(dados.nomeDaCozinha);
 
   const texto = [
-    `${dados.nomeDoQuintal} convidou você para operar a ${dados.nomeDaCozinha} no Meu Quintal.`,
+    `${dados.nomeDoQuintal} convidou você para operar a ${dados.nomeDaCozinha} no QRO.`,
     '',
-    'O Meu Quintal e o sistema de pedidos do espaco: o cliente escaneia o QR da',
+    'O QRO e o sistema de pedidos do espaco: o cliente escaneia o QR da',
     'mesa, monta o pedido, e ele cai direto na sua fila.',
     '',
     'Para aceitar e criar sua senha:',
@@ -117,13 +143,13 @@ export function conviteDeCozinha(dados: ConviteDeCozinha): Email {
   const html = `
 <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
   <p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#777;margin:0 0 8px">
-    Meu Quintal
+    QRO
   </p>
   <h1 style="font-size:24px;line-height:1.25;margin:0 0 16px;font-weight:600">
     ${quintal} convidou você para operar a ${cozinha}.
   </h1>
   <p style="font-size:16px;line-height:1.55;color:#444;margin:0 0 16px">
-    O Meu Quintal é o sistema de pedidos do espaço: o cliente escaneia o QR da mesa,
+    O QRO é o sistema de pedidos do espaço: o cliente escaneia o QR da mesa,
     monta o pedido, e ele cai direto na sua fila.
   </p>
   <p style="margin:24px 0">
@@ -194,7 +220,7 @@ export function boasVindas(dados: BoasVindas): Email {
   const html = `
 <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
   <p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#777;margin:0 0 8px">
-    Meu Quintal
+    QRO
   </p>
   <h1 style="font-size:24px;line-height:1.25;margin:0 0 16px;font-weight:600">
     ${esc(saudacao)}
@@ -220,7 +246,7 @@ export function boasVindas(dados: BoasVindas): Email {
 
   return {
     para: dados.para,
-    assunto: `Sua conta no Meu Quintal está pronta`,
+    assunto: `Sua conta no QRO está pronta`,
     html,
     texto,
   };
@@ -258,7 +284,7 @@ export function recuperarSenha(dados: RecuperarSenha): Email {
   const texto = [
     dados.nome ? `Oi, ${dados.nome}.` : 'Pedido de nova senha.',
     '',
-    `Alguem pediu pra trocar a senha de acesso a ${dados.ondeEntra}, no Meu Quintal.`,
+    `Alguem pediu pra trocar a senha de acesso a ${dados.ondeEntra}, no QRO.`,
     '',
     'Para criar uma senha nova:',
     dados.link,
@@ -271,7 +297,7 @@ export function recuperarSenha(dados: RecuperarSenha): Email {
   const html = `
 <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
   <p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#777;margin:0 0 8px">
-    Meu Quintal
+    QRO
   </p>
   <h1 style="font-size:24px;line-height:1.25;margin:0 0 16px;font-weight:600">
     ${esc(saudacao)}

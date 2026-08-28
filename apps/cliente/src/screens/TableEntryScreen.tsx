@@ -22,8 +22,8 @@ export function TableEntryScreen() {
   }, [tableToken, navigate]);
 
   return (
-    <main className="px-5 py-12 text-center">
-      <p className="font-display italic text-display-md text-inkMuted">Entrando…</p>
+    <main className="px-4 py-10">
+      <p className="font-display text-display-md text-neutral-600">Entrando…</p>
     </main>
   );
 }

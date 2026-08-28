@@ -13,7 +13,9 @@ export default tseslint.config(
       '**/coverage/**',
       '**/*.tsbuildinfo',
       'server/src/generated/**',
-      'Meu Quintal.html',
+      // Referencia de design, nao codigo do produto: o prototipo das telas e o
+      // suporte dele rodam soltos no navegador, fora do build.
+      'docs/design-system/qro/modernist/**',
     ],
   },
 

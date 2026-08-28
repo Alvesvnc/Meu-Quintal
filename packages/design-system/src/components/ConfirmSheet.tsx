@@ -6,13 +6,13 @@ type ConfirmTone = 'primary' | 'danger';
 
 interface ConfirmSheetProps {
   open: boolean;
-  /** Pergunta principal — vai em Fraunces italic display-md */
+  /** Pergunta principal — Archivo 800, alinhada à esquerda. */
   title: ReactNode;
   /** Texto explicativo opcional logo abaixo do título */
   body?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** primary = ação positiva (terracota), danger = ação destrutiva (vermelho) */
+  /** primary = ação que segue em frente, danger = ação destrutiva */
   tone?: ConfirmTone;
   loading?: boolean;
   onConfirm: () => void;
@@ -37,11 +37,11 @@ export function ConfirmSheet({
   return (
     <Sheet open={open} onClose={onClose} ariaLabel="Confirmação">
       <SheetBody>
-        <h2 className="font-display italic text-display-md text-ink leading-tight text-pretty">
+        <h2 className="font-display text-display-md text-ink text-pretty">
           {title}
         </h2>
         {body && (
-          <p className="mt-3 font-sans text-body text-inkMuted text-pretty">
+          <p className="mt-3 text-body-sm text-neutral-700 text-pretty">
             {body}
           </p>
         )}
@@ -62,10 +62,10 @@ export function ConfirmSheet({
           type="button"
           onClick={onClose}
           disabled={loading}
-          className="block w-full mt-3 py-3 cursor-pointer
-                     font-mono text-mono-sm uppercase tracking-wider text-inkDim
-                     hover:text-ink transition-colors duration-base ease-out
-                     disabled:opacity-50 disabled:cursor-not-allowed"
+          className="block w-full mt-3 py-3 text-left cursor-pointer
+                     font-display text-label font-bold uppercase text-neutral-600
+                     hover:text-accent transition-colors duration-base ease-out
+                     disabled:opacity-45 disabled:cursor-not-allowed"
         >
           {cancelLabel}
         </button>

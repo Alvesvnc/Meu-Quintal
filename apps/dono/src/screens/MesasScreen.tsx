@@ -52,7 +52,7 @@ export function MesasScreen() {
         <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">
           Diário · mesas
         </p>
-        <h1 className="font-display italic text-display-xl text-ink leading-tight">
+        <h1 className="font-display text-display-xl text-ink leading-tight">
           {ocupadas} ocupadas, {livres} livres.
         </h1>
         {limpar > 0 && (
@@ -75,7 +75,13 @@ export function MesasScreen() {
               }
             />
 
-            <div className="mt-4 grid grid-cols-4 gap-3 max-w-[440px]">
+            {/*
+              Tres colunas no celular, quatro a partir do sm. Cada celula e um
+              quadrado com o valor do mes dentro: com quatro colunas num
+              aparelho de 320px sobram ~70px por celula, e o valor nao cabe.
+              O teto de 440px mantem o desenho do salao compacto na tela grande.
+            */}
+            <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-3 max-w-[440px]">
               {salao.data.map((m) => (
                 <Celula
                   key={m.id}
@@ -155,7 +161,7 @@ function Celula({ mesa, noMes, selecionada, onClick }: CelulaProps) {
       type="button"
       onClick={onClick}
       className={[
-        'aspect-square rounded-md border-2 cursor-pointer',
+        'aspect-square border-2 cursor-pointer',
         'flex flex-col items-center justify-center gap-0.5 px-1',
         'transition-colors duration-base ease-out',
         tom,
@@ -190,7 +196,7 @@ function Legenda({ tom, rotulo }: { tom: 'accent' | 'primary' | 'warn'; rotulo: 
   const cls = { accent: 'bg-accent', primary: 'bg-primary', warn: 'bg-warn' }[tom];
   return (
     <span className="inline-flex items-center gap-2">
-      <span className={`w-2.5 h-2.5 rounded-full ${cls}`} aria-hidden />
+      <span className={`w-2.5 h-2.5 ${cls}`} aria-hidden />
       <span className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">{rotulo}</span>
     </span>
   );
@@ -213,7 +219,7 @@ function Painel({ mesa, noMes, refMonth, onFechar }: PainelProps) {
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <p className="font-mono text-label uppercase tracking-wider text-inkDim">Mesa</p>
-          <p className="font-display text-display-lg italic text-ink leading-none mt-1">
+          <p className="font-display text-display-lg text-ink leading-none mt-1">
             {String(mesa.numero).padStart(2, '0')}
           </p>
         </div>

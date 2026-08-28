@@ -73,7 +73,7 @@ export function OnboardScreen() {
         <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">
           Configurar · novo restaurante
         </p>
-        <h1 className="font-display italic text-display-xl text-ink leading-tight text-pretty">
+        <h1 className="font-display text-display-xl text-ink leading-tight text-pretty">
           {internalName.trim() || 'Convidar uma cozinha pro quintal.'}
         </h1>
         <p className="mt-3 font-sans text-body-lg text-inkMuted max-w-xl">
@@ -113,7 +113,7 @@ export function OnboardScreen() {
           </p>
 
           {/* Comissão */}
-          <div className="border border-hairline rounded-lg p-4">
+          <div className="border border-hairline p-4">
             <label className="flex items-start gap-3 cursor-pointer mb-3">
               <input
                 type="checkbox"
@@ -160,7 +160,7 @@ export function OnboardScreen() {
           </div>
 
           {/* Aluguel fixo */}
-          <div className="border border-hairline rounded-lg p-4 mt-3">
+          <div className="border border-hairline p-4 mt-3">
             <label className="flex items-start gap-3 cursor-pointer mb-3">
               <input
                 type="checkbox"
@@ -239,7 +239,7 @@ function ConviteCriado({ convite, aoNovo }: { convite: ConviteResponse; aoNovo: 
         <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">
           Configurar · convite criado
         </p>
-        <h1 className="font-display italic text-display-xl text-ink leading-tight">
+        <h1 className="font-display text-display-xl text-ink leading-tight">
           Convite pronto pra {convite.email}.
         </h1>
       </header>
@@ -251,7 +251,7 @@ function ConviteCriado({ convite, aoNovo }: { convite: ConviteResponse; aoNovo: 
           hash dele, do mesmo jeito que faz com senha.
         </p>
 
-        <div className="mt-4 p-4 bg-surface border border-hairline rounded-md">
+        <div className="mt-4 p-4 bg-surface border border-hairline">
           <code className="block font-mono text-mono text-ink break-all">{link ?? '—'}</code>
         </div>
 
@@ -308,6 +308,6 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 const inputCls =
-  'w-full px-3 py-2 h-10 bg-surface border border-hairline rounded-md ' +
+  'w-full px-3 py-2 h-10 bg-surface border border-hairline ' +
   'font-sans text-body text-ink placeholder:text-inkDim ' +
   'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash';

@@ -6,11 +6,26 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: meu-quintal-db
+    container_name: qro-db
+    # ─── CREDENCIAIS DE DESENVOLVIMENTO, CHUMBADAS DE PROPOSITO ────────────
+    #
+    # Isto lia de um `.env` na raiz do repo. O arquivo existia so pra entregar
+    # estas quatro variaveis, e as MESMAS credenciais ja estao escritas na
+    # DATABASE_URL de server/.env.example — dois lugares pro mesmo segredo,
+    # que e como um deles fica desatualizado sem ninguem notar. Foi o que
+    # aconteceu: o `.env` da raiz estava com POSTGRES_PASSWORD VAZIO enquanto
+    # o server esperava `quintal_dev`, e o unico sintoma seria o server nao
+    # conectar, sem dizer por que.
+    #
+    # Nao ha segredo aqui pra proteger: e um banco de brinquedo, na 5433,
+    # que so escuta nesta maquina. O banco de producao esta em
+    # docker-compose.prod.yml e le do .env.prod, onde a senha e obrigatoria.
+    #
+    # Ainda da pra sobrescrever exportando a variavel, se voce quiser.
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-quintal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quintal_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-meu_quintal}
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:

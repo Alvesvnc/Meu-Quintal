@@ -32,7 +32,7 @@ export function FinanceiroScreen() {
         <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">
           Financeiro
         </p>
-        <h1 className="font-display italic text-display-xl text-ink leading-tight">
+        <h1 className="font-display text-display-xl text-ink leading-tight">
           {unico ? 'Seu faturamento.' : 'O que você tem a receber.'}
         </h1>
         <div className="mt-3">
@@ -43,7 +43,7 @@ export function FinanceiroScreen() {
               value={refMonth}
               max={refMonthAtual()}
               onChange={(e) => e.target.value && setRefMonth(e.target.value)}
-              className="px-3 py-1.5 bg-surface border border-hairline rounded-md
+              className="px-3 py-1.5 bg-surface border border-hairline
                          font-mono text-mono text-ink
                          focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash"
             />

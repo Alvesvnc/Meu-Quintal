@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { LogoIcone } from '@mq/design-system';
 import { clearToken } from '../api/client';
 import { useAuth, useEspacoAtual } from '../stores/auth';
 
@@ -33,18 +34,16 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             onClick={onMenuClick}
             aria-label="Abrir menu"
             className="md:hidden -ml-1 w-10 h-10 flex flex-col items-center justify-center gap-[3px] cursor-pointer
-                       rounded-md hover:bg-surface transition-colors duration-base ease-out"
+                       hover:bg-surface transition-colors duration-base ease-out"
           >
-            <span aria-hidden className="block w-5 h-[2px] bg-ink rounded-full" />
-            <span aria-hidden className="block w-5 h-[2px] bg-ink rounded-full" />
-            <span aria-hidden className="block w-5 h-[2px] bg-ink rounded-full" />
+            <span aria-hidden className="block w-5 h-[2px] bg-ink" />
+            <span aria-hidden className="block w-5 h-[2px] bg-ink" />
+            <span aria-hidden className="block w-5 h-[2px] bg-ink" />
           </button>
 
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-sm bg-primary text-white font-mono text-mono-sm" aria-hidden>
-            Q
-          </span>
-          <span className="font-display italic text-body-lg text-ink truncate">
-            {espaco?.name ?? 'Meu Quintal'}
+          <LogoIcone size={22} />
+          <span className="font-display text-body-lg text-ink truncate">
+            {espaco?.name ?? 'QRO'}
           </span>
           <span className="font-mono text-mono-sm text-inkDim hidden sm:inline">
             admin

@@ -13,7 +13,12 @@ vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
  */
 const { guardadas } = vi.hoisted(() => ({ guardadas: new Map<string, Buffer>() }));
 
-vi.mock('../lib/armazenamento.js', () => ({
+vi.mock('../lib/armazenamento.js', async () => ({
+  // Herda o modulo real pra so trocar o que toca disco. `urlPublica` e regra,
+  // nao I/O: dublar ela deixaria o teste passar com a rota errada.
+  ...(await vi.importActual<typeof import('../lib/armazenamento.js')>(
+    '../lib/armazenamento.js',
+  )),
   prepararArmazenamento: vi.fn(),
   guardar: vi.fn(async (data: Buffer, ext: string) => {
     const chave = `${'ab'.repeat(16)}.${ext}`;

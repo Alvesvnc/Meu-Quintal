@@ -1,6 +1,6 @@
 ================================================================================
 MEU QUINTAL - PENDENCIAS ABERTAS
-Ultima atualizacao: 2026-08-26 (recuperar senha + expulsao de sessao)
+Ultima atualizacao: 2026-08-28 (PWA do restaurante; fonte hospedada localmente)
 ================================================================================
 
 Este arquivo existe pra sobreviver a troca de sessao/chat. Se voce abriu um
@@ -16,7 +16,7 @@ Estado em 2026-08-25:
   - App do cliente ......................................... na API
   - App do dono ............................................ na API
   - App do restaurante ..................................... na API
-  - 506 testes | lint 0 erros/0 warnings | typecheck limpo | 4 imagens Docker OK
+  - 652 testes | lint 0 erros/0 warnings | typecheck limpo | 4 imagens Docker OK
 
 NADA ESTA COMMITADO. Sao 100+ arquivos desde a594b82 (2026-06-09).
 
@@ -440,6 +440,54 @@ e trocar por Cascade apagaria o historico de pedidos junto, reescrevendo
 faturamento de ciclo ja fechado.
 
 
+--- 1.13 AS SECOES DO CARDAPIO SAO DA COZINHA, NAO DO SISTEMA ---
+
+Ate 2026-08-27 `MenuItem.category` era um enum de quatro valores fixos:
+entradas, pratos, sobremesas, bebidas. Virou tabela (`menu_categories`, model
+MenuCategoria), escopada por cozinha, com nome e ordem escritos por ela.
+
+POR QUE MUDOU: o produto e vendido pra praca de alimentacao. Padaria, bar,
+sorveteria e pastelaria nao se descrevem com o vocabulario de um restaurante —
+"Pratos" pra pao e "Sobremesas" pra sorvete e a plataforma dizendo pro cliente
+o que a casa vende. E cada nome novo exigia migration.
+
+  O ITEM APONTA PRO ID, NUNCA PRO TEXTO. E isso que faz renomear ser barato:
+  "Pratos" -> "Do fogao" nao move item nenhum. Se um dia alguem trocar por
+  nome, renomear passa a ser uma migracao de dados disfarcada de PATCH.
+
+  A SECAO VEM DO BODY, ENTAO E CONFERIDA. `categoriaId` chega do cliente em
+  POST/PATCH de item e em DELETE de secao (o `destino`). Toda rota confere que
+  o id e de uma secao da cozinha logada — sem isso bastaria conhecer um id pra
+  pendurar prato no cardapio da vizinha. Ha teste pra cada uma.
+
+  APAGAR SECAO EXIGE DESTINO PROS ITENS. FK com Restrict; a rota move os itens
+  e apaga NA MESMA TRANSACAO. Fora dela, um erro no apagar deixaria os pratos
+  trocados de secao sem ninguem ter pedido. A contagem que decide inclui o
+  ARQUIVADO: ele continua apontando pra secao e barraria o DELETE.
+
+  A ULTIMA SECAO NAO SAI (409). Sem nenhuma, o cardapio nao teria onde por o
+  proximo item — e a cozinha descobriria isso no meio do servico, tentando
+  cadastrar um prato. Renomear resolve o caso real.
+
+  REORDENAR MANDA A LISTA INTEIRA (PATCH /categorias/ordem), nao "sobe uma
+  posicao". Duas escritas separadas deixam duas secoes na mesma posicao se a
+  segunda falhar, e ai o cardapio escolhe sozinho quem vem antes. A rota recusa
+  lista parcial, id repetido e id de outra cozinha.
+
+  COZINHA NOVA NASCE COM AS QUATRO DE ANTES (lib/categoriasPadrao.ts), em
+  bootstrap.ts e no aceite de convite. Nao e regra do sistema: e ponto de
+  partida editavel, pra que a primeira tela do app nao seja "crie uma secao
+  antes de criar o primeiro item".
+
+  TETO DE 12 SECOES, e nome de ate 24 letras. Os dois sao EDICAO, nao limite
+  tecnico: a linha de secoes do app do cliente e uma grade de celulas iguais, e
+  passando disso o rotulo trunca e o cliente perde o cardapio de vista.
+
+Migration 20260827120000_categorias_do_cardapio: cria a tabela, da as quatro de
+sempre pra TODA cozinha existente, liga cada item na sua pelo nome, so entao
+poe NOT NULL e derruba o enum. Nenhum cardapio mudou de aparencia.
+
+
 ================================================================================
 2. O QUE FALTA
 ================================================================================
@@ -448,6 +496,21 @@ faturamento de ciclo ja fechado.
 
 O ciclo inteiro funciona: o dono convida, a pessoa recebe o link, abre, le o
 acordo, escolhe a senha e ja entra logada. Ver 1.10.
+
+[x] SEM CHAVE, O E-MAIL VAI PRO CONSOLE (2026-08-28). Vale em
+    DESENVOLVIMENTO apenas, e conserta um beco sem saida:
+
+    "Esqueci minha senha" responde {ok:true} mesmo sem enviar nada — e
+    responde IGUAL pra email que existe e que nao existe, de proposito (nao
+    contar quem tem conta). Com RESEND_API_KEY vazio, o link nao existia em
+    lugar nenhum alcancavel: nem na resposta, nem em email, nem em log. E ler
+    o banco NAO resolvia: access_tokens guarda o HASH do token, nao o token.
+
+    Agora lib/email.ts imprime o email inteiro no console quando nao ha
+    chave. Um lugar so, entao vale pra recuperacao, convite e boas-vindas.
+
+    NAO REMOVER A GUARDA `isDev`. Link de recuperacao em log de producao e
+    falha de seguranca: quem le o log troca a senha de qualquer um.
 
 [ ] RESEND SEM CHAVE. O codigo esta pronto e DESLIGADO — com RESEND_API_KEY
     vazio nada e enviado, nenhuma requisicao sai, e o convite continua
@@ -498,7 +561,7 @@ DESCARTADOS em 2026-08-25 por nao servirem ao negocio:
     move o financeiro inteiro. Deixado aqui de proposito: se tambem nao servir
     ao negocio, apagar conscientemente.
 
-[ ] ROTACAO DE qrToken. Ver 2.5.
+[!] ROTACAO DE qrToken: DESCARTADA de proposito. Ver 2.5.
 
 --- 2.4 BURACOS CONHECIDOS ---
 
@@ -510,6 +573,65 @@ DESCARTADOS em 2026-08-25 por nao servirem ao negocio:
     de quem mexeu, em modules/admin.ts). Fica registrado, nao e impedido.
     Pra fechar: tabela de historico do acordo com vigencia por data, e o
     calculo ao vivo passa a usar o acordo vigente em cada dia do periodo.
+
+[ ] SUITE INSTAVEL: recuperar-senha.test.ts FALHA AS VEZES NO CONJUNTO.
+    Visto em 2026-08-28: os 17 testes de
+    server/src/modules/recuperar-senha.test.ts quebraram numa rodada de
+    `pnpm check` e passaram na rodada seguinte, sem nenhuma mudanca no meio.
+    Rodando o arquivo sozinho passa 17/17, sempre.
+
+    INVESTIGADO EM 2026-08-28, SEM REPRODUZIR. Dez rodadas da suite inteira
+    — seis normais e quatro forcando 32 threads em 12 CPUs — todas verdes.
+
+    O QUE JA FOI FEITO: o afterEach mascarava a causa. Ele fazia
+    `await app.close()`, e quando o beforeEach falha `app` fica undefined —
+    entao o que aparecia era "Cannot read properties of undefined (reading
+    'close')", o erro da LIMPEZA, escondendo o erro de verdade. Agora e
+    `app?.close()`, e o proximo caso vai mostrar a causa real.
+
+    PISTA FALSA, ja descartada: a primeira anotacao aqui dizia que a rodada
+    que falhou levou 10s contra 44s da que passou. Nao significa nada — os
+    44s eram a rodada FRIA, sem cache de transform. Rodada morna leva 10-14s,
+    inclusive as que passam. Nao procure por ai.
+
+    ARGON2: HIPOTESE DESCARTADA COM NUMERO (2026-08-28).
+      Era a pista mais sugestiva — os arquivos que falharam sao justamente os
+      que hasheiam senha, e o argon2 usa 64 MB por hash. MEDIDO nesta maquina
+      (12 CPUs): 41ms sozinho, 102ms com 4 em paralelo, 320ms com 12, 669ms
+      com 24. O prazo era de 5000ms. Nao chega perto — nem com o dobro de
+      operacoes simultaneas que a suite consegue produzir.
+      NAO PROCURE MAIS POR AI.
+
+    EMBARALHAMENTO: TENTADO, SEM REPRODUZIR (2026-08-28).
+      Cinco rodadas com `--sequence.shuffle` no projeto server, que e o que
+      expoe dependencia escondida de ordem entre casos. Todas verdes. Somando
+      com as dez rodadas anteriores, sao quinze sem reproduzir.
+
+    O QUE SOBROU COMO HIPOTESE MAIS PROVAVEL: prazo estourado por maquina
+      ocupada. O caso mais lento do arquivo leva ~555ms, quase todo ele
+      montando um Fastify novo no beforeEach. Com o prazo em 5s, bastava um
+      fator 10 de contencao pra virar falha — e falha por prazo aparece como
+      "teste instavel", nao como "maquina ocupada".
+      MITIGADO: testTimeout subiu pra 15s e hookTimeout pra 20s em
+      vitest.config.ts, com o porque escrito la. O prazo continua pegando
+      TRAVAMENTO, que e pra isso que ele existe; deixou de punir lentidao
+      passageira.
+
+    HIPOTESE MUNDANA QUE NINGUEM TINHA LEVANTADO: outra sessao editando
+      arquivo durante a rodada. Em 2026-08-28 houve varios chats mexendo no
+      mesmo repositorio ao mesmo tempo — `server/src/lib/email.ts` chegou a
+      ficar com erro de sintaxe por menos de um minuto antes de ser corrigido
+      sozinho. Uma rodada de `pnpm check` pegando um arquivo no meio da
+      escrita falha de um jeito que nao reproduz depois, porque o arquivo ja
+      esta inteiro quando alguem vai investigar.
+      Isto EXPLICA a nao-reproducao melhor que qualquer hipotese tecnica.
+      Se voltar a acontecer, a primeira pergunta e: tinha outro chat
+      escrevendo naquele instante?
+      - under-pressure derrubando rotas: NAO bate. Ele responde 503, e o que
+        se viu foi 500.
+
+    Enquanto nao for tratado, CI vermelho neste arquivo NAO significa
+    regressao: rode o arquivo isolado antes de procurar culpado no diff.
 
 [ ] REDUCAO ACEITA NAO ENTRA NA METRICA DE CANCELAMENTO. Se a cozinha propoe
     3 -> 1 e o cliente aceita, o item fica com qty 1 e status 'novo' — as 2
@@ -527,41 +649,193 @@ DESCARTADOS em 2026-08-25 por nao servirem ao negocio:
       (b) GET /api/m/pedidos agrupar por cozinha, como GET /api/m/pedido/:id
           ja faz
 
-[ ] FECHAMENTO DE CICLO E MANUAL. POST /api/a/financeiro/fechar funciona e tem
-    as travas certas (nao fecha mes em andamento, nao fecha duas vezes, so
-    owner — tudo testado). Mas ninguem chama isso sozinho no Space.closingDay.
-    Falta um job/cron.
+--- FECHAMENTO AUTOMATICO DE CICLO: FEITO EM 2026-08-26 ---
 
-[!] NAO HA PAGAMENTO, ENTAO NAO HA CADASTRO SOZINHO.
-    O fluxo "pagou -> recebe email -> entra" existe do email pra frente (1.9),
-    mas quem dispara e VOCE rodando o bootstrap. Falta o comeco: provedor de
-    pagamento, tela de assinatura, e um webhook que chame o mesmo caminho do
-    bootstrap quando o pagamento confirmar.
-    O provedor e decisao sua (Stripe, Mercado Pago, Asaas...). O que ja esta
-    pronto e o pedaco que nao depende dele.
+    server/src/lib/fecharCiclo.ts, chamado por plugins/cron.ts de hora em hora.
 
-[ ] ASSINATURA NAO E COBRADA. Account.plan agora DECIDE coisa (ver 1.11) e
-    Account.status ja e respeitado pelo auth (cancelada nao loga 403; suspensa
-    le mas nao escreve 402 — os tres casos tem teste). O que falta e o dinheiro:
-    nao ha cobranca da assinatura do SaaS, nem trial expirando sozinho. Hoje um
-    trial vencido continua funcionando.
+    O CALCULO SAIU DA ROTA. Agora ha dois chamadores — o botao do dono e o cron
+    — e duas copias divergiriam no primeiro ajuste. E exatamente o que
+    aconteceu com o aggregateStatus (ver secao 3). A regra mora em
+    lib/fecharCiclo.ts; a rota traduz o resultado em HTTP, o cron traduz em log,
+    nenhum dos dois recalcula nada.
 
-[ ] WEB PUSH (tela apagada). Hoje o aviso e in-app: socket + som (WebAudio) +
-    vibracao (Android; iOS nao expoe a Vibration API). Funciona em 100% dos
-    aparelhos com a aba aberta, sem pedir permissao.
-    Pra alcancar tela apagada precisa de service worker + chaves VAPID +
-    permissao. ATENCAO: no iOS, web push exige adicionar o site a tela de
-    inicio — no meio de uma refeicao, ninguem faz. Avaliar se vale so pelo
-    Android.
+    QUANDO FECHA: no `closingDay` do mes SEGUINTE ao periodo cobrado. Agosto sai
+    no dia 5 de setembro. O dia e limitado ao tamanho do mes — closingDay 31 em
+    mes de 30 dias emite no dia 30, senao o JavaScript rolaria pro mes seguinte
+    sozinho e o fechamento sairia atrasado, calado, e so em alguns meses do ano.
+
+    NAO E "hoje e o dia do fechamento": a varredura procura todo ciclo que ja
+    passou do dia e nao fechou. Servidor fora do ar por dias nao perde nenhum.
+
+    O FREIO (ALCANCE_MS = 62 dias). Sem ele, ligar isto num quintal que existe
+    ha um ano emitiria DOZE cobrancas retroativas de uma vez — o dono acordaria
+    com um ano de divida das cozinhas dele inventado por um cron. 62 dias cobrem
+    o mes corrente e o anterior, mais folga pra outage. O que fica de fora NAO
+    some: vai pro log como "precisam do botao do dono".
+
+    ATENCAO NO PRIMEIRO DEPLOY: a varredura e GLOBAL e roda 8s depois do boot.
+    Todo quintal que ja existe e tem mes fechado dentro dos 62 dias vai ter o
+    ciclo emitido na primeira subida. E o comportamento correto, mas nao e
+    silencioso: confira antes de subir se e isso mesmo que voce quer.
+
+    Metrica: mq_ciclos_fechados_total (a mesma do botao).
+
+--- PAGAMENTO: FEITO EM 2026-08-26 (Asaas) ---
+
+    Provedor: ASAAS, checkout HOSPEDADO com assinatura recorrente. Pix e cartao.
+    Boleto ficou de fora de proposito: nao debita sozinho, entao todo mes o
+    cliente precisa agir — e rotatividade autoinfligida.
+
+    O cartao NUNCA passa pelo servidor: a pessoa digita na pagina do Asaas.
+    Tambem nao mandamos cpfCnpj — e opcional, e o Asaas coleta la. Documento
+    que nao guardo e documento que nao vazo.
+
+    Codigo:
+      server/src/lib/asaas.ts          cliente HTTP (toda a superficie do
+                                       provedor; trocar de provedor e reescrever
+                                       ESTE arquivo, igual armazenamento.ts)
+      server/src/lib/assinatura.ts     as REGRAS: evento -> efeito -> status
+      server/src/modules/assinatura.ts GET/POST/DELETE /api/a/assinatura
+      server/src/modules/webhook-asaas.ts   POST /api/webhooks/asaas
+      apps/dono/src/components/AssinaturaDaConta.tsx   a tela, dentro de Conta
+
+    Tres decisoes que NAO devem ser "melhoradas" sem ler o porque:
+      - cancelar deixa a conta `suspensa`, NUNCA `cancelada`. `cancelada`
+        bloqueia o LOGIN — quem cancelasse ficaria trancado do lado de fora,
+        sem conseguir nem voltar a assinar.
+      - a rota de checkout NAO usa exigeContaAtiva. Quem esta devendo e
+        justamente quem precisa dela; proteger seria responder "regularize o
+        pagamento" a quem tenta pagar.
+      - o webhook responde 200 pra quase tudo. A fila do Asaas e sequencial e
+        PARA depois de 15 falhas seguidas, com os eventos sumindo em 14 dias.
+        Evento desconhecido, sem dono ou com corpo torto => 200 + registro.
+        So 401 (token errado) e 500 (banco fora) saem do 2xx.
+
+[ ] FALTA LIGAR: criar conta no Asaas (CPF serve, nao precisa de CNPJ),
+    preencher ASAAS_API_KEY / ASAAS_WEBHOOK_TOKEN / PRECO_*_CENTS, e cadastrar
+    a URL do webhook no painel. Ver server/.env.example.
+    O boot recusa duas configuracoes perigosas: token de webhook igual a chave
+    da API, e NODE_ENV=production com ASAAS_AMBIENTE=sandbox (esse e o erro
+    caro e silencioso — o cliente "paga" com dinheiro de mentira e a conta
+    ativa).
+
+[ ] VERIFICAR NO SANDBOX: se o primeiro pagamento e cobrado NA HORA.
+    O checkout vai com primeiro vencimento = hoje. Adiar pro fim do trial
+    parecia gentil mas dependia de comportamento nao verificado, e o modo de
+    falhar seria nao cobrar ninguem, calado. Confirmar antes de vender.
+
+[ ] NAO HA CADASTRO SOZINHO. Quem cria a conta e VOCE, rodando o bootstrap; a
+    pessoa recebe o email, entra e assina na tela de Conta. O laco fecha, mas
+    com voce no meio. Pra primeiros clientes isso e o certo — automatizar o
+    comeco so vale quando o volume doer.
+
+--- TRIAL QUE EXPIRA: FEITO EM 2026-08-26 ---
+
+    server/src/lib/trial.ts, chamado por plugins/cron.ts de hora em hora.
+    Conta com `trialEndsAt` vencido e SEM assinatura em dia vai pra `suspensa`.
+
+    Quem NAO e tocado (cada um provado contra Postgres de verdade):
+      - `trialEndsAt` NULL. NULL significa "nao tem teste" — e o caso de quem
+        foi cadastrado direto como pagante. O `not: null` no filtro esta la
+        explicito pra que "sem trial" nunca vire "venceu em 1970" e suspenda
+        justamente quem paga.
+      - quem tem assinatura `ativa`
+      - conta `cancelada` (decisao humana; tarefa de fundo nao escreve por cima)
+      - quem ainda esta dentro do prazo
+
+    Suspende, nao cancela — `cancelada` bloquearia o login e trancaria do lado
+    de fora quem acabou de terminar o teste.
+
+    A tela de Conta diz a data em que o teste acabou, em vez de so "conta
+    suspensa": suspender sem explicar vira chamado.
+
+    Metrica: mq_trials_expirados_total. Numero alto ai e sinal COMERCIAL, nao
+    tecnico — teste curto demais, ou o botao de assinar esta escondido.
+
+--- WEB PUSH: FEITO EM 2026-08-28 ---
+
+    O aviso agora tem TRES camadas, e a ordem importa pra entender o codigo:
+
+      1. socket (order:new)  — a fila se atualiza sozinha
+      2. som + vibracao      — lib/sound.ts, so com a aba aberta
+      3. web push            — tela apagada, app fechado, longe do balcao
+
+    A 3 NAO substitui as outras: ela e a unica que alcanca quem nao esta
+    olhando, e a unica que precisa de permissao.
+
+    O ARGUMENTO DO iOS MUDOU, e por isso isto saiu de "avaliar".
+    A objecao antiga era que no iPhone push exige o site na tela de inicio, e
+    "no meio de uma refeicao ninguem faz". Isso vale pro app do CLIENTE — e
+    ele continua sem push, sem manifest e sem service worker, de proposito.
+    O tablet da cozinha e aparelho de trabalho, configurado uma vez na
+    instalacao: ali instalar e o normal, nao o atrito.
+
+    Codigo:
+      server/src/lib/push.ts            as REGRAS (envio, poda de inscricao
+                                        morta). Espelha lib/email.ts: VAZIO =
+                                        desligado, e NUNCA lanca
+      server/src/modules/push.ts        GET/POST/DELETE /api/r/push/*
+      apps/restaurante/src/sw.ts        quem RECEBE o push (service worker)
+      apps/restaurante/src/lib/push.ts  permissao e inscricao no navegador
+      apps/restaurante/src/screens/PushScreen.tsx   a tela que liga
+
+    Decisoes que NAO devem ser "melhoradas" sem ler o porque:
+
+      - `void avisarCozinha(...)`, SEM await. Sao requisicoes HTTP pro Google/
+        Apple, uma por aparelho, dentro da criacao de pedido. Com await, uma
+        lentidao do servico de push vira lentidao de venda. O pedido ja esta
+        no banco e o socket ja saiu quando isto roda.
+
+      - A funcao nunca lanca. Push que falha nao pode virar 500 em POST
+        /api/m/pedidos — seria trocar um aviso perdido por uma venda perdida.
+
+      - 404/410/401/403 do servico APAGAM a inscricao. Os dois primeiros sao
+        aparelho que sumiu; os dois ultimos significam chave VAPID trocada, e
+        guardar a linha so repetiria o erro a cada pedido, pra sempre.
+        Outros erros (500, rede) NAO apagam nada.
+
+      - O service worker NAO mostra notificacao se alguma janela do app estiver
+        visivel: o sino ja tocou, e a notificacao ainda taparia a tela em uso.
+
+      - Tag POR PEDIDO no aviso de pedido novo (cinco pedidos = cinco linhas),
+        e POR MESA no de fechar conta (tocar duas vezes nao gera duas linhas).
+
+      - Sem valor em dinheiro no corpo do aviso. Ele aparece em tela
+        bloqueada, que qualquer um por perto le.
+
+      - TROCAR A SENHA APAGA AS INSCRICOES DA PESSOA (modules/acesso.ts, dentro
+        da transacao). `tokenVersion` derruba JWT, mas push nao usa JWT: a
+        inscricao vive no servico do navegador e nao expira nunca. Sem isso, o
+        aparelho de quem saiu da equipe seguiria recebendo os pedidos.
+
+    Metricas: mq_push_enviados_total{motivo}, mq_push_removidos_total.
+    Pico de removidos logo depois de um deploy = chave VAPID trocada.
+
+[ ] FALTA LIGAR: gerar o par VAPID e por no .env do servidor.
+      pnpm --filter @mq/server exec web-push generate-vapid-keys
+    VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT (ver
+    server/.env.example). VAZIO = push desligado e nada quebra: a tela de
+    Avisos diz que nao esta ligado neste servidor e as camadas 1 e 2 seguem
+    iguais.
+    A CHAVE E PRA SEMPRE, na pratica: trocar depois invalida TODA inscricao
+    existente e todo mundo precisa autorizar de novo, sem nada avisar.
+
+[ ] MIGRATION NAO APLICADA. server/prisma/migrations/20260828120000_web_push
+    foi escrita a mao (o Docker estava fora no dia) e ainda nao rodou contra
+    banco nenhum. Antes de subir: pnpm db:migrate (dev) ou prisma migrate
+    deploy (producao). Tabela nova e vazia, sem backfill — nao ha risco de
+    dado, mas nao ha prova de que o SQL esta certo tambem.
 
 --- 2.4-B FOTO: O QUE FICOU DE FORA ---
 
 Upload de foto de ITEM do cardapio esta FEITO (ver 1.12). O que sobrou:
 
-[ ] O PERFIL DA COZINHA ainda usa `photoUrl`, URL colada a mao. A foto de capa
-    da cozinha aparece na lista do quintal e no topo do cardapio — merece o
-    mesmo tratamento. E repetir o que ja existe: processarFoto + armazenamento
-    + uma coluna, ou reaproveitar MenuItemPhoto com um dono generico.
+[x] O PERFIL DA COZINHA agora ENVIA ARQUIVO (2026-08-27). Coluna nova
+    `kitchens.photoKey`, rotas POST/DELETE /api/r/perfil/foto, mesmo
+    processarFoto + armazenamento da foto de prato.
+    `photoUrl` ficou como legado e ainda vale quando nao ha arquivo enviado —
+    a precedencia esta em UM lugar so, lib/fotoDaCozinha.ts, porque quatro
+    rotas leem essa foto (quintal, cardapio, perfil e /me).
 
 [ ] REORDENAR ARRASTANDO. Hoje so da pra "virar capa", que resolve o caso que
     importa (a unica ordem que o cliente enxerga na lista e quem esta em
@@ -610,10 +884,21 @@ Upload de foto de ITEM do cardapio esta FEITO (ver 1.12). O que sobrou:
     do ambiente e de tag propria. Falta definir esquema de tag e workflow de
     release.
 
-[ ] qrToken DA MESA NAO EXPIRA NEM ROTACIONA — e um bearer permanente impresso
-    no QR. Quem fotografar o QR mantem acesso a mesa pra sempre. O bootstrap ja
-    gera token aleatorio (nao sequencial), mas nao ha rota nem tela pra
-    rotacionar.
+[!] qrToken DA MESA NAO EXPIRA — E ISSO E DECISAO, NAO ESQUECIMENTO (2026-08-26)
+
+    O QR vai IMPRESSO EM 3D, num porta-guardanapo entregue junto com o sistema.
+    Rotacionar o token transformaria cada porta-guardanapo em lixo e obrigaria
+    uma visita fisica a cada mesa. O custo da rotacao e maior que o risco que
+    ela evita.
+
+    O QUE ISSO CUSTA, pra ninguem se surpreender depois: quem fotografar o QR
+    mantem acesso aquela mesa pra sempre. O acesso e limitado a UMA mesa — ver
+    auth-mesa — entao o estrago maximo e alguem lancar pedido numa mesa que nao
+    esta ocupando, e o pedido aparece na cozinha pra ser recusado.
+
+    NAO "CONSERTAR" ISTO com expiracao automatica. Se um dia um QR especifico
+    vazar, a saida e trocar aquele porta-guardanapo e regerar SO aquele token —
+    nunca uma rotacao global.
 
 [ ] PRETTIER NUNCA RODOU NO REPO. ~91 arquivos fora do padrao. Esta configurado
     e funcionando; nao foi executado pra nao enterrar trabalho em progresso num
@@ -627,7 +912,8 @@ Upload de foto de ITEM do cardapio esta FEITO (ver 1.12). O que sobrou:
 
 --- 2.6 COBERTURA DE TESTE ---
 
-506 testes. Cobertura medida: ~62% de linha, 85% de branch.
+588 testes (52 do pagamento, 11 do trial, 15 do fechamento de ciclo). Cobertura anterior medida:
+~62% de linha, 85% de branch — remedir.
 Rodar com: pnpm test:coverage (relatorio HTML em coverage/index.html)
 
 [ ] Rotas de LEITURA do cliente: GET /api/m/pedido/:id, GET /api/m/pedidos e
@@ -668,6 +954,33 @@ Cada uma custou tempo pra descobrir. Estao comentadas no codigo, mas ficam aqui
 pra quem chegar depois.
 
 --- FERRAMENTAL E BUILD ---
+
+- db:up USA --wait, E NAO E ENFEITE. Sem ele, `docker compose up -d` volta
+  quando o container INICIA, nao quando o Postgres aceita conexao — e o
+  `db:migrate` logo em seguida falha com connection refused, de forma
+  intermitente (depende de quao rapido a maquina esta no dia). O healthcheck
+  ja estava no compose; faltava alguem esperar por ele.
+
+- NAO RECRIAR O .env NA RAIZ. Existem DOIS arquivos de ambiente, e so dois:
+
+      server/.env       desenvolvimento (pnpm dev le daqui, via dotenv, que
+                        carrega do CWD — e o CWD do server e server/)
+      .env.prod         deploy (docker compose -f docker-compose.prod.yml
+                        --env-file .env.prod)
+
+  Havia um terceiro, na raiz, que servia SO pra passar quatro variaveis de
+  Postgres pro compose de desenvolvimento. As mesmas credenciais ja estavam
+  escritas na DATABASE_URL de server/.env.example — dois lugares pro mesmo
+  segredo, e um deles ficou desatualizado sem ninguem notar: em 2026-08-28 o
+  .env da raiz estava com POSTGRES_PASSWORD VAZIO enquanto o server esperava
+  `quintal_dev`. O unico sintoma seria o server nao conectar, sem dizer por que.
+
+  Agora as quatro tem PADRAO dentro do docker-compose.yml. Nao ha segredo a
+  proteger ali: banco de brinquedo, na 5433, escutando so nesta maquina. O de
+  producao esta em docker-compose.prod.yml, onde a senha e obrigatoria.
+
+  Se mudar a credencial de dev, mude NOS DOIS lugares (compose e
+  server/.env.example) — ou o problema de cima volta.
 
 - NAO rodar "npm install" neste repo. O gerenciador e pnpm, travado em
   packageManager. npm gera um package-lock.json conflitante.
@@ -723,6 +1036,26 @@ pra quem chegar depois.
 - NAO RODAR `nginx -t` COMO ROOT NA IMAGEM UNPRIVILEGED. Deixa /tmp com dono
   errado e o processo (uid 101) morre no boot com "open() /tmp/nginx.pid failed
   (13: Permission denied)".
+
+--- FRONT E DESIGN SYSTEM ---
+
+- A FONTE E HOSPEDADA NO PROPRIO DOMINIO. NAO trocar por @import do Google
+  Fonts "pra simplificar". Era assim ate 2026-08-28, e em producao a Archivo
+  simplesmente nao carregava: o CSP de apps/nginx.conf.template manda
+  style-src 'self' e font-src 'self' data:, e nenhum dos dois lista o Google.
+  O navegador bloqueava a folha E os arquivos, os tres apps caiam na fonte do
+  sistema, e NADA no build avisava — so aparecia no ambiente de producao.
+  Os woff2 vivem em packages/design-system/src/fontes/ (Archivo v25, OFL 1.1).
+
+- ARCHIVO E FONTE VARIAVEL: um woff2 por subset cobre 100-900. O @font-face
+  declara font-weight: 100 900 de proposito. Trocar por um valor fixo faria
+  o navegador SINTETIZAR o negrito em vez de usar o desenho real do eixo — e
+  titulo em 800 e metade da identidade Modernist.
+
+- A PWA DO RESTAURANTE NAO CACHEIA /api, E ISSO E DELIBERADO. Nao adicionar
+  runtimeCaching no workbox de apps/restaurante/vite.config.ts: fila cacheada
+  mostra pedido que ja saiu e a cozinha monta o prato de novo. Tela vazia a
+  cozinha sabe resolver; tela mentindo, nao.
 
 --- BANCO E PRISMA ---
 

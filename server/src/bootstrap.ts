@@ -1,7 +1,7 @@
 /**
  * Cria uma conta nova (um cliente do SaaS) com o dono e o primeiro quintal.
  *
- * É o comando de onboarding: quando alguém assina o Meu Quintal, é isto que
+ * É o comando de onboarding: quando alguém assina o QRO, é isto que
  * roda. Diferente de `db:seed`, que APAGA TUDO e existe só para desenvolvimento
  * — o seed nunca pode tocar em produção.
  *
@@ -47,8 +47,10 @@
  */
 import crypto from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
+import { categoriasPadrao } from './lib/categoriasPadrao.js';
 import { enviar, emailAtivo, boasVindas } from './lib/email.js';
 import { PLANOS } from './lib/planos.js';
+import { fimDoTrial, trialLigado } from './lib/trial.js';
 import { env } from './lib/env.js';
 
 const prisma = new PrismaClient();
@@ -70,6 +72,8 @@ function slugValido(s: string): boolean {
 
 /** Dias que o link de primeiro acesso vale. */
 const LINK_VALIDO_DIAS = 7;
+
+
 
 async function main() {
   const contaSlug = exigir('CONTA_SLUG');
@@ -155,8 +159,8 @@ async function main() {
         // O plano decide o formato do espaco e o teto de cozinhas.
         plan: restauranteUnico ? 'restaurante' : 'praca',
         status: 'ativa',
-        // 30 dias de trial a partir de agora
-        trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        // Quanto tempo, e SE ha teste, sai de lib/trial.ts — nao daqui.
+        trialEndsAt: fimDoTrial(),
         users: {
           create: { email: donoEmail, passwordHash, name: donoNome, role: 'owner' },
         },
@@ -188,6 +192,9 @@ async function main() {
           // encheria o financeiro de dívidas do dono com ele próprio.
           chargeCommission: false,
           chargeRent: false,
+          // As secoes com que o cardapio comeca. Ver lib/categoriasPadrao.ts:
+          // sao ponto de partida editavel, nao regra do sistema.
+          menuCategorias: { create: categoriasPadrao() },
         },
       });
 
@@ -243,7 +250,11 @@ async function main() {
   console.log('');
   console.log(`  conta   : ${resultado.conta.name} (${resultado.conta.slug})`);
   console.log(
-    `  plano   : ${resultado.conta.plan} (teste ate ${resultado.conta.trialEndsAt?.toISOString().slice(0, 10)})`,
+    `  plano   : ${resultado.conta.plan} (${
+      trialLigado()
+        ? `teste ate ${resultado.conta.trialEndsAt?.toISOString().slice(0, 10)}`
+        : 'SEM teste: precisa assinar pra alterar qualquer coisa'
+    })`,
   );
   console.log(`  espaco  : ${resultado.espaco.name} (${resultado.espaco.slug})`);
   if (resultado.cozinha) {

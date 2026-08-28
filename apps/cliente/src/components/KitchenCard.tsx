@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { Clock } from 'lucide-react';
+import { Chip } from '@mq/design-system';
 import type { KitchenSummary } from '@mq/shared';
 import { fmtBRLShort } from '../lib/format';
+import { Foto } from './Foto';
 
 interface KitchenCardProps {
   kitchen: KitchenSummary;
@@ -8,54 +11,36 @@ interface KitchenCardProps {
 }
 
 /**
- * Variante de grade (2 colunas mobile). Foto 4:5, indice mono primary,
- * nome Fraunces, meta mono.
+ * Célula da grade de cozinhas: foto 4:5, nome com índice vermelho, meta.
+ *
+ * A tagline saiu. Numa grade de duas colunas ela virava duas linhas de cinza
+ * abaixo de cada card, e o olho passava por seis blocos de texto antes de
+ * chegar na quinta cozinha. A foto vende; o número e o tempo situam.
  */
 export function KitchenCard({ kitchen, index }: KitchenCardProps) {
   return (
-    <Link to={`/k/${kitchen.slug}`} className="block group no-underline text-inherit">
-      <div className="overflow-hidden rounded-lg bg-surface mb-3 aspect-[4/5]">
-        {kitchen.photoUrl ? (
-          <img
-            src={kitchen.photoUrl}
-            alt={`Foto da cozinha ${kitchen.name}`}
-            loading={index < 4 ? 'eager' : 'lazy'}
-            decoding="async"
-            className="w-full h-full object-cover transition-opacity duration-base ease-out group-hover:opacity-92"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center font-mono text-mono-sm text-inkDim">
-            sem foto
-          </div>
-        )}
-      </div>
+    <Link to={`/k/${kitchen.slug}`} className="flex flex-col gap-2 no-underline text-inherit">
+      <Foto
+        src={kitchen.photoUrl}
+        alt={`Foto da cozinha ${kitchen.name}`}
+        eager={index < 4}
+        className="aspect-[4/5] w-full"
+      />
 
-      <div className="flex items-baseline gap-2">
-        <span className="font-mono text-mono-sm text-primary">
-          {String(index + 1).padStart(2, '0')}.
-        </span>
-        <h2 className="font-display text-[20px] leading-tight text-ink flex-1">
-          {kitchen.name}
-        </h2>
-      </div>
-
-      <p className="mt-1 font-mono text-mono-sm text-inkDim">
-        ~{kitchen.slaMinutes} min · {fmtBRLShort(kitchen.priceMinCents)}–{fmtBRLShort(kitchen.priceMaxCents).replace('R$', '').trim()}
+      <p className="font-display text-body-lg font-bold leading-[1.15] text-ink">
+        <span className="text-accent">{String(index + 1).padStart(2, '0')}</span> {kitchen.name}
       </p>
 
-      {kitchen.tagline && (
-        <p
-          className="mt-1.5 font-sans text-body-sm text-inkMuted leading-snug"
-          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-        >
-          {kitchen.tagline}
-        </p>
-      )}
+      <p className="flex items-center gap-1.5 text-meta text-neutral-600 tabular">
+        <Clock size={13} strokeWidth={2} aria-hidden className="shrink-0" />~{kitchen.slaMinutes}{' '}
+        min · {fmtBRLShort(kitchen.priceMinCents)}–
+        {fmtBRLShort(kitchen.priceMaxCents).replace('R$', '').trim()}
+      </p>
 
       {kitchen.closingNote && (
-        <p className="mt-1.5 font-mono text-mono-sm uppercase tracking-wider text-warn">
+        <Chip tone="solid" className="self-start">
           {kitchen.closingNote}
-        </p>
+        </Chip>
       )}
     </Link>
   );

@@ -8,18 +8,12 @@ interface ScreenErrorProps {
 
 export function ScreenError({ title, body, onRetry }: ScreenErrorProps) {
   return (
-    <main className="px-5 py-12">
-      <h1 className="font-display italic text-display-lg text-ink leading-tight text-pretty">
-        {title}
-      </h1>
-      {body && (
-        <p className="mt-3 font-sans text-body text-inkMuted text-pretty">
-          {body}
-        </p>
-      )}
+    <main className="px-4 py-10">
+      <h1 className="font-display text-display-lg text-ink text-pretty">{title}</h1>
+      {body && <p className="mt-3 text-body-sm text-neutral-700 text-pretty">{body}</p>}
       {onRetry && (
         <div className="mt-6">
-          <Button variant="primary" size="lg" onClick={onRetry}>
+          <Button variant="secondary" size="lg" fullWidth onClick={onRetry}>
             Tentar de novo
           </Button>
         </div>

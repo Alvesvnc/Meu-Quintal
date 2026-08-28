@@ -5,8 +5,8 @@
 # Build a partir da RAIZ do monorepo:
 #   docker build -f apps/Dockerfile \
 #     --build-arg APP=cliente \
-#     --build-arg VITE_API_URL=https://api.meuquintal.com.br \
-#     -t meu-quintal-cliente .
+#     --build-arg VITE_API_URL=https://api.qro.com.br \
+#     -t qro-cliente .
 #
 # ATENCAO — VITE_API_URL E BUILD-TIME, NAO RUNTIME.
 # O Vite substitui import.meta.env.VITE_API_URL por texto literal dentro do

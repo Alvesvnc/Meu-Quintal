@@ -1,4 +1,4 @@
-// Meu Quintal — schema multi-tenant.
+// QRO — schema multi-tenant.
 //
 // Hierarquia:
 //   Account (o cliente pagante do SaaS)
@@ -24,7 +24,7 @@ datasource db {
 }
 
 // ─── Conta: o cliente pagante do SaaS ───────────────────────────────────────
-// Um dono de food-court assina o Meu Quintal e ganha uma Account. Tudo abaixo
+// Um dono de food-court assina o QRO e ganha uma Account. Tudo abaixo
 // dela pertence a esse cliente e nao pode ser visto por nenhum outro.
 model Account {
   id          String        @id @default(uuid()) @db.Uuid
@@ -40,6 +40,10 @@ model Account {
   spaces  Space[]
   users   AccountUser[]
   invites Invite[]
+
+  /// A mensalidade que ESTA conta paga pro QRO. Nao confundir com
+  /// BillingCycle, que e o dono cobrando as cozinhas dele.
+  assinatura Assinatura?
 
   @@map("accounts")
 }
@@ -70,7 +74,7 @@ model AccessToken {
   expiresAt DateTime
   /// Carimbo de uso. `null` = ainda vale. Uso unico.
   usedAt    DateTime?
-  createdAt DateTime        @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([kitchenUserId])
@@ -79,10 +83,10 @@ model AccessToken {
 
 enum AccessTokenKind {
   /// Conta recem-criada, senha ainda nao existe. Vale 7 dias.
-  primeiro_acesso  @map("primeiro-acesso")
+  primeiro_acesso @map("primeiro-acesso")
   /// Esqueceu a senha. Vale 1 HORA: quem pediu esta na frente do computador
   /// agora, e uma janela longa e uma janela de ataque a mais.
-  recuperar_senha  @map("recuperar-senha")
+  recuperar_senha @map("recuperar-senha")
 }
 
 /// O plano E o que diferencia restaurante unico de praca de alimentacao.
@@ -251,12 +255,21 @@ model Kitchen {
   category    String?
   tagline     String?
   description String?
-  photoUrl    String?
-  slaMinutes  Int           @default(15)
-  status      KitchenStatus @default(ativa)
-  spaceId     String        @db.Uuid
-  space       Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  createdAt   DateTime      @default(now())
+
+  /// URL EXTERNA, colada a mao. Legado: existe pras cozinhas cadastradas antes
+  /// de haver upload. Foto nova entra em `photoKey`, que tem precedencia.
+  photoUrl String?
+
+  /// Nome do arquivo no armazenamento. ALEATORIO — nunca o nome que veio no
+  /// upload, que e texto controlado por quem envia e caminho pra path
+  /// traversal. Ver lib/armazenamento.ts.
+  photoKey String? @unique
+
+  slaMinutes Int           @default(15)
+  status     KitchenStatus @default(ativa)
+  spaceId    String        @db.Uuid
+  space      Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
 
   // ─── Acordo financeiro com o quintal ────────────────────────────────────
   // Comissao e aluguel sao independentes: da pra cobrar so um, os dois ou
@@ -270,13 +283,15 @@ model Kitchen {
   /// Aluguel fixo mensal da casinha, em centavos
   rentCents  Int     @default(0)
 
-  menuItems  MenuItem[]
-  orderItems OrderItem[]
-  users      KitchenUser[]
-  charges    KitchenCharge[]
-  changes    OrderChange[]
+  menuItems      MenuItem[]
+  menuCategorias MenuCategoria[]
+  orderItems     OrderItem[]
+  users          KitchenUser[]
+  charges        KitchenCharge[]
+  changes        OrderChange[]
   /// Donos que operam esta cozinha diretamente (restaurante unico).
-  donos      AccountUser[]
+  donos          AccountUser[]
+  pushInscricoes PushSubscription[]
 
   @@unique([spaceId, slug])
   @@index([spaceId, status])
@@ -285,27 +300,64 @@ model Kitchen {
 
 // ─── Usuário operador de uma cozinha (1+ por cozinha) ───────────────────────
 model KitchenUser {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String    @unique
+  id           String  @id @default(uuid()) @db.Uuid
+  email        String  @unique
   passwordHash String
   name         String?
-  kitchenId    String    @db.Uuid
-  kitchen      Kitchen   @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
-  role         String    @default("owner") // owner | operator (futuro)
+  kitchenId    String  @db.Uuid
+  kitchen      Kitchen @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+  role         String  @default("owner") // owner | operator (futuro)
 
   /// Sobe a cada troca de senha e invalida todo JWT emitido antes.
   ///
   /// Sem isto, trocar a senha nao expulsa ninguem: o token e stateless e vale
   /// 7 dias. Quem trocasse a senha JUSTAMENTE porque desconfia de invasao
   /// continuaria com o invasor dentro, achando que resolveu.
-  tokenVersion Int       @default(0)
+  tokenVersion Int @default(0)
 
-  acessos      AccessToken[]
-  createdAt    DateTime  @default(now())
-  lastLoginAt  DateTime?
+  acessos     AccessToken[]
+  createdAt   DateTime      @default(now())
+  lastLoginAt DateTime?
 
   @@index([kitchenId])
   @@map("kitchen_users")
+}
+
+/// Um APARELHO inscrito pra receber aviso com o app fechado.
+///
+/// A inscricao e do aparelho, nao da pessoa: quem opera pelo tablet do balcao
+/// E pelo proprio celular precisa ser avisado nos dois. Por isso a chave e o
+/// `endpoint`, que o navegador emite uma vez por instalacao.
+model PushSubscription {
+  id String @id @default(uuid()) @db.Uuid
+
+  kitchenId String  @db.Uuid
+  kitchen   Kitchen @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+
+  /// Quem inscreveu. SEM chave estrangeira de proposito: pode ser um
+  /// KitchenUser (o operador) ou um AccountUser (o dono, no restaurante
+  /// unico) — os dois abrem /api/r/*. Serve pra UMA coisa: apagar a inscricao
+  /// quando a pessoa troca a senha. Sem isso, derrubar as sessoes de quem foi
+  /// demitido nao derrubaria o push, e o aparelho dela seguiria recebendo
+  /// "mesa 4, R$ 87" pra sempre — inscricao de push nao expira.
+  userId String @db.Uuid
+
+  /// URL que o navegador deu pra este aparelho. UNICA no sistema: reinscrever
+  /// o mesmo aparelho atualiza a linha em vez de criar uma segunda.
+  endpoint String @unique
+
+  /// Chaves do aparelho. O payload vai cifrado de ponta a ponta — nem o
+  /// servico de push (Google, Apple, Mozilla) le o que vai dentro.
+  p256dh String
+  auth   String
+
+  createdAt DateTime  @default(now())
+  /// Ultimo envio aceito. So pra enxergar aparelho que parou de responder.
+  lastOkAt  DateTime?
+
+  @@index([kitchenId])
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 enum KitchenStatus {
@@ -316,18 +368,28 @@ enum KitchenStatus {
 
 // ─── Item de cardápio ───────────────────────────────────────────────────────
 model MenuItem {
-  id          String       @id @default(uuid()) @db.Uuid
-  kitchenId   String       @db.Uuid
-  kitchen     Kitchen      @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
-  category    MenuCategory
+  id        String  @id @default(uuid()) @db.Uuid
+  kitchenId String  @db.Uuid
+  kitchen   Kitchen @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+
+  /// A secao do cardapio em que o item aparece. E uma LINHA, nao um enum: os
+  /// topicos sao da cozinha, e "Entradas/Pratos/Sobremesas/Bebidas" nao serve
+  /// pra padaria, bar ou sorveteria. Ver model MenuCategoria.
+  ///
+  /// `Restrict` no relacionamento e de proposito: apagar uma categoria com item
+  /// dentro deixaria item orfao (e o cardapio sem onde exibi-lo). A rota de
+  /// exclusao exige destino pros itens antes de apagar.
+  categoriaId String        @db.Uuid
+  categoria   MenuCategoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
   name        String
   description String?
   priceCents  Int
   photoUrl    String?
-  available   Boolean      @default(true)
+  available   Boolean    @default(true)
   badge       MenuBadge?
-  sortOrder   Int          @default(0)
-  createdAt   DateTime     @default(now())
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
 
   /// Item "excluido" pela cozinha. NAO se apaga de verdade: OrderItem aponta
   /// pra ca com onDelete padrao (Restrict), entao um DELETE ou falharia ou —
@@ -336,13 +398,14 @@ model MenuItem {
   ///
   /// Arquivado some do cardapio do cliente e nao pode ser pedido; o que ja foi
   /// vendido continua intacto (OrderItem guarda nome e preco em snapshot).
-  archivedAt  DateTime?
+  archivedAt DateTime?
 
   orderItems OrderItem[]
   fotos      MenuItemPhoto[]
 
   @@index([kitchenId, available])
   @@index([kitchenId, archivedAt])
+  @@index([categoriaId])
   @@map("menu_items")
 }
 
@@ -374,11 +437,37 @@ model MenuItemPhoto {
   @@map("menu_item_photos")
 }
 
-enum MenuCategory {
-  entradas
-  pratos
-  sobremesas
-  bebidas
+/// Secao do cardapio, escrita pela propria cozinha.
+///
+/// Era um enum de quatro valores fixos. Nao dava conta: uma padaria quer
+/// "Paes / Salgados / Cafe", um bar quer "Drinks / Petiscos", e chamar tudo de
+/// "Pratos" apaga a organizacao que a casa ja tem no balcao. Como tabela, cada
+/// cozinha escreve os topicos dela — e pode renomear sem que o item mude de
+/// lugar, porque o item aponta pro id, nao pro texto.
+///
+/// ESCOPADA POR COZINHA: `kitchenId` entra em toda query. Categoria de uma
+/// cozinha nao pode ser usada por outra — ha checagem na rota, senao bastaria
+/// conhecer um id pra pendurar um item no cardapio da vizinha.
+model MenuCategoria {
+  id        String  @id @default(uuid()) @db.Uuid
+  kitchenId String  @db.Uuid
+  kitchen   Kitchen @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
+
+  /// Como o cliente le. Unico por cozinha: duas "Bebidas" na mesma casa seriam
+  /// erro de digitacao, nao intencao.
+  name String
+
+  /// A ordem em que as secoes aparecem no cardapio. E edicao, nao alfabeto:
+  /// "Sobremesas" antes de "Pratos" venderia a ordem errada da refeicao.
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  items MenuItem[]
+
+  @@unique([kitchenId, name])
+  @@index([kitchenId, sortOrder])
+  @@map("menu_categories")
 }
 
 enum MenuBadge {
@@ -396,6 +485,20 @@ model Order {
   tableId            String    @db.Uuid
   table              Table     @relation(fields: [tableId], references: [id])
   totalCents         Int
+  /// Quem pediu, escrito pelo proprio cliente. NULL = pedido da mesa, sem dono.
+  ///
+  /// Existe porque varias pessoas dividem uma mesa e cada uma pede do proprio
+  /// celular. Sem isto, "fechar conta" pegava TODOS os pedidos daquela mesa
+  /// naquela cozinha: quem apertasse primeiro fechava a conta do vizinho junto.
+  ///
+  /// NAO E CREDENCIAL. E digitado no aparelho do cliente, entao qualquer um
+  /// pode escrever qualquer nome. Serve pra ROTULAR e AGRUPAR, nunca pra
+  /// autorizar — prevenir de verdade exigiria login, e login na porta de um
+  /// restaurante de passagem custa mais venda do que protege.
+  ///
+  /// Opcional de proposito: quem pular o campo cai na conta da mesa, que e como
+  /// funcionava antes. Campo obrigatorio reintroduziria o atrito que ele evita.
+  nomeCliente        String?   @db.VarChar(40)
   createdAt          DateTime  @default(now())
   /// Quando cliente apertou "Fechar conta" - sinaliza pro restaurante cobrar
   paymentRequestedAt DateTime?
@@ -494,17 +597,17 @@ model KitchenCharge {
   kitchen   Kitchen      @relation(fields: [kitchenId], references: [id], onDelete: Cascade)
 
   /// Bruto vendido pela cozinha no ciclo — base do cálculo
-  grossCents      Int
+  grossCents       Int
   /// Se o acordo tinha comissão QUANDO O CICLO FECHOU. Congelado junto com o
   /// resto porque é ele que decide se o dono pode ver `grossCents` — sem isso,
   /// ligar a comissão hoje revelaria o faturamento de todos os meses passados,
   /// que estavam protegidos pelo acordo vigente na época.
   chargeCommission Boolean @default(true)
-  commissionPct   Decimal @db.Decimal(5, 2)
-  commissionCents Int
-  rentCents       Int
+  commissionPct    Decimal @db.Decimal(5, 2)
+  commissionCents  Int
+  rentCents        Int
   /// commissionCents + rentCents — o que a cozinha deve
-  totalDueCents   Int
+  totalDueCents    Int
 
   status    ChargeStatus @default(aberta)
   paidAt    DateTime?
@@ -604,4 +707,116 @@ enum TipoDeEspaco {
   /// mesmo) e o cliente vai direto ao cardapio, sem passar por uma lista de um
   /// item so.
   restaurante_unico @map("restaurante-unico")
+}
+
+// ─── Assinatura do QRO (nos cobrando o dono) ────────────────────────────────
+//
+// NAO CONFUNDIR com BillingCycle/KitchenCharge, que e o DONO cobrando as
+// COZINHAS. Aquele dinheiro nunca passa pelo app — cada cozinha acerta no
+// balcao dela. Este passa por um provedor de pagamento de verdade.
+//
+// Ver packages/shared/src/types/assinatura.ts.
+
+model Assinatura {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Uma por conta. Upgrade/downgrade mudaria ESTA linha; o historico de
+  /// cobranca vive em EventoDeCobranca.
+  accountId String  @unique @db.Uuid
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  status AssinaturaStatus @default(nenhuma)
+
+  /// Qual provedor emitiu os ids abaixo. Existe pra que trocar de provedor um
+  /// dia nao exija adivinhar a que sistema um id antigo pertencia.
+  provedor String @default("asaas")
+
+  /// OS IDS DO PROVEDOR SAO A CHAVE DE LIGACAO DO WEBHOOK: o evento chega
+  /// falando a lingua dele, e e por estes campos que vira "esta conta aqui".
+  ///
+  /// Todos nullable porque nascem em momentos diferentes — o checkout existe
+  /// antes da assinatura, e a assinatura antes do primeiro pagamento.
+  asaasCheckoutId     String? @unique
+  asaasSubscriptionId String? @unique
+  asaasCustomerId     String?
+
+  /// Preco travado quando assinou, em centavos.
+  ///
+  /// Guardado aqui em vez de lido do env na hora de exibir: mexer na tabela de
+  /// precos NAO pode mudar retroativamente o que um cliente antigo ve que paga.
+  precoMensalCents Int?
+
+  /// Vem do provedor (`nextDueDate`), nunca de conta feita aqui. Calcular por
+  /// nossa conta divergiria do que foi de fato cobrado no primeiro mes que
+  /// tivesse retentativa, desconto ou proporcional.
+  proximaCobrancaEm DateTime?
+
+  /// Ultimo pagamento confirmado. Serve pro suporte responder "desde quando
+  /// esta assim" sem abrir o painel do provedor.
+  pagoEm DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventos EventoDeCobranca[]
+
+  /// O webhook procura por este campo quando o evento nao traz nada melhor.
+  /// Sem indice, todo evento do Asaas varreria a tabela inteira.
+  @@index([asaasCustomerId])
+  @@map("assinaturas")
+}
+
+enum AssinaturaStatus {
+  /// Nunca assinou: trial, ou conta criada na mao.
+  nenhuma
+  /// Checkout aberto, pagador ainda nao concluiu.
+  aguardando
+  ativa
+  /// Venceu e nao pagou. Puxa Account.status pra `suspensa` — le, nao escreve.
+  atrasada
+  /// Encerrada, pelo cliente ou por nos. Tambem deixa a conta `suspensa`, NAO
+  /// `cancelada`: ver lib/assinatura.ts, "por que cancelar nao tranca a porta".
+  encerrada
+}
+
+/// Todo webhook recebido, gravado ANTES de ser aplicado.
+///
+/// Dois motivos, nenhum dos dois resolvivel de outro jeito:
+///
+///   IDEMPOTENCIA. O Asaas entrega "at least once" — o mesmo evento chega mais
+///   de uma vez. Sem esta tabela, um PAYMENT_RECEIVED repetido reativaria uma
+///   conta encerrada no meio. O @unique em `eventoId` e a trava: a segunda
+///   insercao falha e o processamento para ali.
+///
+///   AUDITORIA. Quando um cliente disser "eu paguei", a resposta nao pode ser
+///   "o painel do provedor diz que nao". Aqui fica o que ELE nos contou, com
+///   data e corpo cru — e a fila do provedor apaga o que passa de 14 dias.
+model EventoDeCobranca {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Id do evento no provedor (`evt_...`). UNICO: e o que impede aplicar duas
+  /// vezes.
+  eventoId String @unique
+
+  /// Nome cru (PAYMENT_RECEIVED, CHECKOUT_PAID...). Texto, NAO enum: evento
+  /// novo do provedor nao pode quebrar a insercao. Ver o comentario sobre a
+  /// fila em modules/webhook-asaas.ts — 15 falhas seguidas e ela para.
+  tipo String
+
+  /// `null` quando chegou e nao deu pra dizer de quem era. Nao e erro fatal:
+  /// fica registrado pra investigacao e a fila do provedor segue andando.
+  assinaturaId String?     @db.Uuid
+  assinatura   Assinatura? @relation(fields: [assinaturaId], references: [id], onDelete: SetNull)
+
+  /// O corpo inteiro, como chegou. Sem isto, um bug no parser vira evento
+  /// perdido pra sempre.
+  payload Json
+
+  /// O que a aplicacao FEZ com o evento, em texto curto pro suporte ler.
+  efeito String?
+
+  recebidoEm DateTime @default(now())
+
+  @@index([assinaturaId, recebidoEm])
+  @@map("eventos_de_cobranca")
 }

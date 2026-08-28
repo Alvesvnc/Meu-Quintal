@@ -22,6 +22,7 @@ import { prisma } from '../lib/prisma.js';
 import { senhaConfere } from '../lib/senha.js';
 import { exigeContaAtiva } from '../plugins/auth-dono.js';
 import { calcularCobranca, janelaDoCiclo, refMonthDe } from '../lib/cobranca.js';
+import { fecharCiclo } from '../lib/fecharCiclo.js';
 import { totalAtivoCents } from '../lib/orderStatus.js';
 import { brutoVisivel, somarVisiveis } from '../lib/faturamento.js';
 import { ranquearMesas } from '../lib/desempenhoMesa.js';
@@ -665,100 +666,31 @@ export async function adminRoutes(fastify: FastifyInstance) {
       if (!space) return reply.code(404).send({ error: 'Quintal nao encontrado.' });
 
       const { refMonth } = parsed.data;
-      const { startsAt, endsAt } = janelaDoCiclo(refMonth);
 
-      // Fechar um mes que ainda esta correndo cobraria menos do que o devido.
-      if (endsAt.getTime() > Date.now()) {
-        return reply.code(409).send({
-          error: `O ciclo ${refMonth} ainda nao terminou. So da pra fechar depois de ${endsAt.toISOString().slice(0, 10)}.`,
-        });
+      // O CALCULO NAO MORA MAIS AQUI. O cron fecha o mesmo ciclo sozinho no dia
+      // combinado; duas copias do calculo divergiriam no primeiro ajuste. Ver
+      // lib/fecharCiclo.ts.
+      const r = await fecharCiclo(prisma, space, refMonth);
+
+      if (!r.ok) {
+        // Os dois motivos — mes em andamento e ciclo ja fechado — sao 409: o
+        // estado do ciclo e que impede, nao o formato do pedido.
+        return reply.code(409).send({ error: r.mensagem });
       }
-
-      const jaExiste = await prisma.billingCycle.findUnique({
-        where: { spaceId_refMonth: { spaceId: space.id, refMonth } },
-        select: { status: true },
-      });
-      if (jaExiste?.status === 'fechado') {
-        return reply.code(409).send({ error: `O ciclo ${refMonth} ja foi fechado.` });
-      }
-
-      const cozinhas = await prisma.kitchen.findMany({
-        where: { spaceId: space.id },
-        include: {
-          orderItems: {
-            where: { createdAt: { gte: startsAt, lte: endsAt }, status: { not: 'cancelado' } },
-            select: { qty: true, unitPriceCents: true },
-          },
-        },
-      });
-
-      const padrao = paraNumero(space.defaultCommissionPct);
-
-      const cobrancas = cozinhas.map((k) => {
-        const grossCents = k.orderItems.reduce((a, i) => a + i.qty * i.unitPriceCents, 0);
-        const calc = calcularCobranca(
-          grossCents,
-          {
-            chargeCommission: k.chargeCommission,
-            commissionPct: k.commissionPct === null ? null : paraNumero(k.commissionPct),
-            chargeRent: k.chargeRent,
-            rentCents: k.rentCents,
-          },
-          padrao,
-        );
-        // `chargeCommission` vai junto: e o que decide, dali em diante, se o
-        // dono pode ver este `grossCents`. Ver KitchenCharge no schema.
-        return { kitchenId: k.id, grossCents, chargeCommission: k.chargeCommission, ...calc };
-      });
-
-      // Transacao: ciclo fechado sem as cobrancas dentro seria um mes que
-      // aparece como cobrado e nao cobra ninguem.
-      const ciclo = await prisma.$transaction(async (tx) => {
-        const c = await tx.billingCycle.upsert({
-          where: { spaceId_refMonth: { spaceId: space.id, refMonth } },
-          create: {
-            spaceId: space.id,
-            refMonth,
-            startsAt,
-            endsAt,
-            status: 'fechado',
-            closedAt: new Date(),
-          },
-          update: { status: 'fechado', closedAt: new Date() },
-        });
-
-        await tx.kitchenCharge.deleteMany({ where: { cycleId: c.id } });
-        await tx.kitchenCharge.createMany({
-          data: cobrancas.map((cb) => ({
-            cycleId: c.id,
-            kitchenId: cb.kitchenId,
-            grossCents: cb.grossCents,
-            chargeCommission: cb.chargeCommission,
-            commissionPct: cb.commissionPct,
-            commissionCents: cb.commissionCents,
-            rentCents: cb.rentCents,
-            totalDueCents: cb.totalDueCents,
-            status: 'fechada' as const,
-          })),
-        });
-
-        return c;
-      });
 
       ciclosFechados.inc();
 
-      const totalCents = cobrancas.reduce((a, c) => a + c.totalDueCents, 0);
       req.log.info(
-        { refMonth, spaceId: space.id, por: ctx.email, totalCents },
+        { refMonth, spaceId: space.id, por: ctx.email, totalCents: r.totalDueCents },
         'ciclo de cobranca fechado',
       );
 
       return reply.code(201).send({
         ok: true,
-        cicloId: ciclo.id,
-        refMonth,
-        cobrancas: cobrancas.length,
-        totalDueCents: totalCents,
+        cicloId: r.cicloId,
+        refMonth: r.refMonth,
+        cobrancas: r.cobrancas,
+        totalDueCents: r.totalDueCents,
       });
     },
   );

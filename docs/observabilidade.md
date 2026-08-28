@@ -36,19 +36,19 @@ O log é JSON de uma linha (pino). Em desenvolvimento sai formatado por
 
 ```bash
 # tudo de uma requisição específica
-docker logs meu-quintal-server 2>&1 | jq 'select(.reqId == "req-1a2b")'
+docker logs qro-server 2>&1 | jq 'select(.reqId == "req-1a2b")'
 
 # só os erros
-docker logs meu-quintal-server 2>&1 | jq 'select(.level >= 50)'
+docker logs qro-server 2>&1 | jq 'select(.level >= 50)'
 
 # requisições acima de 500ms
-docker logs meu-quintal-server 2>&1 | jq 'select(.responseTime > 500) | {url: .req.url, ms: .responseTime}'
+docker logs qro-server 2>&1 | jq 'select(.responseTime > 500) | {url: .req.url, ms: .responseTime}'
 
 # tentativa de usar token de um app no outro (sinal de sondagem)
-docker logs meu-quintal-server 2>&1 | jq 'select(.msg | test("token de outro tipo"))'
+docker logs qro-server 2>&1 | jq 'select(.msg | test("token de outro tipo"))'
 
 # tentativa de acesso cruzado entre tenants
-docker logs meu-quintal-server 2>&1 | jq 'select(.msg | test("tentou assinar"))'
+docker logs qro-server 2>&1 | jq 'select(.msg | test("tentou assinar"))'
 ```
 
 > `authorization` e `cookie` saem como `[redigido]`. É de propósito: eles

@@ -57,21 +57,21 @@ export function FotosDoItem({ itemId, fotos }: Props) {
   return (
     <div className="mt-5">
       <div className="flex items-baseline justify-between mb-2 gap-3">
-        <label className="font-mono text-label uppercase tracking-wider text-inkInverseDim">
+        <label className="font-mono text-label uppercase tracking-wider text-inkDim">
           Fotos
         </label>
-        <span className="font-mono text-mono-sm text-inkInverseDim">
+        <span className="font-mono text-mono-sm text-inkDim">
           {fotos.length}/{MAX_FOTOS}
         </span>
       </div>
 
-      <p className="mb-3 font-sans text-body-sm text-inkInverseDim">
+      <p className="mb-3 font-sans text-body-sm text-inkMuted">
         A primeira é a que aparece no cardápio. As outras o cliente vê ao abrir o prato.
       </p>
 
       <div className="grid grid-cols-3 gap-2">
         {fotos.map((f, i) => (
-          <figure key={f.id} className="relative aspect-square rounded-md overflow-hidden bg-surfaceDeep">
+          <figure key={f.id} className="relative aspect-square overflow-hidden bg-surface">
             <img
               src={urlDaFoto(f.url)}
               alt=""
@@ -83,8 +83,8 @@ export function FotosDoItem({ itemId, fotos }: Props) {
 
             {i === 0 && (
               <figcaption
-                className="absolute top-1 left-1 px-1.5 py-0.5 rounded-sm bg-primary
-                           font-mono text-mono-sm uppercase tracking-wider text-inkInverse"
+                className="absolute top-1 left-1 px-1.5 py-0.5 bg-primary
+                           font-mono text-mono-sm uppercase tracking-wider text-bg"
               >
                 capa
               </figcaption>
@@ -97,7 +97,7 @@ export function FotosDoItem({ itemId, fotos }: Props) {
                   disabled={ocupado}
                   onClick={() => capa.mutate({ itemId, fotoId: f.id })}
                   className="flex-1 h-9 bg-ink/70 font-mono text-mono-sm uppercase tracking-wider
-                             text-white cursor-pointer hover:bg-primary
+                             text-bg cursor-pointer hover:bg-primary
                              disabled:opacity-50 transition-colors duration-base ease-out"
                 >
                   capa
@@ -108,7 +108,7 @@ export function FotosDoItem({ itemId, fotos }: Props) {
                 disabled={ocupado}
                 aria-label="Remover foto"
                 onClick={() => excluir.mutate({ itemId, fotoId: f.id })}
-                className="w-9 h-9 bg-ink/70 font-mono text-mono text-white cursor-pointer
+                className="w-9 h-9 bg-ink/70 font-mono text-mono text-bg cursor-pointer
                            hover:bg-danger disabled:opacity-50
                            transition-colors duration-base ease-out"
               >
@@ -123,12 +123,12 @@ export function FotosDoItem({ itemId, fotos }: Props) {
             type="button"
             disabled={ocupado}
             onClick={() => inputRef.current?.click()}
-            className="aspect-square rounded-md border border-dashed border-hairlineDark
+            className="aspect-square border border-dashed border-hairline
                        flex flex-col items-center justify-center gap-1 cursor-pointer
-                       text-inkInverseDim hover:border-primary hover:text-primary
+                       text-inkDim hover:border-primary hover:text-primary
                        disabled:opacity-50 transition-colors duration-base ease-out"
           >
-            <span className="font-display italic text-display-md">
+            <span className="font-display text-display-md">
               {enviar.isPending ? '…' : '+'}
             </span>
             <span className="font-mono text-mono-sm uppercase tracking-wider">
@@ -152,7 +152,7 @@ export function FotosDoItem({ itemId, fotos }: Props) {
       {erro && <p className="mt-3 font-mono text-mono-sm text-danger">{erro}</p>}
 
       {cheio && (
-        <p className="mt-3 font-sans text-body-sm text-inkInverseDim">
+        <p className="mt-3 font-sans text-body-sm text-inkMuted">
           Chegou no limite. Remova uma pra colocar outra.
         </p>
       )}

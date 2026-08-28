@@ -1,5 +1,5 @@
 {
-  "name": "meu-quintal",
+  "name": "qro",
   "private": true,
   "license": "UNLICENSED",
   "version": "0.1.0",
@@ -25,7 +25,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @mq/server db:migrate",
     "db:seed": "pnpm --filter @mq/server db:seed",

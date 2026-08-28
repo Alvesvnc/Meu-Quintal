@@ -63,10 +63,48 @@ export const propostasExpiradas = new Counter({
   registers: [registro],
 });
 
+/**
+ * Contas suspensas por teste vencido sem virar assinatura.
+ *
+ * Numero alto e sinal comercial, nao tecnico: ou o teste e curto demais, ou o
+ * produto nao convenceu, ou o caminho ate o botao de assinar esta escondido.
+ */
+export const trialsExpirados = new Counter({
+  name: 'mq_trials_expirados_total',
+  help: 'Contas suspensas por fim do periodo de teste',
+  registers: [registro],
+});
+
 /** Ciclos de cobranca fechados. */
 export const ciclosFechados = new Counter({
   name: 'mq_ciclos_fechados_total',
   help: 'Ciclos de cobranca fechados',
+  registers: [registro],
+});
+
+/**
+ * Avisos de push aceitos pelo servico do navegador.
+ *
+ * ACEITO NAO E LIDO: o servico so confirma que recebeu pra entregar. Se o
+ * aparelho esta desligado ha dois dias, isto conta 1 e ninguem viu nada.
+ */
+export const pushEnviados = new Counter({
+  name: 'mq_push_enviados_total',
+  help: 'Avisos de push aceitos pelo servico de push',
+  labelNames: ['motivo'],
+  registers: [registro],
+});
+
+/**
+ * Inscricoes apagadas por terem morrido do outro lado.
+ *
+ * Um pouco disso e normal e saudavel: aparelho trocado, app desinstalado,
+ * permissao revogada. Um PICO logo depois de um deploy e outra coisa — e o
+ * sintoma de chave VAPID trocada, que invalida todo mundo de uma vez.
+ */
+export const pushRemovidos = new Counter({
+  name: 'mq_push_removidos_total',
+  help: 'Inscricoes de push apagadas por terem expirado',
   registers: [registro],
 });
 

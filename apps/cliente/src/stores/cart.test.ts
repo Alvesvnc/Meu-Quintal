@@ -2,8 +2,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { MenuItem } from '@mq/shared';
 import { useCart, selectItemCount, selectTotalCents, groupByKitchen } from './cart';
 
-const item = (id: string, priceCents: number, name = `item-${id}`) =>
-  ({ id, name, priceCents }) as MenuItem;
+/**
+ * `fotos` vai explicito mesmo vazio: `addLine` LE esse campo pra guardar a
+ * capa na linha, e um fixture sem ele quebraria por falta de dado — nao por
+ * regra de carrinho, que e o que estes testes cobrem.
+ */
+const item = (
+  id: string,
+  priceCents: number,
+  name = `item-${id}`,
+  extra: Partial<MenuItem> = {},
+) => ({ id, name, priceCents, fotos: [], photoUrl: null, ...extra }) as MenuItem;
 
 const nagoya = { slug: 'nagoya', name: 'Nagoya' };
 const forno = { slug: 'forno', name: 'Forno de Barro' };
@@ -32,6 +41,30 @@ describe('carrinho — linhas', () => {
     expect(line.priceCents).toBe(1500);
     expect(line.kitchenSlug).toBe('nagoya');
     expect(line.kitchenName).toBe('Nagoya');
+  });
+
+  it('guarda a capa do item na linha, e nao a URL pronta', () => {
+    useCart.getState().addLine(
+      item('a', 1500, 'item-a', {
+        fotos: [{ id: 'f1', url: '/api/fotos/abc.webp', width: 800, height: 800 }],
+      }),
+      nagoya,
+    );
+    // Caminho relativo: o carrinho sobrevive em localStorage a uma troca de
+    // VITE_API_URL, e o endereco absoluto congelaria o host antigo na linha.
+    expect(useCart.getState().lines[0].foto).toBe('/api/fotos/abc.webp');
+  });
+
+  it('cai na photoUrl externa quando a cozinha nao enviou foto', () => {
+    useCart
+      .getState()
+      .addLine(item('a', 1500, 'item-a', { photoUrl: 'https://exemplo/x.jpg' }), nagoya);
+    expect(useCart.getState().lines[0].foto).toBe('https://exemplo/x.jpg');
+  });
+
+  it('sem foto nenhuma, a linha fica sem capa', () => {
+    useCart.getState().addLine(item('a', 1500), nagoya);
+    expect(useCart.getState().lines[0].foto).toBeUndefined();
   });
 
   it('setQty com 0 ou negativo remove a linha', () => {

@@ -46,6 +46,14 @@ export interface OrderLineItem {
   unitPriceCents: number;
   note: string | null;
   status: OrderItemStatus;
+  /**
+   * Capa do item, pronta pro `<img>` (caminho relativo a API) ou `null`.
+   *
+   * A tela de acompanhar mostra o pedido como uma lista de FOTOS, nao de
+   * nomes: quem espera no salao reconhece o prato antes de ler. Sem este
+   * campo a lista precisaria de uma query por item so pra achar a imagem.
+   */
+  foto: string | null;
 }
 
 export interface OrderStatusEvent {
@@ -73,8 +81,23 @@ export interface OrderListItem {
   /** Status agregado da cozinha desse pedido. */
   status: OrderItemStatus;
   itemCount: number;
+  /**
+   * Os itens ATIVOS do pedido, na ordem, so com o que a lista desenha.
+   *
+   * A tela de pedidos troca o texto "2 itens" por uma fileira de miniaturas —
+   * e o nome fica de `alt`. Cancelado nao entra: nao vai chegar.
+   */
+  itens: OrderListItemPreview[];
   paymentRequestedAt: string | null;
   paidAt: string | null;
+}
+
+export interface OrderListItemPreview {
+  id: string;
+  name: string;
+  qty: number;
+  /** Capa do item (caminho relativo a API) ou `null` quando nao ha foto. */
+  foto: string | null;
 }
 
 /** Evento Socket.io `payment:requested` — emitido quando cliente fecha conta. */
@@ -91,6 +114,14 @@ export interface PaymentRequestedEvent {
 /** Body de POST /api/m/pedidos/fechar-conta */
 export interface RequestPaymentInput {
   kitchenSlug: string;
+  /**
+   * De quem é a conta. Ausente = a conta da mesa (os pedidos que ninguém
+   * assinou).
+   *
+   * O servidor compara por igualdade exata, incluindo o nulo: quem assinou não
+   * arrasta a conta da mesa, e a conta da mesa não arrasta a de quem assinou.
+   */
+  nomeCliente?: string;
 }
 
 export interface RequestPaymentResponse {

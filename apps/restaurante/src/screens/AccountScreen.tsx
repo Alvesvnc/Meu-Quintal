@@ -31,7 +31,7 @@ export function AccountScreen() {
   };
 
   if (q.isLoading) {
-    return <main className="px-5 py-12 font-sans text-body text-inkDim">Carregando…</main>;
+    return <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">Carregando…</main>;
   }
   if (q.isError || !q.data) {
     return (
@@ -48,10 +48,10 @@ export function AccountScreen() {
   const erro = salvar.error ? mensagemDeErro(salvar.error, 'Nao consegui salvar.') : null;
 
   return (
-    <main className="px-5 pb-28">
+    <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 pb-28">
       <section className="pt-6">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">Cozinha</p>
-        <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight">
+        <h1 className="mt-1 font-display text-display-lg text-ink leading-tight">
           {perfil.name}
         </h1>
         <p className="mt-2 font-sans text-body text-inkDim">
@@ -106,7 +106,7 @@ export function AccountScreen() {
         <ul className="mt-2 divide-y divide-hairlineSoft">
           <LinkRow rotulo="Histórico" onClick={() => navigate('/historico')} />
           <LinkRow rotulo="Métricas" onClick={() => navigate('/metricas')} />
-          <LinkRow rotulo="Avisos no celular" onClick={() => navigate('/push')} />
+          <LinkRow rotulo="Avisos" onClick={() => navigate('/push')} />
         </ul>
       </section>
 
@@ -115,7 +115,7 @@ export function AccountScreen() {
           Sair
         </Button>
         <p className="mt-4 text-center font-mono text-mono-sm uppercase tracking-wider text-inkDim">
-          Meu Quintal · cozinha
+          QRO · cozinha
         </p>
       </section>
     </main>

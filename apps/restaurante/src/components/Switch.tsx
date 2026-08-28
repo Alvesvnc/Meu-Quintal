@@ -5,12 +5,15 @@ interface SwitchProps {
 }
 
 /**
- * Switch toggle dark-mode-friendly e responsivo ao font-size do app.
+ * Chave liga/desliga: trilho retangular com moldura e botão QUADRADO.
  *
- * Usamos PIXELS EXPLÍCITOS (não rem-based como w-14) porque o app restaurante
- * sobreescreve html font-size pra 18px, o que escala TODAS as classes Tailwind
- * baseadas em rem proporcionalmente — e isso visualmente borrava o switch.
- * Pixels = layout absoluto, previsível.
+ * Sem raio, como todo o resto do sistema — a pílula com bolinha era a única
+ * forma arredondada que restava na tela. O estado ligado preenche o trilho de
+ * vermelho; desligado, ele fica vazio com o botão em tinta escura. A posição
+ * sozinha já diria, mas o preenchimento é o que se lê de relance.
+ *
+ * Geometria em PIXEL e não em classe rem: esta peça tem tamanho fixo, e o
+ * corpo do app pode mudar de tamanho de fonte sem que a chave mude junto.
  */
 export function Switch({ checked, onChange, ariaLabel }: SwitchProps) {
   return (
@@ -21,25 +24,24 @@ export function Switch({ checked, onChange, ariaLabel }: SwitchProps) {
       aria-label={ariaLabel}
       onClick={onChange}
       className={[
-        'shrink-0 relative rounded-full cursor-pointer',
+        'shrink-0 relative rounded-none cursor-pointer border',
         'transition-colors duration-base ease-out',
-        'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primaryWash',
-        checked ? 'bg-accent/30' : 'bg-hairline',
+        checked ? 'bg-accent border-accent' : 'bg-surface border-divider',
       ].join(' ')}
       style={{ width: '52px', height: '28px' }}
     >
       <span
         aria-hidden
         className={[
-          'absolute rounded-full block',
+          'absolute block rounded-none',
           'transition-all duration-base ease-out',
-          checked ? 'bg-accent' : 'bg-inkDim',
+          checked ? 'bg-bg' : 'bg-neutral-700',
         ].join(' ')}
         style={{
-          width:  '20px',
-          height: '20px',
-          top:    '4px',
-          left:   checked ? '28px' : '4px',
+          width: '18px',
+          height: '18px',
+          top: '4px',
+          left: checked ? '28px' : '4px',
         }}
       />
     </button>

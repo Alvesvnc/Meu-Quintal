@@ -1,27 +1,27 @@
-import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Divider, Button } from '@mq/design-system';
+import { Button, Pulso } from '@mq/design-system';
 import { useQuintal } from '../api/hooks';
 import { KitchenRow } from '../components/KitchenRow';
 import { KitchenCard } from '../components/KitchenCard';
 import { ScreenError } from '../components/ScreenError';
 
-type Layout = 'lista' | 'grade';
+/** Abaixo disto a grade de duas colunas desperdiça meia tela numa célula vazia. */
+const MINIMO_PRA_GRADE = 3;
 
 /**
  * Tela 01 — pós-QR · lista de cozinhas.
- * Default: grade 2 cols (decidido em 2026-05-26 — ver pages/cliente.md).
+ *
+ * O parágrafo com capitular saiu. Ele dizia em três linhas o que o cabeçalho
+ * (mesa), o título (quantas cozinhas) e os cards (quais) já dizem — e era a
+ * primeira coisa entre o QR e a comida.
  */
 export function LandingScreen() {
-  const [layout] = useState<Layout>('grade');
   const { data, isLoading, error, refetch } = useQuintal();
 
   if (isLoading) {
     return (
-      <main className="px-5 pt-8 text-center">
-        <p className="font-display italic text-display-md text-inkMuted">
-          Carregando o quintal…
-        </p>
+      <main className="px-4 pt-8">
+        <p className="font-display text-display-md text-neutral-600">Carregando o quintal…</p>
       </main>
     );
   }
@@ -36,9 +36,8 @@ export function LandingScreen() {
     );
   }
 
-  const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  const openCount = data.kitchens.length;
-  const mesaNumero = data.table.numero;
+  const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const abertas = data.kitchens.length;
 
   // ─── Restaurante único: pula a lista ─────────────────────────────────────
   //
@@ -53,56 +52,52 @@ export function LandingScreen() {
     return <Navigate to={`/k/${data.kitchens[0].slug}`} replace />;
   }
 
+  const emGrade = abertas >= MINIMO_PRA_GRADE;
+
   return (
-    <main className="pb-10">
-      <section className="px-5 pt-6 pb-2">
-        <p className="font-sans text-body text-ink leading-relaxed text-pretty
-                      first-letter:font-display first-letter:italic
-                      first-letter:text-[56px] first-letter:leading-[0.85]
-                      first-letter:float-left first-letter:mr-3 first-letter:mt-1
-                      first-letter:text-primary">
-          Você está na Mesa{' '}
-          <span className="font-mono">{String(mesaNumero).padStart(2, '0')}</span>.
-          O quintal hoje tem{' '}
-          <em className="font-display italic">{openCount} cozinhas</em> abertas.
-          Monte seu pedido com itens de quantas quiser.
+    <main className="pb-8">
+      <section className="px-4 py-4 flex flex-col gap-2">
+        <p className="flex items-center gap-2 font-display text-label font-bold uppercase text-neutral-600">
+          <Pulso />
+          Agora · <span className="tabular">{agora}</span>
         </p>
+        <h1 className="font-display text-display-lg text-ink">
+          {abertas === 0
+            ? 'Nenhuma cozinha aberta.'
+            : `${abertas} ${abertas === 1 ? 'cozinha aberta' : 'cozinhas abertas'}.`}
+        </h1>
       </section>
 
-      <div className="px-5 pt-5 pb-1">
-        <Divider label={`Hoje · ${now}`} />
-      </div>
+      {abertas > 0 &&
+        (emGrade ? (
+          <section className="px-4 pb-6 grid grid-cols-2 gap-x-3 gap-y-6">
+            {data.kitchens.map((k, i) => (
+              <KitchenCard key={k.id} kitchen={k} index={i} />
+            ))}
+          </section>
+        ) : (
+          <section className="px-4 pb-6">
+            {data.kitchens.map((k, i) => (
+              <KitchenRow key={k.id} kitchen={k} index={i} />
+            ))}
+          </section>
+        ))}
 
-      {layout === 'lista' ? (
-        <section className="px-5">
-          {data.kitchens.map((k, i) => (
-            <KitchenRow key={k.id} kitchen={k} index={i} />
-          ))}
-        </section>
-      ) : (
-        <section className="px-5 pt-4 grid grid-cols-2 gap-x-3 gap-y-7">
-          {data.kitchens.map((k, i) => (
-            <KitchenCard key={k.id} kitchen={k} index={i} />
-          ))}
-        </section>
-      )}
-
-      {data.kitchens.length === 0 && (
-        <section className="px-5 pt-10 text-center">
-          <p className="font-display italic text-display-md text-inkMuted text-pretty">
-            Nenhuma cozinha aberta agora.
+      {abertas === 0 && (
+        <section className="px-4">
+          <p className="text-body-sm text-neutral-700">
+            As cozinhas do {data.space.name} estão fechadas agora.
           </p>
-          <div className="mt-5">
-            <Button variant="secondary" size="md" onClick={() => refetch()}>
+          <div className="mt-4">
+            <Button variant="secondary" size="lg" fullWidth onClick={() => refetch()}>
               Tentar de novo
             </Button>
           </div>
         </section>
       )}
 
-      <footer className="px-5 pt-8 pb-2">
-        <Divider />
-        <p className="mt-4 text-center font-mono text-mono-sm uppercase tracking-wider text-inkDim">
+      <footer className="mt-4 px-4 py-3 border-t border-divider">
+        <p className="font-display text-label-sm font-bold uppercase text-neutral-600">
           {data.space.name}
         </p>
       </footer>

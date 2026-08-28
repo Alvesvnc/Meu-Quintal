@@ -10,6 +10,7 @@ import { prisma } from '../lib/prisma.js';
 import { hashDeToken, criarLinkDeAcesso } from '../lib/acessoToken.js';
 import { enviar, recuperarSenha as emailDeRecuperacao, boasVindas } from '../lib/email.js';
 import { env } from '../lib/env.js';
+import { apagarInscricoesDe } from '../lib/push.js';
 import { montarMe } from './admin.js';
 
 /**
@@ -195,6 +196,7 @@ export async function acessoRoutes(fastify: FastifyInstance) {
             where: { userId: a.userId!, usedAt: null },
             data: { usedAt: new Date() },
           });
+          await apagarInscricoesDe(tx, a.userId!);
         } else {
           await tx.kitchenUser.update({
             where: { id: a.kitchenUserId! },
@@ -204,6 +206,7 @@ export async function acessoRoutes(fastify: FastifyInstance) {
             where: { kitchenUserId: a.kitchenUserId!, usedAt: null },
             data: { usedAt: new Date() },
           });
+          await apagarInscricoesDe(tx, a.kitchenUserId!);
         }
 
         return true;

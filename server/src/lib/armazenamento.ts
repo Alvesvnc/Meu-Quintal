@@ -40,6 +40,16 @@ function novaChave(extensao: string): string {
   return `${crypto.randomBytes(16).toString('hex')}.${extensao}`;
 }
 
+/**
+ * Endereço público de um arquivo guardado. Ver modules/fotos.ts.
+ *
+ * Caminho RELATIVO de propósito: o servidor não sabe em que domínio está
+ * publicado, e cada app resolve isso com o próprio `VITE_API_URL`.
+ */
+export function urlPublica(chave: string): string {
+  return '/api/fotos/' + chave;
+}
+
 /** Cria a pasta uma vez, no boot. Falhar aqui é melhor que no primeiro upload. */
 export async function prepararArmazenamento(): Promise<void> {
   await fs.mkdir(raiz(), { recursive: true });

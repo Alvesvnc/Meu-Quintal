@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>QRO — wordmark em HTML</title>
+<link rel="icon" type="image/svg+xml" href="qro-favicon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&display=swap">
+<style>body{margin:0;font-family:Archivo,sans-serif;background:#f3f2f2;color:#201e1d}</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+  QRO — WORDMARK EM HTML (a forma recomendada de usar a marca)
+  Copie o <span class="qro-logo"> + o CSS abaixo para o seu site.
+  Escala pelo font-size: mude só ele e tudo acompanha (o quadrado
+  usa em). Requisito único: fonte Archivo 800 carregada na página.
+═══════════════════════════════════════════════════════════════ -->
+
+<style>
+  .qro-logo{
+    display:inline-flex; align-items:center; gap:.14em;
+    font-family:Archivo, "Arial Black", sans-serif; font-weight:800;
+    letter-spacing:-.03em; line-height:.9; font-size:32px; /* ← só mude isto */
+    color:#201e1d; text-decoration:none; user-select:none;
+  }
+  .qro-logo .o{ width:.72em; height:.72em; border:.17em solid #ec3013; flex:none }
+  /* variante para fundo vermelho ou escuro */
+  .qro-logo.clara{ color:#f3f2f2 }
+  .qro-logo.clara .o{ border-color:#f3f2f2 }
+</style>
+
+<!-- uso normal (fundo claro) -->
+<div style="padding:48px; display:flex; flex-direction:column; gap:32px; align-items:flex-start">
+  <a href="/" class="qro-logo" aria-label="QRO">QR<span class="o"></span></a>
+  <a href="/" class="qro-logo" style="font-size:20px" aria-label="QRO">QR<span class="o"></span></a>
+
+  <!-- uso sobre campo vermelho -->
+  <div style="background:#ec3013; padding:24px 32px">
+    <a href="/" class="qro-logo clara" aria-label="QRO">QR<span class="o"></span></a>
+  </div>
+</div>
+
+</body>
+</html>

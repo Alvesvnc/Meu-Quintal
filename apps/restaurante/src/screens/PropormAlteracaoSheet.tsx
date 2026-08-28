@@ -65,10 +65,10 @@ export function PropormAlteracaoSheet({ order, onClose }: Props) {
   return (
     <Sheet open onClose={onClose} ariaLabel="Alterar pedido">
       <SheetHeader>
-        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkInverseDim">
+        <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           Pedido #{order.shortId} · Mesa {String(order.mesaNumero).padStart(2, '0')}
         </p>
-        <h2 className="mt-1 font-display italic text-display-md text-inkInverse leading-tight">
+        <h2 className="mt-1 font-display text-display-md text-ink leading-tight">
           O que você não consegue entregar?
         </h2>
       </SheetHeader>
@@ -78,12 +78,12 @@ export function PropormAlteracaoSheet({ order, onClose }: Props) {
           {alteraveis.map((item) => {
             const atual = novasQtds[item.id] ?? item.qty;
             return (
-              <li key={item.id} className="border-b border-hairlineDark pb-4">
+              <li key={item.id} className="border-b border-hairline pb-4">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-sans text-body-lg text-inkInverse flex-1">
+                  <span className="font-sans text-body-lg text-ink flex-1">
                     {item.name}
                   </span>
-                  <span className="font-mono text-mono-sm text-inkInverseDim shrink-0">
+                  <span className="font-mono text-mono-sm text-inkDim shrink-0">
                     pedido: {item.qty}×
                   </span>
                 </div>
@@ -105,13 +105,13 @@ export function PropormAlteracaoSheet({ order, onClose }: Props) {
                           type="button"
                           onClick={() => definir(item.id, n)}
                           className={[
-                            'min-w-11 h-11 px-3 rounded-md font-mono text-body tabular-nums',
+                            'min-w-11 h-11 px-3 font-mono text-body tabular-nums',
                             'border transition-colors duration-base ease-out',
                             selecionado && cancelar
-                              ? 'border-danger bg-danger text-inkInverse'
+                              ? 'border-danger bg-danger text-bg'
                               : selecionado
-                                ? 'border-primary bg-primary text-inkInverse'
-                                : 'border-hairlineDark text-inkInverseDim',
+                                ? 'border-primary bg-primary text-bg'
+                                : 'border-hairline text-inkDim',
                           ].join(' ')}
                         >
                           {cancelar ? 'cancelar' : `${n}×`}
@@ -134,11 +134,11 @@ export function PropormAlteracaoSheet({ order, onClose }: Props) {
         </div>
 
         {linhasAlteradas.length === 0 ? (
-          <p className="mt-5 font-sans text-body-sm text-inkInverseDim">
+          <p className="mt-5 font-sans text-body-sm text-inkMuted">
             Escolha uma quantidade menor em algum item para propor a mudança.
           </p>
         ) : (
-          <p className="mt-5 font-sans text-body-sm text-inkInverseDim">
+          <p className="mt-5 font-sans text-body-sm text-inkMuted">
             O cliente tem 5 minutos para responder. Sem resposta,{' '}
             {linhasAlteradas.length === 1 ? 'o item é cancelado' : 'os itens são cancelados'} por
             completo.

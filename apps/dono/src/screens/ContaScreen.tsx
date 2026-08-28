@@ -5,6 +5,7 @@ import { clearToken } from '../api/client';
 import { useAuth, useEspacoAtual } from '../stores/auth';
 import { Carregando, ErroDaTela } from '../components/Estado';
 import { PlanoDaConta } from '../components/PlanoDaConta';
+import { AssinaturaDaConta } from '../components/AssinaturaDaConta';
 
 /** Conta, quintal e equipe. */
 export function ContaScreen() {
@@ -32,9 +33,7 @@ export function ContaScreen() {
     <>
       <header className="mb-8">
         <p className="font-mono text-label uppercase tracking-wider text-inkDim mb-1">Eu</p>
-        <h1 className="font-display italic text-display-xl text-ink leading-tight">
-          {me.account.name}
-        </h1>
+        <h1 className="font-display text-display-xl text-ink leading-tight">{me.account.name}</h1>
         {me.account.status !== 'ativa' && (
           <p className="mt-2 font-sans text-body text-warn">
             Conta {me.account.status}. Você continua vendo tudo, mas não consegue alterar nada.
@@ -54,7 +53,7 @@ export function ContaScreen() {
                   type="button"
                   onClick={() => setEspaco(e.slug)}
                   className={[
-                    'px-3 py-2 rounded-md border font-sans text-body-sm cursor-pointer',
+                    'px-3 py-2 border font-sans text-body-sm cursor-pointer',
                     'transition-colors duration-base ease-out',
                     e.slug === espaco?.slug
                       ? 'border-primary bg-primaryWash text-primary'
@@ -75,7 +74,7 @@ export function ContaScreen() {
               <Linha rotulo="Nome" valor={espaco.name} />
               <Linha rotulo="Mesas" valor={String(espaco.tablesTotal)} />
               <Linha rotulo="Comissão padrão" valor={`${espaco.defaultCommissionPct}%`} />
-              {/* "Fechamento", não "repasse": o dinheiro não sai daqui — é a
+              {/* "Fechamento", não"repasse": o dinheiro não sai daqui — é a
                   cozinha que deve ao quintal. */}
               <Linha rotulo="Ciclo fecha" valor={`dia ${espaco.closingDay} do mês`} />
             </dl>
@@ -89,6 +88,10 @@ export function ContaScreen() {
             testeAte={me.account.trialEndsAt ?? null}
           />
         )}
+
+        {/* Logo abaixo do plano: o preço é do plano, e quem acabou de ler o
+            que o plano permite é quem decide pagar por ele. */}
+        <AssinaturaDaConta />
 
         <section>
           <Divider label="Você" />

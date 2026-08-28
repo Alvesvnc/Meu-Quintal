@@ -1,5 +1,6 @@
 import type { AccountPlan } from '@prisma/client';
 import type { TipoDeEspaco } from '@mq/shared';
+import { env } from './env.js';
 
 /**
  * O plano é o que diferencia restaurante único de praça de alimentação.
@@ -81,4 +82,33 @@ export function podeAdicionarCozinha(plano: AccountPlan, cozinhasHoje: number): 
         ? 'O plano Restaurante é de uma cozinha só. Para ter mais de uma no mesmo espaço, é o plano Praça de alimentação.'
         : `O plano ${PLANOS[plano].nome} permite ${teto} cozinhas.`,
   };
+}
+
+/**
+ * Quanto este plano custa por mês, em centavos. `null` = não configurado.
+ *
+ * ─── POR QUE VEM DO ENV, E NÃO ESTÁ ESCRITO AQUI ────────────────────────────
+ *
+ * Preço muda sem que o software mude. Chumbar o número no código faria toda
+ * correção de tabela virar deploy — e num sábado, quando ninguém quer buildar,
+ * a tentação seria mexer direto no banco.
+ *
+ * ─── POR QUE NÃO TEM PADRÃO ─────────────────────────────────────────────────
+ *
+ * Um valor chutado aqui viraria assinatura cobrando errado sem ninguém
+ * perceber: o checkout abriria, o cliente pagaria, e só no extrato alguém
+ * notaria. `null` faz a rota de checkout recusar dizendo qual variável falta.
+ * Preço é decisão comercial; código não tem opinião sobre ela.
+ *
+ * O valor efetivamente cobrado fica congelado em `Assinatura.precoMensalCents`
+ * no momento da assinatura — mexer aqui não remarca quem já é cliente.
+ */
+export function precoMensalCents(plano: AccountPlan): number | null {
+  const preco = plano === 'restaurante' ? env.PRECO_RESTAURANTE_CENTS : env.PRECO_PRACA_CENTS;
+  return preco ?? null;
+}
+
+/** Nome da variável que falta, pra mensagem de erro dizer o que configurar. */
+export function varDePreco(plano: AccountPlan): string {
+  return plano === 'restaurante' ? 'PRECO_RESTAURANTE_CENTS' : 'PRECO_PRACA_CENTS';
 }

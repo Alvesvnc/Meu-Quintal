@@ -1,7 +1,18 @@
 /** Resposta de GET /api/m/k/:slug — cardápio de uma cozinha. */
 
-export type MenuCategory = 'entradas' | 'pratos' | 'sobremesas' | 'bebidas';
 export type MenuBadge = 'novo' | 'esgotando' | 'sem-estoque';
+
+/**
+ * Uma secao do cardapio, escrita pela cozinha.
+ *
+ * Era um enum de quatro valores ('entradas' | 'pratos' | ...) e o app do
+ * cliente traduzia cada um pro rotulo. Agora o rotulo vem pronto do servidor:
+ * quem escreve "Do forno" ou "Pra beber" e a casa, nao a gente.
+ */
+export interface MenuCategoria {
+  id: string;
+  name: string;
+}
 
 export interface MenuItemFoto {
   id: string;
@@ -13,7 +24,8 @@ export interface MenuItemFoto {
 export interface MenuItem {
   id: string;
   kitchenSlug: string;
-  category: MenuCategory;
+  /** A secao do cardapio. Resolve em `KitchenMenuResponse.categorias`. */
+  categoriaId: string;
   name: string;
   description: string | null;
   priceCents: number;
@@ -38,5 +50,10 @@ export interface KitchenMenuResponse {
     photoUrl: string | null;
     slaMinutes: number;
   };
+  /**
+   * Na ordem em que a cozinha decidiu exibir. Vem inteira, inclusive secao
+   * vazia — filtrar aqui obrigaria o app a adivinhar a ordem das que sobraram.
+   */
+  categorias: MenuCategoria[];
   items: MenuItem[];
 }

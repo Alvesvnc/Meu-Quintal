@@ -3,5 +3,5 @@ dist
 coverage
 pnpm-lock.yaml
 *.tsbuildinfo
-Meu Quintal.html
 server/prisma/migrations
+docs/design-system/qro/modernist

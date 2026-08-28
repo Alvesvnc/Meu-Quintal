@@ -56,7 +56,7 @@ process.on('unhandledRejection', (err) => {
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST });
-  app.log.info(`Meu Quintal · server em http://${env.HOST}:${env.PORT} (${env.NODE_ENV})`);
+  app.log.info(`QRO · server em http://${env.HOST}:${env.PORT} (${env.NODE_ENV})`);
   app.log.info(
     sentryAtivo
       ? `Sentry ativo (traces ${env.SENTRY_TRACES_SAMPLE_RATE})`

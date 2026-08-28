@@ -24,7 +24,7 @@ export function SeletorDeMotivo({ valor, onChange, texto, onTextoChange }: Props
 
   return (
     <div>
-      <p className="font-mono text-label uppercase tracking-wider text-inkInverseDim">
+      <p className="font-mono text-label uppercase tracking-wider text-inkDim">
         Por que?
       </p>
 
@@ -38,11 +38,11 @@ export function SeletorDeMotivo({ valor, onChange, texto, onTextoChange }: Props
               onClick={() => onChange(m)}
               className={[
                 // min-h-11: alvo de toque numa tela que pode estar engordurada
-                'min-h-11 px-3 py-2 rounded-md text-left',
+                'min-h-11 px-3 py-2 text-left',
                 'font-sans text-body-sm border transition-colors duration-base ease-out',
                 ativo
-                  ? 'border-primary bg-primary text-inkInverse'
-                  : 'border-hairlineDark text-inkInverseDim',
+                  ? 'border-primary bg-primary text-bg'
+                  : 'border-hairline text-inkDim',
               ].join(' ')}
             >
               {MOTIVO_LABEL[m]}
@@ -52,7 +52,7 @@ export function SeletorDeMotivo({ valor, onChange, texto, onTextoChange }: Props
       </div>
 
       <label className="mt-4 block">
-        <span className="font-mono text-label uppercase tracking-wider text-inkInverseDim">
+        <span className="font-mono text-label uppercase tracking-wider text-inkDim">
           {precisaDeTexto ? 'Explique (obrigatório)' : 'Detalhe (o cliente vai ler)'}
         </span>
         <input
@@ -64,9 +64,10 @@ export function SeletorDeMotivo({ valor, onChange, texto, onTextoChange }: Props
             precisaDeTexto ? 'o que aconteceu?' : 'acabou a costela, só tenho frango…'
           }
           className={[
-            'mt-2 w-full rounded-md bg-surfaceDeep px-4 py-3',
-            'font-sans text-body text-inkInverse placeholder:text-inkInverseDim border',
-            precisaDeTexto && textoCurto ? 'border-danger' : 'border-hairlineDark',
+            'mt-2 w-full bg-surface px-4 py-3',
+            'font-sans text-body text-ink placeholder:text-inkDim border',
+            'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash',
+            precisaDeTexto && textoCurto ? 'border-danger' : 'border-hairline',
           ].join(' ')}
         />
       </label>

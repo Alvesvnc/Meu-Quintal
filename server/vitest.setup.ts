@@ -26,3 +26,19 @@ process.env.RATE_LIMIT_MAX = '100000';
 process.env.SENTRY_DSN = '';
 process.env.METRICS_TOKEN = '';
 process.env.RESEND_API_KEY = '';
+
+// Asaas DESLIGADO na suite, pelo mesmo motivo do SENTRY_DSN acima: no dia em
+// que houver uma chave de verdade no .env da maquina, um teste nao pode sair
+// abrindo checkout no provedor. Quem precisa da integracao ligada sobrescreve
+// no proprio arquivo, antes do import dinamico do app.
+process.env.ASAAS_API_KEY = '';
+process.env.ASAAS_WEBHOOK_TOKEN = '';
+process.env.PRECO_RESTAURANTE_CENTS = '';
+process.env.PRECO_PRACA_CENTS = '';
+
+// Push DESLIGADO na suite, mesmo motivo do Asaas e do Sentry: no dia em que
+// houver um par VAPID de verdade no .env da maquina, um teste nao pode sair
+// disparando notificacao pra aparelho de gente. Quem precisa dele ligado
+// sobrescreve no proprio arquivo, antes do import dinamico do app.
+process.env.VAPID_PUBLIC_KEY = '';
+process.env.VAPID_PRIVATE_KEY = '';

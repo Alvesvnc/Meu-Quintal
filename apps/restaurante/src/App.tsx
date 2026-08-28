@@ -23,8 +23,17 @@ export function App() {
   // passar pelo login.
   const isSenha = loc.pathname.startsWith('/senha/');
 
+  // A COZINHA TRABALHA EM TABLET, nao em celular.
+  //
+  // Este container era `max-w-[480px]` fixo: no tablet do balcao — que e o
+  // aparelho principal — o app virava uma coluna estreita no meio da tela,
+  // mostrando uma ficha por vez com o resto vazio. Num turno cheio isso
+  // significa rolar a lista o tempo todo pra ver o que ja esta na tela.
+  //
+  // Agora a largura acompanha o aparelho e so trava em 1400px, onde uma linha
+  // de leitura ja ficaria longa demais.
   return (
-    <div className="min-h-screen mx-auto max-w-[480px] bg-bg text-ink">
+    <div className="min-h-screen mx-auto w-full max-w-[1400px] bg-bg text-ink">
       {/* Login renderiza fora do shell (sem header/tabs) */}
       {isLogin || isConvite || isSenha ? (
         <Routes>

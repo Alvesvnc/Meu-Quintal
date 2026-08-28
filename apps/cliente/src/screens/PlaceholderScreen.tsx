@@ -5,20 +5,20 @@ import { Button } from '@mq/design-system';
 export function PlaceholderScreen({ title }: { title: string }) {
   const params = useParams();
   return (
-    <main className="px-5 py-10 max-w-md mx-auto">
-      <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim mb-3">
+    <main className="px-4 py-8">
+      <p className="font-display text-label font-bold uppercase text-neutral-600 mb-2">
         Tela em construção
       </p>
-      <h1 className="font-display italic text-display-lg leading-tight text-pretty">
-        {title}
-      </h1>
+      <h1 className="font-display text-display-lg text-ink text-pretty">{title}</h1>
+
       {Object.keys(params).length > 0 && (
-        <pre className="mt-5 font-mono text-mono-sm text-inkDim p-3 bg-surface rounded-md border border-hairline overflow-auto">
+        <pre className="mt-5 p-3 bg-surface border border-divider text-body-sm text-neutral-700 overflow-auto">
 {JSON.stringify(params, null, 2)}
         </pre>
       )}
-      <div className="mt-7">
-        <Link to="/">
+
+      <div className="mt-6">
+        <Link to="/" className="no-underline">
           <Button variant="secondary" size="lg" fullWidth>
             Voltar pro quintal
           </Button>

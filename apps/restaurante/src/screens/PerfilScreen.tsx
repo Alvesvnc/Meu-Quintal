@@ -5,6 +5,7 @@ import { mensagemDeErro, type PerfilCozinhaResponse } from '@mq/shared';
 import { usePerfil, useSalvarPerfil } from '../api/hooks';
 import { Switch } from '../components/Switch';
 import { ScreenError } from '../components/ScreenError';
+import { FotoDaCozinha } from '../components/FotoDaCozinha';
 
 /**
  * O que o cliente vê: nome, foto, categoria, frase, tempo de preparo.
@@ -16,9 +17,13 @@ import { ScreenError } from '../components/ScreenError';
  * quintal: mudar quebraria link salvo, QR impresso e a sala de socket. Trocar
  * slug é operação do dono do espaço.
  *
- * A FOTO É UMA URL, não um upload. Não existe armazenamento de arquivo no
- * sistema — o campo antigo abria um seletor de arquivo e gerava um `blob:` que
- * morria ao recarregar a página. Está anotado em `pendencias.txt`.
+ * A FOTO É UM ARQUIVO ENVIADO daqui — computador ou celular. O servidor
+ * reencoda pra webp antes de guardar, então o cliente baixa uma imagem leve
+ * mesmo quando a cozinha manda a foto crua de 9 MB do celular.
+ *
+ * O campo de URL continua existindo, mas SÓ pra quem já tinha um preenchido:
+ * ele aponta pra imagem hospedada em outro site e some no dia em que aquele
+ * site cair. Mesmo desenho do `EditItemSheet` com as fotos de prato.
  */
 export function PerfilScreen() {
   const navigate = useNavigate();
@@ -26,7 +31,7 @@ export function PerfilScreen() {
   const salvar = useSalvarPerfil();
 
   if (q.isLoading) {
-    return <main className="px-5 py-12 font-sans text-body text-inkDim">Carregando…</main>;
+    return <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 py-12 font-sans text-body text-inkDim">Carregando…</main>;
   }
   if (q.isError || !q.data) {
     return (
@@ -76,10 +81,10 @@ function Formulario({ perfil, salvando, erro, onSalvar, onCancelar }: FormProps)
   const [photoUrl, setPhotoUrl] = useState(perfil.photoUrl ?? '');
   const [slaStr, setSlaStr] = useState(String(perfil.slaMinutes));
   const [ativa, setAtiva] = useState(perfil.status !== 'pausada');
-  // Guarda QUAL url falhou, e nao um booleano: assim trocar a url limpa o
-  // erro sozinho, sem um effect ressincronizando estado a cada digitacao.
-  const [urlQuebrada, setUrlQuebrada] = useState<string | null>(null);
-  const fotoQuebrada = urlQuebrada !== null && urlQuebrada === photoUrl.trim();
+
+  // A foto que aparece vem do campo antigo quando nao ha arquivo enviado — e o
+  // servidor ja resolveu essa precedencia, entao basta comparar.
+  const ehLegado = perfil.foto !== null && perfil.foto === perfil.photoUrl;
 
   const sla = Number(slaStr);
   const slaValido = Number.isInteger(sla) && sla >= 1 && sla <= 120;
@@ -90,7 +95,7 @@ function Formulario({ perfil, salvando, erro, onSalvar, onCancelar }: FormProps)
     if (!podeSalvar) return;
     onSalvar({
       name: name.trim(),
-      // Campo vazio vira `null`, não string vazia: "" apareceria como uma
+      // Campo vazio vira `null`, não string vazia: `""` apareceria como uma
       // categoria de verdade nas telas do cliente e do dono.
       category: category.trim() || null,
       tagline: tagline.trim() || null,
@@ -102,17 +107,17 @@ function Formulario({ perfil, salvando, erro, onSalvar, onCancelar }: FormProps)
   };
 
   return (
-    <main className="pb-48 px-5">
+    <main className="w-full max-w-[720px] mx-auto px-5 sm:px-6 pb-48">
       <section className="pt-6">
         <p className="font-mono text-mono-sm uppercase tracking-wider text-inkDim">
           Identidade · o que o cliente vê
         </p>
-        <h1 className="mt-1 font-display text-display-lg italic text-ink leading-tight text-pretty">
+        <h1 className="mt-1 font-display text-display-lg text-ink leading-tight text-pretty">
           Perfil da cozinha.
         </h1>
         <p className="mt-2 font-sans text-body text-inkMuted">
-          O dono do quintal cuida do acordo financeiro. Aqui é com você: o que você vende, a foto,
-          a frase, quanto tempo demora.
+          O dono do quintal cuida do acordo financeiro. Aqui é com você: o que você vende, a foto, a
+          frase, quanto tempo demora.
         </p>
       </section>
 
@@ -135,38 +140,34 @@ function Formulario({ perfil, salvando, erro, onSalvar, onCancelar }: FormProps)
 
       <section className="mt-7">
         <Divider label="Foto da cozinha" />
-        <p className="mt-3 font-sans text-body-sm text-inkMuted mb-3">
-          Cole o endereço de uma imagem já publicada na internet. Ainda não dá pra enviar arquivo
-          direto daqui. 4:5 vertical funciona melhor.
+        <p className="mt-3 font-sans text-body-sm text-inkMuted mb-4">
+          Escolha uma foto do computador ou do celular. 4:5 vertical funciona melhor. Pode mandar a
+          foto grande — ela é reduzida e convertida aqui, pro cardápio abrir rápido no 4G.
         </p>
 
-        <Campo rotulo="Endereço da imagem">
-          <input
-            type="url"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="https://…"
-            className={inputCls}
-          />
-        </Campo>
+        {/* A foto é salva NA HORA, fora do botão "Salvar" do formulário: ela
+            já está no servidor quando o upload termina. Fingir que depende do
+            botão faria a cozinha achar que perdeu a foto ao cancelar. */}
+        <FotoDaCozinha foto={perfil.foto} nome={perfil.name} ehLegado={ehLegado} />
 
+        {/* Legado: cozinha cadastrada antes de existir upload. Só aparece se
+            já tiver valor — não há por que oferecer o caminho velho pra quem
+            está começando agora. */}
         {photoUrl.trim() !== '' && (
-          <div className="mt-3 rounded-md overflow-hidden bg-surface aspect-[4/5] max-w-[280px]">
-            {fotoQuebrada ? (
-              <div className="w-full h-full flex items-center justify-center px-4 text-center">
-                <p className="font-sans text-body-sm text-danger">
-                  Não consegui carregar essa imagem. Confira o endereço.
-                </p>
-              </div>
-            ) : (
-              <img
-                src={photoUrl}
-                alt={`Foto da ${name}`}
-                onError={() => setUrlQuebrada(photoUrl.trim())}
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
+          <Campo rotulo="Foto por endereço" dica="campo antigo">
+            <input
+              type="url"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              placeholder="https://…"
+              className={inputCls}
+            />
+            <p className="mt-2 font-sans text-body-sm text-inkMuted">
+              {ehLegado
+                ? 'Envie a foto acima e apague este endereço — assim ela fica guardada aqui e não depende de outro site continuar no ar.'
+                : 'Sem efeito enquanto houver foto enviada. Fica guardado caso você remova a de cima.'}
+            </p>
+          </Campo>
         )}
       </section>
 
@@ -237,9 +238,7 @@ function Formulario({ perfil, salvando, erro, onSalvar, onCancelar }: FormProps)
             <span className="font-sans text-body text-inkMuted">minutos</span>
           </div>
           {!slaValido && (
-            <p className="mt-2 font-mono text-mono-sm text-danger">
-              Entre 1 e 120 minutos.
-            </p>
+            <p className="mt-2 font-mono text-mono-sm text-danger">Entre 1 e 120 minutos.</p>
           )}
         </Campo>
       </section>
@@ -270,7 +269,9 @@ function Campo({
   return (
     <div className="mt-5">
       <div className="flex items-baseline justify-between mb-2 gap-3">
-        <label className="font-mono text-label uppercase tracking-wider text-inkDim">{rotulo}</label>
+        <label className="font-mono text-label uppercase tracking-wider text-inkDim">
+          {rotulo}
+        </label>
         {dica && (
           <span className="font-mono text-mono-sm text-inkDim normal-case tracking-normal text-right">
             {dica}
@@ -283,6 +284,6 @@ function Campo({
 }
 
 const inputCls =
-  'w-full px-4 py-3 bg-surface border border-hairline rounded-md ' +
+  'w-full px-4 py-3 bg-surface border border-hairline  ' +
   'font-sans text-body text-ink placeholder:text-inkDim ' +
   'focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primaryWash';
